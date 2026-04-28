@@ -1,0 +1,5 @@
+-- TODO: consolidated initial schema per app_handoff_v8.md §6.2.
+-- Tables: profiles, master_cvs, applications, generation_events, account_deletions,
+--         request_logs, token_usage, idempotency_keys, telemetry_events.
+-- Enums: application_status (9 values).
+-- RLS policies, indexes, and the on_auth_user_created trigger all live here.
