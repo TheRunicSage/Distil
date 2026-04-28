@@ -499,8 +499,8 @@ Follow this order exactly. Each step depends on the previous.
 - [x] = done  [ ] = not started  [~] = in progress
 
 ```
-[ ] 1.  Project scaffold: Next.js + TypeScript + Tailwind + shadcn init + Sentry + env files
-[ ] 2.  Folder skeleton per repo structure above
+[x] 1.  Project scaffold: Next.js + TypeScript + Tailwind + shadcn init + Sentry + env files
+[x] 2.  Folder skeleton per repo structure above
 [ ] 3.  lib/env.ts — Zod env validation, fails fast
 [ ] 4.  supabase/migrations/0001_initial.sql — run the full SQL from app_handoff_v8.md §6.2
 [ ] 5.  lib/supabase/{browser,server,service,middleware}.ts — three clients
@@ -572,6 +572,10 @@ Format: `[step number] DECISION POINT title: Option chosen — brief reason`
 [2] Skeleton stub content: one-line `// TODO:` marker per file naming the file's job. Locked Interface Contracts land in step 7, not now.
 [1] GitHub repo: `https://github.com/TheRunicSage/distil`. Local scaffold pushes here on first commit. Vercel project name and Supabase project ref still outstanding; deploy/migration steps are blocked on those values but local scaffold proceeds.
 [1] `middleware.ts` vs `proxy.ts`: Next.js 16 deprecated the `middleware` file convention in favour of `proxy.ts` (same API, new filename). Milestone 0 ships a `middleware.ts` stub — still works, emits a deprecation warning. When step 5 wires the real session-refresh logic, rename to `proxy.ts` and update references in CLAUDE.md and app_handoff §6.4. Per the standing principle.
+[1] shadcn Nova preset: `shadcn init -d` selected the Nova preset, which pulled in extra dependencies the spec doesn't list — `@base-ui/react`, `class-variance-authority`, `clsx`, `lucide-react`, `tailwind-merge`, `tw-animate-css`, plus the `shadcn` runtime package. All are standard shadcn-ecosystem tooling and don't conflict with the architecture. Geist (also pulled by Nova) was removed from `app/layout.tsx` so DM Sans + Instrument Serif are the only fonts loaded.
+[1] Light theme scoping: dark theme is global via `<html class="dark">`. For preview islands (CvPreview, CoverLetterPreview, email body) we render content using the `--color-l-*` brand utilities directly (`bg-l-bg`, `text-l-text`) rather than stripping `.dark` from a subtree. Cleaner than CSS variable override gymnastics inside a `.dark` ancestor.
+[1] `.claude/settings.local.json` ignored, `settings.json` committed — standard Claude Code convention. The committed settings.json carries project-level harness config; settings.local.json holds per-machine overrides.
+[1] `next.config.ts` `turbopack.root` pinned to `__dirname` to silence the multiple-lockfiles warning caused by an unrelated `package-lock.json` in `$HOME`.
 
 **Standing principle (set in this session):** prefer the latest *stable* version of any tool we adopt; when spec sample code targets an older version, modify the code to match the current API rather than pinning to the older version.
 
