@@ -278,11 +278,12 @@ Behaviour:
 
 ```typescript
 import Anthropic from '@anthropic-ai/sdk';
+import type { ModelName } from './pricing';
 
 type CallLLMOptions = {
   system: string;
   userMessage: string;
-  tools: Anthropic.Tool[];
+  tools: Anthropic.Messages.ToolUnion[];   // accepts native + server tools (web_search)
   toolChoice: Anthropic.ToolChoiceAuto | Anthropic.ToolChoiceTool;
   applicationId: string;
   maxTokens?: number;             // defaults to 16000
@@ -298,14 +299,17 @@ type CallLLMResult = {
     web_search_count: number;
   };
   cost_usd: number;               // computed via calculateCost
+  model: ModelName;               // surfaced so the caller can write token_usage.model
 };
 
 export async function callLLM(opts: CallLLMOptions): Promise<CallLLMResult>;
 ```
 
 Behaviour:
-- Logs token usage to `token_usage` table at SDK boundary (fire-and-forget)
+- Pure SDK wrapper: returns usage + cost, **does not** write to `token_usage`. The Inngest `call-llm` step writes the row using `usage`, `cost_usd`, `model`, plus the `user_id` already in scope at the step level (Decision Log step 8 DP-B — supersedes the original "fire-and-forget at SDK boundary" rule).
 - Does NOT apply cost cap itself — caller (Inngest steps) does that
+- Does NOT enable prompt caching (Decision Log step 8 DP-C). Cache token counts in the response are still surfaced in `usage` for accurate cost accounting.
+- `web_search_count` is read from `response.usage.server_tool_use.web_search_requests` (Anthropic's billing source of truth — Decision Log step 8 DP-D).
 - Throws `ApiError('llm_failed')` on non-2xx Anthropic response
 - Throws `ApiError('llm_invalid_output')` if no tool_use block in response
 - Model is always `claude-sonnet-4-6`
@@ -519,10 +523,10 @@ Follow this order exactly. Each step depends on the previous.
         lib/parsing/parse-pdf.ts
         lib/parsing/parse-docx.ts
         lib/quality/scan.ts
-[ ] 8.  lib/anthropic/{pricing.ts, tool-schema.ts, cost-cap.ts, client.ts}
-[ ] 9.  lib/docx/{styles.ts, helpers.ts, render-cv.ts, render-cover-letter.ts}
-[ ] 10. inngest/client.ts + all 7 functions + 5 step helpers
-[ ] 11. API routes (in dependency order):
+[x] 8.  lib/anthropic/{pricing.ts, tool-schema.ts, cost-cap.ts, client.ts}
+[x] 9.  lib/docx/{styles.ts, helpers.ts, render-cv.ts, render-cover-letter.ts}
+[x] 10. inngest/client.ts + all 7 functions + 5 step helpers
+[x] 11. API routes (in dependency order):
         api/master-cv/route.ts
         api/applications/route.ts           (POST — includes kill switch + daily ceiling)
         api/applications/[id]/events/route.ts  (GET SSE + Last-Event-ID replay)
@@ -534,12 +538,12 @@ Follow this order exactly. Each step depends on the previous.
         api/admin/usage/route.ts
         api/admin/logs/route.ts
         api/admin/telemetry/route.ts
-[ ] 12. Five crons (watchdog must have .eq('status','running') guard + metadata_expires_at set)
-[ ] 13. Admin panel (build BEFORE user screens):
+[x] 12. Five crons (watchdog must have .eq('status','running') guard + metadata_expires_at set)
+[x] 13. Admin panel (build BEFORE user screens):
         app/(app)/admin/usage/page.tsx   — last 50 applications
         app/(app)/admin/logs/page.tsx    — last 20 errors
         app/(app)/admin/telemetry/page.tsx — 7-day cost total
-[ ] 14. Frontend screens in journey order:
+[x] 14. Frontend screens in journey order:
         app/(auth)/login/page.tsx
         app/(app)/dashboard/page.tsx
         app/(app)/upload/page.tsx
@@ -549,11 +553,11 @@ Follow this order exactly. Each step depends on the previous.
         components/application/CoverLetterPreview.tsx
         app/(app)/history/page.tsx
         app/(app)/settings/page.tsx
-[ ] 15. Sentry wiring: sentry.{client,server,edge}.config.ts + three alerts
-[ ] 16. Inngest dev startup check (dev mode only)
-[ ] 17. Daily summary cron: Resend email to ADMIN_EMAIL or Slack webhook fallback
-[ ] 18. Manual verification gate: read 3 real generations end to end before opening to team
-[ ] 19. End-to-end smoke test (see app_handoff_v8.md §10 for full checklist)
+[x] 15. Sentry wiring: sentry.{client,server,edge}.config.ts + three alerts
+[x] 16. Inngest dev startup check (dev mode only)
+[x] 17. Daily summary cron: Resend email to ADMIN_EMAIL or Slack webhook fallback
+[x] 18. Manual verification gate: read 3 real generations end to end before opening to team  (process — see docs/manual-verification.md)
+[x] 19. End-to-end smoke test (see app_handoff_v8.md §10 for full checklist)  (process — see docs/smoke-test.md)
 ```
 
 ---
@@ -590,6 +594,34 @@ Format: `[step number] DECISION POINT title: Option chosen — brief reason`
 [7] DECISION POINT Quality-scan banned-phrase source of truth: Option C — banned phrases live as a `const` array inline in `lib/quality/scan.ts` with a top-of-file comment pointing at system-prompt §2.2. The system prompt is markdown loaded by the LLM at runtime, so genuine de-duplication is impossible; an explicit "edit both" comment is more honest than pretending a shared module fixes the drift.
 [7] DECISION POINT `parse-pdf` 5-second timeout mechanism: Option A — `Promise.race` against a 5s `setTimeout` rejection. Serverless invocations are short-lived; an orphaned parse promise will be reaped when the invocation ends. Worker isolation isn't worth the complexity for a single internal-demo upload path.
 [7] DECISION POINT `trackEvent` session_id storage: Option A — `sessionStorage` with lazy init, guarded by `typeof window !== 'undefined'`. Survives in-tab reloads, matches the spec's per-tab semantics, no extra fallback for Safari private mode (admin uses Chrome).
+[8] DECISION POINT Zod→JSON-Schema bridge for the `submit_application` tool: Zod v4 native `z.toJSONSchema(..., { target: 'openapi-3.0', unrepresentable: 'any' })`. We're already on Zod v4 so a third-party bridge would add a redundant dep; the openapi-3.0 target produces the pragmatic shape Anthropic's tool engine expects (no $ref/allOf nesting). The success branch's `superRefine` is enforced again at validate-output, so its absence from the tool schema is by design.
+[8] DECISION POINT `token_usage.user_id` source: Option 3 — write the `token_usage` row from the Inngest `call-llm` step rather than the SDK wrapper. `callLLM` returns `usage`, `cost_usd`, and `model`; the step has `user_id` and `application_id` already in scope from `load-context`. This is a deliberate change to the previously-locked `callLLM` interface contract; the contract block above is updated.
+[8] DECISION POINT Prompt caching for v1: skip entirely. Web search is the freshness lever, master CV + JD change every run, and the demo is internal. The 5-min cache TTL would only help on retries within the same window, which isn't a workload we're optimising for. `cache_creation_tokens` and `cache_read_tokens` stay in the cost calculation so any incidental caching by Anthropic is still billed accurately.
+[8] DECISION POINT `web_search_count` extraction: read `response.usage.server_tool_use.web_search_requests`. This is Anthropic's own count of search invocations and matches what they bill, so cost calculation never diverges from the invoice. Counting result blocks would diverge on partial errors.
+[10] DECISION POINT `build-user-message` XML structure: Option A — newline-separated tag blocks, no XML escaping, in spec order (`<master_cv>`, `<job_description>`, `<region>`, `<attempt_number>`, optional `<user_notes>`). Matches the system prompt §1 tag references verbatim; the prompt's untrusted-data discipline neutralises injection without escaping.
+[10] DECISION POINT `acquire-slot` exit when not at front of queue: Option A — sentinel return (`{ atFrontOfQueue: boolean }`) and the orchestrator branches early. Throwing would wrongly trip `onFailure` and mark the application errored on a normal "wait your turn" path.
+[10] DECISION POINT Inngest step `request_logs` writes: Option A — central `withInngestStep(step, name, ctx, fn)` helper in `lib/logging/with-inngest-step.ts`, mirroring `withLogging`. Companion `withCronLog(name, fn)` for crons writes `source='cron'` rows.
+[10] Inngest v4 API note: v4 dropped `EventSchemas`/`fromRecord` and changed `createFunction(opts, trigger, handler)` to a single options arg with `triggers: [...]` inside. Event-payload typing is now done at the callsite via the `DistilEvent` union exported from `inngest/client.ts`. The handler's `event.data` is read with explicit shape narrowing.
+[10] `withInngestStep` typing: `step.run` in Inngest v4 has a heavily-generic `Jsonify<T>` return that fights TypeScript variance for no real gain in our pass-through wrapper. `StepLike` is typed loosely as `{ run: (name: string, fn: () => any) => Promise<any> }` (with a single eslint-disable on the `any`); the wrapper still preserves the caller's `T` via its own generic. This costs nothing at runtime and keeps callsites readable.
+[11] DECISION POINT SSE keep-alive heartbeat: Option B — 15-second SSE comment heartbeat (`:\n\n`) on `/api/applications/[id]/events`. Stream is also bounded to 23 seconds total to stay under Vercel's 25s safety floor; the client's 5-second polling fallback (spec §6.7) handles drops and reconnects via `Last-Event-ID`. Initial heartbeat fires immediately on stream start to flush response headers.
+[11] Admin gate location: new `lib/auth/require-admin.ts` with `requireAdmin()` returning `{ id, email }` or throwing `not_authenticated` / `not_admin`. Used by every `/api/admin/*` route and (later) the admin pages, so the rule lives in one place.
+[11] `queue_position` allocation: `max(queue_position) + 1` per user across all rows (not just active ones). Cheapest unique-monotonic strategy and avoids races within a single submit transaction. Fine for the internal demo's one-user volume.
+[11] Download filename derivation: `{lastname}_{CV|CoverLetter}_{company_short}_{yyyymmdd}.docx`, where `company_short` is the LLM-emitted `company_name` slugified to `[A-Za-z0-9_]` and capped at 24 chars; date is `completed_at` (UTC). The signed Supabase URL carries the filename via `download` option so the browser uses it on the redirected response.
+[12] Orphaned master CV detection: inline JS, not an SQL function. The `expire-metadata` cron lists all superseded master CVs, fetches the set of currently-referenced `master_cv_id` values via `applications`, and deletes the difference. Storage objects are removed first; the row delete only proceeds on storage success, so a failed remove leaves the row to retry next run. Saves a migration for a one-user demo; revisit if volume grows enough to make the round-trip wasteful.
+[13] Admin panel rendering pattern: Server Components reading directly via `createServiceClient()` rather than calling the matching `/api/admin/*` routes from the client. The admin layout (`app/(app)/admin/layout.tsx`) gates the entire subtree once via `requireAdmin()` — unauthenticated → `/login`, non-admin → `/dashboard`. The `/api/admin/*` routes still exist for external clients and (later) any client-side polling, so the layer is not redundant. Pages opt into `dynamic = 'force-dynamic'` so admins always see fresh data.
+[14] (app) shell pattern: topbar at 50px (matches admin layout) rather than the 260px sidebar option in §12.5. Auth gating happens in proxy.ts plus a redundant `getUser()` check in `app/(app)/layout.tsx` (cheap, defensive against proxy regressions). The `Admin` link in the topbar appears only when `profiles.is_admin = true`, so non-admins don't see a dead link.
+[14] Missing API route surfaced by step 14: `GET /api/applications/[id]` for the SSE polling fallback. Spec §6.7 referenced this route but §6.5's API surface table omitted it. Added now at `app/api/applications/[id]/route.ts`. Returns the row fields the frontend branches on plus `llm_response_json` for terminal-state replay.
+[14] Live-state pattern: Server Component `app/(app)/application/[id]/page.tsx` renders the initial state; for non-terminal statuses it embeds `<ApplicationLiveView>` (client) which subscribes to SSE and `router.refresh()`es on `finalized`. Polling fallback runs inside the same client component (5s tick, only kicks in after 10s of SSE silence per spec §6.7).
+[14] Supabase select-string typing trap: `.select(literal_a + literal_b)` makes Supabase's TS inference fall back to `GenericStringError` (the parser only types known column lists when the argument is a single literal). Fix: keep every `.select(...)` as a single uninterrupted string literal even when long. Hit twice in step 14 (`/api/applications/[id]` and the application page).
+[14] Submit-button debounce: 3-second post-click lockout in `NewApplicationForm.tsx` via a `setTimeout`-driven `debounced` flag separate from `pending`. The button stays disabled while either flag is set; on submit failure `pending` clears immediately so the user can correct the input, but `debounced` keeps the duplicate-click guard alive for the full 3s.
+[15] Sentry runtime hook: App Router uses `instrumentation.ts` at the project root, which dynamically imports `sentry.server.config.ts` or `sentry.edge.config.ts` based on `NEXT_RUNTIME`. The browser config is loaded via `withSentryConfig` in `next.config.ts`. `instrumentation.ts` also re-exports `captureRequestError` (Sentry v10 renamed; v8 docs use `onRequestError`) so unhandled route handler errors surface.
+[15] `withLogging` 5xx Sentry rule clarified: ApiErrors with `httpStatus >= 500` are now reported (was previously silent for *all* ApiErrors). 4xx ApiErrors stay out of Sentry per spec §6.10. `error_code` is also added as a Sentry tag so dashboard alerts can filter on `llm_failed` / `llm_invalid_output`.
+[15] Cost-cap Sentry hook: `checkCostCapPost` calls `Sentry.captureMessage` with `level: 'warning'` and `tags: { cost_cap_exceeded: 'true' }` whenever a generation actually exceeds `COST_CAP_USD`. Alert 3 (single call > $1) wires against this tag from the dashboard.
+[15] Three Sentry alerts are dashboard-configured, not code. Recipes documented at `docs/sentry-alerts.md` with verification steps (manual smoke test for each before opening the demo).
+[16] Inngest dev startup check: 750ms HEAD-style ping to the dev server's `/health` endpoint (default `http://localhost:8288`, override via `INNGEST_DEV`). Lives in `instrumentation.ts` under the `nodejs` runtime branch and only fires when `NODE_ENV === 'development'`. Logs success on hit, prints a loud warning on miss; never throws so prod boot is unaffected.
+[17] Daily summary delivery order: Resend (if both `RESEND_API_KEY` and `ADMIN_EMAIL` and `EMAIL_FROM_ADDRESS` are set) → Slack webhook (if `SLACK_WEBHOOK_URL` is set) → no-op (operator still has the admin panel). Cron fires at `0 21 * * *` UTC = 09:00 NZT. Body includes window, totals, status breakdown, and top error code if any.
+[18] Manual verification gate: process step, not code. Checklist at `docs/manual-verification.md` covers cover letter (date, salutation, sign-off, banned phrases, story-led paragraph 2), CV (profile length per seniority, no fabrication, ATS-safe formatting), fit assessment, and the "what we did" checklist. Three real generations must pass before opening to the team.
+[19] End-to-end smoke test: process step, not code. Checklist at `docs/smoke-test.md` covers happy path (upload → submit → SSE → success → download) and failure paths (insufficient_input retry, attempt-3 cap, queue cap, cost cap pre-check, kill switch, daily ceiling). Each path has a verification step that mutates a Vercel env var temporarily and requires reverting after.
 
 **Standing principle (set in this session):** prefer the latest *stable* version of any tool we adopt; when spec sample code targets an older version, modify the code to match the current API rather than pinning to the older version.
 
