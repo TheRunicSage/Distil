@@ -1,1 +1,167 @@
-// TODO: styled React preview of cv_content from llm_response_json (light theme)
+// Light-theme React preview of the tailored CV. Reads
+// cv_content from llm_response_json. Mirrors the DOCX layout so the
+// user can sanity-check the content before downloading; not pixel
+// perfect — the DOCX is canonical. See CLAUDE.md §12 (light theme is
+// scoped to the preview cards via brand `l-*` tokens).
+
+import type { ApplicationOutputSuccess } from "@/lib/llm/output-schema";
+
+type Props = {
+  content: ApplicationOutputSuccess["cv_content"];
+};
+
+function pipe(parts: ReadonlyArray<string | null | undefined>): string {
+  return parts.filter((p): p is string => Boolean(p && p.trim())).join(" | ");
+}
+
+export function CvPreview({ content }: Props) {
+  return (
+    <article className="rounded-lg border border-l-border bg-l-bg p-10 font-sans text-l-text shadow-card">
+      <header>
+        <h1 className="text-2xl font-bold leading-tight">
+          {content.contact_details.full_name}
+        </h1>
+        <p className="mt-2 border-b border-l-border pb-2 text-xs text-l-mid">
+          {pipe([
+            content.contact_details.location,
+            content.contact_details.email,
+            content.contact_details.phone,
+            content.contact_details.linkedin,
+          ])}
+          {content.contact_details.work_rights || content.contact_details.availability ? (
+            <>
+              <br />
+              {pipe([
+                content.contact_details.work_rights
+                  ? `Work Rights: ${content.contact_details.work_rights}`
+                  : null,
+                content.contact_details.availability
+                  ? `Availability: ${content.contact_details.availability}`
+                  : null,
+              ])}
+            </>
+          ) : null}
+        </p>
+      </header>
+
+      <Section title="Profile">
+        <p className="text-sm leading-relaxed">{content.profile}</p>
+      </Section>
+
+      {content.technical_skills.length > 0 && (
+        <Section title="Technical Skills">
+          <ul className="space-y-1.5 text-sm">
+            {content.technical_skills.map((g, i) => (
+              <li key={i}>
+                <strong className="font-semibold">{g.category}:</strong>{" "}
+                {g.skills.join(", ")}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+
+      <Section title="Professional Experience">
+        <div className="space-y-5">
+          {content.professional_experience.map((role, i) => (
+            <div key={i}>
+              <p className="font-semibold">
+                {role.role_title}, {role.company}
+              </p>
+              <p className="text-xs text-l-mid">
+                {pipe([role.location, `${role.start_date} to ${role.end_date}`])}
+              </p>
+              <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm">
+                {role.bullets.map((b, j) => (
+                  <li key={j}>{b}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      {content.key_projects.length > 0 && (
+        <Section title="Key Projects">
+          <div className="space-y-5">
+            {content.key_projects.map((p, i) => (
+              <div key={i}>
+                <p>
+                  <strong className="font-semibold">{p.name}</strong>
+                  {" | "}
+                  <em className="italic text-l-mid">{p.context}</em>
+                </p>
+                <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm">
+                  {p.bullets.map((b, j) => (
+                    <li key={j}>{b}</li>
+                  ))}
+                </ul>
+                {p.technologies.length > 0 && (
+                  <p className="mt-1.5 text-xs text-l-mid">
+                    Technologies: {p.technologies.join(", ")}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      <Section title="Education">
+        <div className="space-y-4">
+          {content.education.map((e, i) => (
+            <div key={i}>
+              <p className="font-semibold">
+                {e.qualification}, {e.institution}
+              </p>
+              <p className="text-xs text-l-mid">
+                {pipe([e.location, e.dates])}
+              </p>
+              {e.details.length > 0 && (
+                <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm">
+                  {e.details.map((d, j) => (
+                    <li key={j}>{d}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      {content.leadership_and_interests.length > 0 && (
+        <Section title="Leadership and Interests">
+          <ul className="space-y-1.5 text-sm">
+            {content.leadership_and_interests.map((item, i) => (
+              <li key={i}>
+                <strong className="font-semibold">{item.title}:</strong>{" "}
+                {item.description}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+
+      <Section title="Referees">
+        <p className="text-sm">{content.referees}</p>
+      </Section>
+    </article>
+  );
+}
+
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="mt-6">
+      <h2 className="border-b border-l-border pb-1 text-xs font-bold uppercase tracking-[0.08em] text-orange">
+        {title}
+      </h2>
+      <div className="mt-2.5">{children}</div>
+    </section>
+  );
+}

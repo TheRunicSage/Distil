@@ -1,1 +1,200 @@
-// TODO: heading(), bullet(), contactLine(), roleHeader()
+// Reusable paragraph builders for the CV and cover letter renderers.
+// Pure functions: input data, output Paragraph nodes. Caller assembles
+// the final document. Keeps render-cv.ts / render-cover-letter.ts at the
+// "list of sections" level rather than fussing with TextRun configs.
+
+import {
+  AlignmentType,
+  BorderStyle,
+  Paragraph,
+  TextRun,
+  type ParagraphChild,
+} from "docx";
+import { COLOURS, FONTS, SIZES, SPACING } from "./styles";
+
+// Filters out null/undefined/empty values, then joins with " | ". Used
+// for contact lines and "Location | Dates" sub-rows. Without the filter
+// you get stray pipes when (for example) phone is missing.
+export function pipeJoin(
+  parts: ReadonlyArray<string | null | undefined>,
+): string {
+  return parts.filter((p): p is string => Boolean(p && p.trim())).join(" | ");
+}
+
+export function nameHeading(fullName: string): Paragraph {
+  return new Paragraph({
+    children: [
+      new TextRun({
+        text: fullName,
+        bold: true,
+        font: FONTS.heading,
+        size: SIZES.name_heading,
+      }),
+    ],
+    spacing: { after: SPACING.paragraph_after },
+  });
+}
+
+// Contact paragraph with a light-grey bottom rule. The rule is the only
+// "decoration" in the CV; everything else is plain text.
+export function contactLine(text: string, withRule: boolean): Paragraph {
+  return new Paragraph({
+    children: [
+      new TextRun({
+        text,
+        font: FONTS.body,
+        size: SIZES.contact_line,
+        color: COLOURS.dark_grey,
+      }),
+    ],
+    spacing: {
+      after: withRule ? SPACING.section_after : SPACING.paragraph_after,
+      line: SPACING.line_115,
+      lineRule: "auto",
+    },
+    border: withRule
+      ? {
+          bottom: {
+            color: COLOURS.rule,
+            space: 4,
+            style: BorderStyle.SINGLE,
+            size: 6, // eighths-of-a-point: 6 = 0.75pt
+          },
+        }
+      : undefined,
+  });
+}
+
+// Section heading: "PROFILE", "TECHNICAL SKILLS", etc. Bold all-caps
+// 13pt with a bottom rule. ATS parsers tolerate this style well.
+export function sectionHeading(text: string): Paragraph {
+  return new Paragraph({
+    children: [
+      new TextRun({
+        text: text.toUpperCase(),
+        bold: true,
+        font: FONTS.heading,
+        size: SIZES.section_heading,
+        characterSpacing: 10, // ~0.5pt tracking, very light
+      }),
+    ],
+    spacing: {
+      before: SPACING.heading_before,
+      after: SPACING.heading_after,
+    },
+    border: {
+      bottom: {
+        color: COLOURS.rule,
+        space: 2,
+        style: BorderStyle.SINGLE,
+        size: 6,
+      },
+    },
+    keepNext: true,
+  });
+}
+
+// Plain body paragraph (Profile, Referees, single-paragraph items).
+export function bodyParagraph(
+  text: string,
+  opts: { justified?: boolean; afterTwips?: number } = {},
+): Paragraph {
+  return new Paragraph({
+    children: [
+      new TextRun({
+        text,
+        font: FONTS.body,
+        size: SIZES.body,
+        color: COLOURS.black,
+      }),
+    ],
+    alignment: opts.justified ? AlignmentType.JUSTIFIED : AlignmentType.LEFT,
+    spacing: {
+      after: opts.afterTwips ?? SPACING.paragraph_after,
+      line: SPACING.line_115,
+      lineRule: "auto",
+    },
+  });
+}
+
+// Bullet item via Word's List Bullet style. 0.25in indent, hanging.
+export function bullet(text: string): Paragraph {
+  return new Paragraph({
+    children: [
+      new TextRun({
+        text,
+        font: FONTS.body,
+        size: SIZES.body,
+        color: COLOURS.black,
+      }),
+    ],
+    bullet: { level: 0 },
+    indent: { left: SPACING.bullet_indent, hanging: SPACING.bullet_indent },
+    spacing: {
+      after: 80, // 4pt after each bullet, per spec
+      line: SPACING.line_115,
+      lineRule: "auto",
+    },
+  });
+}
+
+// "Role Title, Company" bold first line of a role block. keepNext keeps
+// the role header on the same page as its first bullet.
+export function roleHeader(parts: ReadonlyArray<TextRun>): Paragraph {
+  return new Paragraph({
+    children: parts as unknown as ParagraphChild[],
+    spacing: {
+      before: SPACING.paragraph_after,
+      after: 0,
+      line: SPACING.line_115,
+      lineRule: "auto",
+    },
+    keepNext: true,
+  });
+}
+
+// 10pt grey "Location | Dates" line under a role / education / project.
+export function metaLine(text: string): Paragraph {
+  return new Paragraph({
+    children: [
+      new TextRun({
+        text,
+        font: FONTS.body,
+        size: SIZES.small,
+        color: COLOURS.medium_grey,
+      }),
+    ],
+    spacing: {
+      after: SPACING.paragraph_after,
+      line: SPACING.line_115,
+      lineRule: "auto",
+    },
+    keepNext: true,
+  });
+}
+
+// Bold prefix + plain remainder. Used for "Category: skill, skill" rows
+// and for the "Project Name | Context (italic)" header line.
+export function boldPrefixRun(prefix: string): TextRun {
+  return new TextRun({
+    text: prefix,
+    bold: true,
+    font: FONTS.body,
+    size: SIZES.body,
+    color: COLOURS.black,
+  });
+}
+
+export function plainRun(
+  text: string,
+  opts: { italic?: boolean; bold?: boolean; small?: boolean; grey?: boolean } = {},
+): TextRun {
+  return new TextRun({
+    text,
+    italics: opts.italic,
+    bold: opts.bold,
+    font: FONTS.body,
+    size: opts.small ? SIZES.small : SIZES.body,
+    color: opts.grey ? COLOURS.medium_grey : COLOURS.black,
+  });
+}

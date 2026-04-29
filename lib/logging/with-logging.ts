@@ -57,6 +57,12 @@ export function withLogging(
         status = "error";
         errorCode = err.code;
         errorMessage = sanitiseErrorMessage(err.message);
+        // Spec §6.10: report 5xx to Sentry, never 4xx.
+        if (err.httpStatus >= 500) {
+          Sentry.captureException(err, {
+            tags: { request_id, route: name, error_code: err.code },
+          });
+        }
         response = NextResponse.json(
           { error: { code: err.code, message: err.message } },
           { status: err.httpStatus },
@@ -65,7 +71,9 @@ export function withLogging(
         status = "error";
         errorCode = "internal_error";
         errorMessage = sanitiseErrorMessage(err);
-        Sentry.captureException(err, { tags: { request_id, route: name } });
+        Sentry.captureException(err, {
+          tags: { request_id, route: name, error_code: "internal_error" },
+        });
         response = NextResponse.json(
           {
             error: {

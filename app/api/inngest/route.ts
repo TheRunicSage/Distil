@@ -1,12 +1,29 @@
-// TODO: Inngest webhook handler — re-export `serve` from inngest/client.ts.
-export async function GET() {
-  return new Response("not implemented", { status: 501 });
-}
+// Inngest webhook handler. Registers every Inngest function with the
+// platform and serves runs back to it. The seven functions match the
+// build sequence step 10 surface.
 
-export async function POST() {
-  return new Response("not implemented", { status: 501 });
-}
+import { serve } from "inngest/next";
 
-export async function PUT() {
-  return new Response("not implemented", { status: 501 });
-}
+import { inngest } from "@/inngest/client";
+import { generateApplication } from "@/inngest/functions/generate-application";
+import { triggerNextInQueue } from "@/inngest/functions/trigger-next-in-queue";
+import { expireFiles } from "@/inngest/functions/expire-files";
+import { expireMetadata } from "@/inngest/functions/expire-metadata";
+import { sweepRequestLogs } from "@/inngest/functions/sweep-request-logs";
+import { sweepIdempotencyKeys } from "@/inngest/functions/sweep-idempotency-keys";
+import { watchdogStuckApplications } from "@/inngest/functions/watchdog-stuck-applications";
+import { dailySummary } from "@/inngest/functions/daily-summary";
+
+export const { GET, POST, PUT } = serve({
+  client: inngest,
+  functions: [
+    generateApplication,
+    triggerNextInQueue,
+    expireFiles,
+    expireMetadata,
+    sweepRequestLogs,
+    sweepIdempotencyKeys,
+    watchdogStuckApplications,
+    dailySummary,
+  ],
+});
