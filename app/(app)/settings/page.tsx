@@ -69,6 +69,43 @@ export default async function SettingsPage() {
         </Link>
       </section>
 
+      {profile?.is_admin && (
+        <section className="rounded-lg border border-border bg-dark3 p-6">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+            Admin tools
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Internal observability for the admin user.
+          </p>
+          <ul className="mt-4 space-y-2 text-sm">
+            <li>
+              <Link
+                href="/admin/usage"
+                className="text-orange hover:text-orange-light"
+              >
+                Usage — last 50 applications →
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/admin/logs"
+                className="text-orange hover:text-orange-light"
+              >
+                Logs — recent errors →
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/admin/telemetry"
+                className="text-orange hover:text-orange-light"
+              >
+                Telemetry — 7-day cost total →
+              </Link>
+            </li>
+          </ul>
+        </section>
+      )}
+
       <section className="rounded-lg border border-border bg-dark3 p-6">
         <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
           Session
