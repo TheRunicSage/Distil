@@ -502,7 +502,7 @@ Follow this order exactly. Each step depends on the previous.
 [x] 1.  Project scaffold: Next.js + TypeScript + Tailwind + shadcn init + Sentry + env files
 [x] 2.  Folder skeleton per repo structure above
 [x] 3.  lib/env.ts — Zod env validation, fails fast
-[ ] 4.  supabase/migrations/0001_initial.sql — run the full SQL from app_handoff_v8.md §6.2
+[x] 4.  supabase/migrations/0001_initial.sql — run the full SQL from app_handoff_v8.md §6.2
 [x] 5.  lib/supabase/{browser,server,service,middleware}.ts — three clients (+ proxy.ts wired)
 [~] 6.  Login page + admin user setup + UPDATE profiles SET is_admin = true   (page + actions done; awaiting admin user creation in Supabase)
 [ ] 7.  Shared modules (in this order):
@@ -580,6 +580,9 @@ Format: `[step number] DECISION POINT title: Option chosen — brief reason`
 [3] Zod v4 issue iteration: `error.flatten().fieldErrors` types each value as `unknown` in v4, breaking the v3 `msgs.join()` pattern. Use `error.issues.map(...)` directly — same output, properly typed.
 [6] Server Action return shape: `signIn` returns `SignInResult = { error: string } | undefined` (used with React 19's `useActionState`) rather than throwing. The form renders the generic error inline so we never reveal whether the email exists; only success path calls `redirect('/dashboard')`. `signOut` is colocated since it's a one-line companion action.
 [6] Login form primitives: raw `<input>` + Tailwind brand classes for now, not shadcn `Input`. Step 14 (frontend polish) is when we install `shadcn add input label` and refactor; this is the minimum to satisfy step 6's "functional login" goal.
+[4] Supabase CLI: installed as a dev dependency (`supabase` package), invoked via `npx supabase`. Keeps tooling per-project and out of the global PATH. `supabase/config.toml` has `project_id = "distil"` (was the default `webbbb` from working directory name).
+[4] Migration filename: kept as `0001_initial.sql` per spec rather than the timestamp format the CLI's `migration new` generates. The CLI accepts the integer-prefix form. New migrations can use either format as long as the version sorts after the previous one; `supabase migration new <name>` will generate timestamps from here forward, which is fine.
+[4] Migration application path: `npx supabase db push` against the linked remote, not local Docker. Spec doesn't require local-first development; remote-only is simpler for a single-environment internal demo and skips the Docker dependency entirely.
 
 **Standing principle (set in this session):** prefer the latest *stable* version of any tool we adopt; when spec sample code targets an older version, modify the code to match the current API rather than pinning to the older version.
 
