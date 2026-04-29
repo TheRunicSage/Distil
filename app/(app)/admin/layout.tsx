@@ -34,29 +34,32 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="flex flex-1 flex-col">
-      <header className="flex h-[50px] shrink-0 items-center justify-between border-b border-border bg-dark2 px-6">
-        <div className="flex items-center gap-6">
-          <span className="font-serif italic text-lg text-text">Distil</span>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between border-b border-border pb-4">
+        <div className="flex items-center gap-4">
           <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
             Admin
           </span>
+          <nav className="flex items-center gap-1">
+            {NAV.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="rounded-sm px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-dark4 hover:text-text"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
         </div>
-        <nav className="flex items-center gap-1">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="rounded-sm px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-dark4 hover:text-text"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      </header>
-      <main className="flex-1 overflow-y-auto px-6 py-8">
-        <div className="mx-auto max-w-[1200px]">{children}</div>
-      </main>
+        <Link
+          href="/settings"
+          className="text-xs text-muted-foreground hover:text-text"
+        >
+          ← Back to Settings
+        </Link>
+      </div>
+      {children}
     </div>
   );
 }

@@ -37,6 +37,7 @@ export default async function DashboardPage() {
     supabase
       .from("applications")
       .select("id, status, attempt_number, created_at, completed_at")
+      .not("started_at", "is", null)
       .order("created_at", { ascending: false })
       .limit(5),
   ]);

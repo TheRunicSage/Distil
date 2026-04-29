@@ -13,6 +13,7 @@
 
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { CopyId } from "@/components/app/CopyId";
 import { ApplicationLiveView } from "@/components/application/ApplicationLiveView";
 import { CoverLetterPreview } from "@/components/application/CoverLetterPreview";
 import { CvPreview } from "@/components/application/CvPreview";
@@ -80,10 +81,9 @@ export default async function ApplicationPage({ params }: RouteCtx) {
         >
           ← Back to Dashboard
         </Link>
-        <div className="mt-2 flex flex-wrap items-baseline gap-3">
-          <h1 className="font-mono text-lg text-text">
-            Application {id.slice(0, 8)}
-          </h1>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <h1 className="text-lg text-text">Application</h1>
+          <CopyId value={id} />
           <span
             className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.05em] ${tone}`}
           >

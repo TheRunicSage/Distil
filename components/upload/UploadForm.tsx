@@ -1,32 +1,63 @@
 "use client";
 
-// Master CV upload form. Client Component because it streams a file
-// via FormData with progress feedback. POST goes to /api/master-cv;
-// the route validates size, MIME, parses, and writes the row + storage
-// object. On 201 we redirect back to the dashboard.
+// Master CV upload form. Drag-and-drop zone with file preview, error
+// surfaces, and toast confirmation on success. Submits multipart to
+// /api/master-cv and routes back to dashboard on 201.
 
 import { useRouter } from "next/navigation";
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import {
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+  type FormEvent,
+} from "react";
+import { useToast } from "@/components/ui/toast";
 
 const MAX_BYTES = 3 * 1024 * 1024;
 const ACCEPT = ".pdf,.docx";
 
+function fileLabel(name: string): string {
+  return name.length > 40 ? `${name.slice(0, 37)}…` : name;
+}
+
 export function UploadForm() {
   const router = useRouter();
+  const toast = useToast();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
-  function pickFile(e: ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0] ?? null;
+  function setIfValid(f: File | null) {
     setError(null);
-    if (f && f.size > MAX_BYTES) {
+    if (!f) {
+      setFile(null);
+      return;
+    }
+    if (f.size > MAX_BYTES) {
       setError("Files must be 3 MB or smaller.");
       setFile(null);
-      e.target.value = "";
+      return;
+    }
+    const lower = f.name.toLowerCase();
+    if (!lower.endsWith(".pdf") && !lower.endsWith(".docx")) {
+      setError("Only PDF or DOCX files.");
+      setFile(null);
       return;
     }
     setFile(f);
+  }
+
+  function pickFile(e: ChangeEvent<HTMLInputElement>) {
+    setIfValid(e.target.files?.[0] ?? null);
+  }
+
+  function onDrop(e: DragEvent<HTMLLabelElement>) {
+    e.preventDefault();
+    setDragOver(false);
+    setIfValid(e.dataTransfer.files?.[0] ?? null);
   }
 
   async function submit(e: FormEvent<HTMLFormElement>) {
@@ -40,42 +71,90 @@ export function UploadForm() {
       const res = await fetch("/api/master-cv", { method: "POST", body: fd });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        setError(body?.error?.message ?? "Upload failed. Try again.");
+        const msg = body?.error?.message ?? "Upload failed. Try again.";
+        setError(msg);
+        toast.push(msg, "error");
         setPending(false);
         return;
       }
+      toast.push("Master CV uploaded.", "success");
       router.push("/dashboard");
       router.refresh();
     } catch {
-      setError("Network error. Try again.");
+      const msg = "Network error. Try again.";
+      setError(msg);
+      toast.push(msg, "error");
       setPending(false);
     }
   }
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <label className="block">
-        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
-          Choose file
-        </span>
+      <label
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={onDrop}
+        className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center transition-colors ${
+          dragOver
+            ? "border-orange bg-orange-dim"
+            : file
+              ? "border-success/50 bg-dark3"
+              : "border-border bg-dark2 hover:border-orange/50 hover:bg-dark3"
+        }`}
+      >
         <input
+          ref={inputRef}
           type="file"
           accept={ACCEPT}
           onChange={pickFile}
-          className="mt-2 block w-full text-sm text-text file:mr-4 file:rounded-sm file:border-0 file:bg-orange file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-orange-light"
+          className="sr-only"
         />
+        {file ? (
+          <>
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-success">
+              Ready
+            </p>
+            <p className="mt-2 font-mono text-sm text-text">
+              {fileLabel(file.name)}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {Math.round(file.size / 1024)} KB ·{" "}
+              {file.name.toLowerCase().endsWith(".pdf") ? "PDF" : "DOCX"}
+            </p>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                setFile(null);
+                if (inputRef.current) inputRef.current.value = "";
+              }}
+              className="mt-3 text-[11px] text-muted-foreground hover:text-text"
+            >
+              Choose a different file
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+              Drop file here
+            </p>
+            <p className="mt-2 text-sm text-text">
+              or{" "}
+              <span className="text-orange underline-offset-2 hover:underline">
+                browse
+              </span>{" "}
+              from your computer
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              PDF or DOCX, 3 MB max. Scanned PDFs without text won&apos;t
+              parse — upload a text-based version or DOCX.
+            </p>
+          </>
+        )}
       </label>
-      <p className="text-xs text-muted-foreground">
-        PDF or DOCX, 3 MB max. Scanned PDFs without text won&apos;t parse —
-        upload a text-based version or DOCX.
-      </p>
-
-      {file && (
-        <p className="text-sm text-text">
-          Selected: <span className="font-mono">{file.name}</span> ·{" "}
-          {Math.round(file.size / 1024)} KB
-        </p>
-      )}
 
       {error && (
         <p role="alert" className="text-sm text-danger">
@@ -86,9 +165,9 @@ export function UploadForm() {
       <button
         type="submit"
         disabled={!file || pending}
-        className="rounded-sm bg-orange px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-light disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-sm bg-orange px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange-light disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {pending ? "Uploading…" : "Upload"}
+        {pending ? "Uploading…" : file ? "Upload master CV" : "Choose a file to upload"}
       </button>
     </form>
   );
