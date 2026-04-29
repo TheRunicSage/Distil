@@ -35,9 +35,12 @@ export default async function AppLayout({
       <header className="flex h-[50px] shrink-0 items-center justify-between border-b border-border bg-dark2 px-6">
         <Link
           href="/dashboard"
-          className="font-serif italic text-lg text-text"
+          className="flex items-baseline gap-2"
         >
-          Distil
+          <span className="font-serif italic text-lg text-text">Distil</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-orange/80">
+            by Curiosum
+          </span>
         </Link>
         <nav className="flex items-center gap-1">
           {NAV.map((item) => (

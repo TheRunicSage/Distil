@@ -16,7 +16,12 @@ export default function LoginPage() {
     <main className="flex flex-1 items-center justify-center px-6 py-16">
       <div className="w-full max-w-md">
         <header className="mb-10 text-center">
-          <h1 className="font-serif italic text-4xl text-foreground">Distil</h1>
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange">
+            Curiosum
+          </p>
+          <h1 className="mt-2 font-serif italic text-4xl text-foreground">
+            Distil
+          </h1>
           <p className="mt-3 text-sm text-muted-foreground">
             Sign in to continue.
           </p>
