@@ -505,7 +505,7 @@ Follow this order exactly. Each step depends on the previous.
 [x] 4.  supabase/migrations/0001_initial.sql — run the full SQL from app_handoff_v8.md §6.2
 [x] 5.  lib/supabase/{browser,server,service,middleware}.ts — three clients (+ proxy.ts wired)
 [~] 6.  Login page + admin user setup + UPDATE profiles SET is_admin = true   (page + actions done; awaiting admin user creation in Supabase)
-[ ] 7.  Shared modules (in this order):
+[x] 7.  Shared modules (in this order):
         lib/errors/codes.ts
         lib/errors/api-error.ts
         lib/errors/sanitise.ts
@@ -583,6 +583,13 @@ Format: `[step number] DECISION POINT title: Option chosen — brief reason`
 [4] Supabase CLI: installed as a dev dependency (`supabase` package), invoked via `npx supabase`. Keeps tooling per-project and out of the global PATH. `supabase/config.toml` has `project_id = "distil"` (was the default `webbbb` from working directory name).
 [4] Migration filename: kept as `0001_initial.sql` per spec rather than the timestamp format the CLI's `migration new` generates. The CLI accepts the integer-prefix form. New migrations can use either format as long as the version sorts after the previous one; `supabase migration new <name>` will generate timestamps from here forward, which is fine.
 [4] Migration application path: `npx supabase db push` against the linked remote, not local Docker. Spec doesn't require local-first development; remote-only is simpler for a single-environment internal demo and skips the Docker dependency entirely.
+[7] DECISION POINT `withLogging` wrapping pattern: Option C — wrapper used as `export const POST = withLogging('name', async (req, ctx) => { ... })`. The `ctx` is a small mutable handle the handler can populate (`ctx.user_id = ...`, `ctx.application_id = ...`) so the wrapper's finally block can write a complete `request_logs` row.
+[7] DECISION POINT `withLogging` / `withIdempotency` composition: Option C — logging is the outer wrapper; the handler calls `withIdempotency(...)` internally. On a cache hit the wrapper still writes a `request_logs` row with `metadata.replayed = true` so replays remain traceable.
+[7] DECISION POINT `sanitiseErrorMessage` rule precision: Option C — strip RFC-5322 emails, NZ + E.164 phones, and runs of 20+ characters from the alphabet `[A-Za-z0-9+/=_-]` (covers JWTs, base64, hex, API keys), but explicitly safe-list canonical UUIDs (8-4-4-4-12 with dashes) since `application_id` / `request_id` UUIDs appear all over our error messages. Truncate to 1000 chars after redaction.
+[7] DECISION POINT `runQualityScan` return shape: Option B — pure function returns `QualityWarning[]`. The Inngest `quality-scan` step writes the warnings into the step's `request_logs` row metadata. Keeps `lib/quality` free of Supabase coupling and trivially unit-testable.
+[7] DECISION POINT Quality-scan banned-phrase source of truth: Option C — banned phrases live as a `const` array inline in `lib/quality/scan.ts` with a top-of-file comment pointing at system-prompt §2.2. The system prompt is markdown loaded by the LLM at runtime, so genuine de-duplication is impossible; an explicit "edit both" comment is more honest than pretending a shared module fixes the drift.
+[7] DECISION POINT `parse-pdf` 5-second timeout mechanism: Option A — `Promise.race` against a 5s `setTimeout` rejection. Serverless invocations are short-lived; an orphaned parse promise will be reaped when the invocation ends. Worker isolation isn't worth the complexity for a single internal-demo upload path.
+[7] DECISION POINT `trackEvent` session_id storage: Option A — `sessionStorage` with lazy init, guarded by `typeof window !== 'undefined'`. Survives in-tab reloads, matches the spec's per-tab semantics, no extra fallback for Safari private mode (admin uses Chrome).
 
 **Standing principle (set in this session):** prefer the latest *stable* version of any tool we adopt; when spec sample code targets an older version, modify the code to match the current API rather than pinning to the older version.
 
