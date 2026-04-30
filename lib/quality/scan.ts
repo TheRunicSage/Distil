@@ -105,13 +105,17 @@ export function runQualityScan(
     }
   }
 
-  // ATS coverage 50–60%: schema rejects below 50%, full pass at >=60%; the
-  // band in between is a soft warning.
+  // ATS coverage warning. The hard-reject 60% rule was removed from the
+  // schema (2026-04-30) to align with system prompt §0.2 — a weak-fit
+  // candidate's CV will legitimately have lower direct keyword match
+  // when the model bridges gaps with growth-oriented language rather
+  // than keyword-stuffing. We still surface low coverage as a warning
+  // in request_logs for ops visibility; we never block delivery on it.
   const coverage = computeAtsCoverage(output);
-  if (coverage >= 0.5 && coverage < 0.6) {
+  if (coverage < 0.6) {
     warnings.push({
       kind: "ats_keyword_coverage_low",
-      detail: `ATS keyword coverage ${Math.round(coverage * 100)}% (warn band 50–60%)`,
+      detail: `ATS keyword coverage ${Math.round(coverage * 100)}% (target 60%+)`,
     });
   }
 

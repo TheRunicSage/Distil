@@ -284,7 +284,10 @@ type CallLLMOptions = {
   system: string;
   userMessage: string;
   tools: Anthropic.Messages.ToolUnion[];   // accepts native + server tools (web_search)
-  toolChoice: Anthropic.ToolChoiceAuto | Anthropic.ToolChoiceTool;
+  toolChoice:
+    | Anthropic.ToolChoiceAuto
+    | Anthropic.ToolChoiceTool
+    | Anthropic.ToolChoiceAny;
   applicationId: string;
   maxTokens?: number;             // defaults to 16000
 };
@@ -308,7 +311,7 @@ export async function callLLM(opts: CallLLMOptions): Promise<CallLLMResult>;
 Behaviour:
 - Pure SDK wrapper: returns usage + cost, **does not** write to `token_usage`. The Inngest `call-llm` step writes the row using `usage`, `cost_usd`, `model`, plus the `user_id` already in scope at the step level (Decision Log step 8 DP-B — supersedes the original "fire-and-forget at SDK boundary" rule).
 - Does NOT apply cost cap itself — caller (Inngest steps) does that
-- Does NOT enable prompt caching (Decision Log step 8 DP-C). Cache token counts in the response are still surfaced in `usage` for accurate cost accounting.
+- System prompt is sent as a single text content block with `cache_control: { type: "ephemeral" }`. Per Decision Log step 8 DP-C (REVISED 2026-04-30), caching is now enabled to amortise the ~7-8K-token system prompt across back-to-back generations and retries. Cache token counts continue to feed `calculateCost`.
 - `web_search_count` is read from `response.usage.server_tool_use.web_search_requests` (Anthropic's billing source of truth — Decision Log step 8 DP-D).
 - Throws `ApiError('llm_failed')` on non-2xx Anthropic response
 - Throws `ApiError('llm_invalid_output')` if no tool_use block in response
@@ -442,8 +445,10 @@ Full layout spec in `app_handoff_v8.md §5`. Key rules that cause bugs if missed
 - Filename format: `{lastname}_CV_{company_short}_{yyyymmdd}.docx` — set by download route,
   NOT by renderer
 - ATS rules: no headers, no footers, no page numbers, no text boxes, no tables in either doc
-- Font: Calibri throughout. Body 11pt (22 half-points in docx package). Name 18pt (36). Section
-  headings 13pt (26).
+- Font: Calibri throughout. Body 10.5pt (21 half-points in docx package). Name 16pt (32). Section
+  headings 12pt (24). Margins 15mm. Section headings + contact rule are Curiosum brand orange
+  (#E85A0E); everything else is black/grey for ATS reliability. Sizes were tightened 2026-04-30
+  to land typical Mid/Senior CVs on 2 pages instead of 3 — see Decision Log entry below.
 - All constants already defined in `lib/docx/styles.ts` — use them, do not hardcode values
 
 ---
@@ -603,6 +608,8 @@ Format: `[step number] DECISION POINT title: Option chosen — brief reason`
 [8] **REVISED (DP-A — submit_application tool schema shape):** Option A — flat root object, all branch-specific fields optional, only `status` required. The original plan let `z.toJSONSchema` emit the discriminated union as-is, which produced a root-level `oneOf` with no `type: "object"`. Anthropic's tool API rejects that shape: `tools.0.custom.input_schema.type: Field required`. Fix lives entirely in `lib/anthropic/tool-schema.ts`: still derive from `ApplicationOutputSchema` via `z.toJSONSchema`, then merge the two oneOf branches at the bridge layer into a single root `type: "object"` schema. Status enum becomes `["success", "insufficient_input"]`; every other field is optional at the schema level. Branch correctness ("if status='success' then these fields must be present") is enforced post-call by the Inngest validate-output step's strict discriminated-union Zod parse — runtime semantics in `lib/llm/output-schema.ts` are unchanged. Tool description spells out the two-branch contract for the model. Considered alternatives: `allOf` + `if/then/else` (rejected — Anthropic's tool engine is finicky with nested allOf, and Zod already enforces post-call); hand-written tool schema (rejected — loses single source of truth).
 [8] DECISION POINT `token_usage.user_id` source: Option 3 — write the `token_usage` row from the Inngest `call-llm` step rather than the SDK wrapper. `callLLM` returns `usage`, `cost_usd`, and `model`; the step has `user_id` and `application_id` already in scope from `load-context`. This is a deliberate change to the previously-locked `callLLM` interface contract; the contract block above is updated.
 [8] DECISION POINT Prompt caching for v1: skip entirely. Web search is the freshness lever, master CV + JD change every run, and the demo is internal. The 5-min cache TTL would only help on retries within the same window, which isn't a workload we're optimising for. `cache_creation_tokens` and `cache_read_tokens` stay in the cost calculation so any incidental caching by Anthropic is still billed accurately.
+
+[8] **REVISED (2026-04-30): system prompt caching turned ON.** Single cache breakpoint on the system prompt only — sent as `system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }]` in `lib/anthropic/client.ts`. Reason: real generations were costing ~$0.50 each, of which ~$0.025 per call is the static ~7–8K-token system prompt at $3/MTok input. With caching that drops to ~$0.0024 per cache hit ($0.30/MTok), and the 5-min TTL covers the common patterns we actually see (back-to-back retries on `insufficient_input` / `llm_invalid_output`, plus pairs of submissions in the same admin session). First call still pays the cache write at $3.75/MTok (~$0.030, slightly more than the uncached input), so the break-even is one cache hit. Tools and the user message are NOT cached (tools are small; user message varies per call). Token counts already flow into `calculateCost` per the original DP-C, so billing accuracy was not a blocker.
 [8] DECISION POINT `web_search_count` extraction: read `response.usage.server_tool_use.web_search_requests`. This is Anthropic's own count of search invocations and matches what they bill, so cost calculation never diverges from the invoice. Counting result blocks would diverge on partial errors.
 [10] DECISION POINT `build-user-message` XML structure: Option A — newline-separated tag blocks, no XML escaping, in spec order (`<master_cv>`, `<job_description>`, `<region>`, `<attempt_number>`, optional `<user_notes>`). Matches the system prompt §1 tag references verbatim; the prompt's untrusted-data discipline neutralises injection without escaping.
 [10] DECISION POINT `acquire-slot` exit when not at front of queue: Option A — sentinel return and the orchestrator branches early. Throwing would wrongly trip `onFailure` and mark the application errored on a normal "wait your turn" path.
@@ -649,7 +656,68 @@ Format: `[step number] DECISION POINT title: Option chosen — brief reason`
 
 **Standing principle (set in this session):** prefer the latest *stable* version of any tool we adopt; when spec sample code targets an older version, modify the code to match the current API rather than pinning to the older version.
 
+[13] Admin access location (TODO for prod): admin currently lives inside the authenticated user shell at `app/(app)/admin/*`, gated by `requireAdmin()` in `app/(app)/admin/layout.tsx` (Decision Log [13] from earlier). This is fine for the internal demo. **For the prod build, move admin off `/dashboard` etc. into a separate `/admin` route group** (e.g. its own `app/(admin)/layout.tsx` + own ambient/topbar) so the admin surface is no longer reachable from the consumer nav and so any future signups never see an admin link in their topbar. The `is_admin` profile flag and the `requireAdmin()` helper stay; only the file location and the topbar conditional change. Do this before opening signups.
+
 [18] System prompt §7.1 — `insufficient_input` is reserved for the six exhaustive triggers (JD too short / gibberish / non-English; company unidentifiable; CV empty/fragmentary/non-CV). Contact-detail cosmetics — phone formatting, missing LinkedIn URL, missing work rights / availability, email or location layout — are explicit non-triggers. The model copies whatever the master CV shows, infers sensibly when fields are silent, and proceeds to `success`. Reason: a real generation bailed out because the master CV had `+64 0220293753` (country code combined with leading zero) and no full LinkedIn URL — content the candidate can fix in the docx in seconds. Section 10 self-check item 18 enforces it pre-return.
+
+[18] System prompt §7 restructure (after second and third bail-outs on the same submission): renamed §7.1 → §7.0 stop-and-reconsider gate (a hard rule listed BEFORE the trigger list, since the model was reading the trigger list first and inventing reasons that overlapped with it); §7.1 is now a defaults table (`Available on request` for missing work_rights / availability; `LinkedIn` literal as placeholder for missing LinkedIn; copy phone/email/location verbatim with no inference); §7.2 is a worked example showing wrong vs correct response for the exact phone+LinkedIn+work_rights+availability case that has been failing; §7.3 is the real triggers (exhaustive); §7.4 is retry behaviour. Soft language ("infer conservatively", "infer sensibly") removed — the model used those phrases as a permission slip to ask the user. Defaults are now literal strings the model just copies in.
+
+[18] `insufficient_input_reason` Zod cap raised from 800 → 2000 chars in `lib/llm/output-schema.ts`. An over-cautious model emitted a long enumeration of contact-detail concerns that overflowed 800 chars and failed `validate-output` as `llm_invalid_output` — masking the real "model bailed when it shouldn't" signal. The reason field is rendered as a paragraph to the user; verbose-but-readable is fine, opaque is not.
+
+[18] System prompt §0 added (Mission and Operating Posture). After three rounds of bail-out fixes (contact-detail v1, contact-detail v2, then a fresh seniority/fit hand-wringing), the prompt was treating the model as a gatekeeper that needed exhaustive carve-outs for each new bail-out class. Inverted the posture: the model is now positioned as the candidate's advocate, the service is paid and one-shot (no back-and-forth), and the only gate is mechanically unreadable inputs (§7.3). Concrete additions: §0.1 advocate-not-gatekeeper rules; §0.2 "best-light principle" requiring gaps be handled by bridging language and emphasis on strongest evidence rather than refusal; §0.3 hard one-tool-call no-prose rule (the latest failure was prose preamble before the tool call); §0.4 plain-English definition of what insufficient_input actually means. §3 Phase 3 reframed: fit assessment is informational metadata, never a gate. §7.0 expanded to bucket bail-out reasons into "contact-detail concerns" and "fit/seniority/qualifications concerns" — both buckets force `status: "success"`. §10 self-check items 19 (no prose outside tool call) and 20 (no gap-acknowledgement leaking into CV/cover letter prose) added. Trigger: the model emitted "Before I generate the full tailored CV and cover letter, there is a genuine concern to flag regarding candidate fit…" as preamble text on a Careerforce Data Analyst role where the candidate's experience was below the stated minimum — exactly the case the user explicitly wants handled by leading with strongest evidence + bridging language, not by refusal or warning.
+
+[8] tool_choice changed from `{ type: "tool", name: "submit_application" }` to `{ type: "any" }` in `inngest/functions/generate-application.ts:177`. Root cause of "Before generating a full application for this submission, let me run the research needed to complete it." being emitted into `insufficient_input_reason`: forcing tool_choice to a specific tool makes the model call that tool *immediately on its first move*, which means `web_search` (a server tool) is unreachable. The model could not run Phase 2 company research even though the system prompt mandates it, so it bailed with conversational prose. `{ type: "any" }` still forbids text-only output (the response must end on a tool call) but lets the model chain `web_search` calls (executed server-side by Anthropic in-band) before the final `submit_application` call. Submitter will be picked correctly: `lib/anthropic/client.ts` `find(block => block.type === "tool_use")` skips `server_tool_use` blocks (web_search) and lands on the `submit_application` tool_use. `CallLLMOptions.toolChoice` type union extended to include `Anthropic.ToolChoiceAny` (locked interface contract above updated). This was the underlying cause of the entire bail-out cascade — the model wasn't being timid, it was being prevented from doing its job — so it kept finding new shapes for "I can't do this" prose every time we patched the prompt.
+
+[9] DOCX density and Curiosum branding (2026-04-30, `lib/docx/styles.ts` + `helpers.ts` + `render-cv.ts`). User feedback after first end-to-end generation: CV rendered at 3 pages where 2 was expected, and the original "no Curiosum branding on user docs" rule from app_handoff_v8.md §5.1 v8 was overridden in favour of subtle brand cues. Two parallel changes:
+
+Density (combined ~10–12% page-area savings):
+- Body 11pt → 10.5pt (size 22 → 21). 9.5pt small/contact-line. Stays comfortably above the 9pt ATS floor.
+- Section heading 13pt → 12pt (26 → 24).
+- Name 18pt → 16pt (36 → 32).
+- Margins 20mm → 15mm (1134 → 850 twips).
+- `paragraph_after` 6pt → 4pt; `section_after` 12pt → 9pt; `heading_before` 12pt → 9pt; `heading_after` 4pt → 3pt; new `bullet_after` 2pt (was hardcoded 4pt in `bullet()`).
+- Line height kept at 1.15 — going below feels cramped at 10.5pt.
+
+Branding (subtle, ATS-safe — solid color text in headings is fine for ATS; the danger is graphics, tables, and text boxes, not RGB on text):
+- New `COLOURS.brand_orange = "E85A0E"` (matches `--color-orange` in app/globals.css).
+- New `COLOURS.brand_orange_dim = "F4B58E"` for the section-heading bottom rule.
+- Section heading text: black → brand_orange.
+- Section heading rule: grey → brand_orange_dim (paler so it doesn't fight the orange text).
+- Contact closing rule: grey → brand_orange (the document's main brand signature, 1pt instead of 0.75pt).
+- Body, bullets, meta lines, name heading: unchanged (black/grey).
+
+Hardcoded magic numbers in `render-cv.ts` (`after: 80`, `after: 120`, `line: 276`) refactored to reference `SPACING.paragraph_after` / `SPACING.line_115` so future tuning lives in one place. CLAUDE.md DOCX Rendering Rules block updated to match the new sizes.
+
+[7] Output-schema cap and superRefine tuning (2026-04-30, `lib/llm/output-schema.ts`):
+- ATS keyword coverage `superRefine` (hard-reject below 60%) **removed entirely**. It conflicted with §0.2 — a weak-fit candidate's CV will have lower direct keyword matching by design, and failing the generation on that ratio means the user gets nothing for their paid attempt. Coverage now reported as a non-blocking warning by `lib/quality/scan.ts` (warns whenever `< 60%`), still surfaced in `request_logs.metadata` for ops visibility but never blocks delivery.
+- Full length-cap audit after the third whack-a-mole `llm_invalid_output` failure on a single generation. Caps were tuned for the old gatekeeping posture; advocate-style outputs legitimately run longer. Bumps applied as a single pass rather than reactively per-field. Internal-metadata fields (fit/research/JD/salary): generous since they don't render to docx. Docx-rendered fields (CV bullets, CL paragraphs): sized so the renderer comfortably fits "action + outcome" bullets and 80–100-word cover letter paragraphs. Identifier-style fields (phone, dates, salutation): unchanged. Bumps:
+  - `fit_assessment.reasoning` 500 → 1500
+  - `fit_assessment.warnings[]` 300 → 600
+  - `RecentNewsItem.headline` 300 → 400
+  - `research_summary.company_snapshot` 500 → 800
+  - `research_summary.industry_context` 300 → 600
+  - `research_summary.company_reference_used` 500 → 800
+  - `research_summary.company_reference_note` 500 → 800
+  - `jd_analysis.role_archetype` 100 → 200
+  - `jd_analysis.must_haves[]` 200 → 400
+  - `jd_analysis.nice_to_haves[]` 200 → 400
+  - `jd_analysis.ats_keywords[]` 80 → 120
+  - `salary_band.range` 100 → 200
+  - `salary_band.source_name` 100 → 200
+  - `TechnicalSkillsGroup.category` 80 → 120
+  - `TechnicalSkillsGroup.skills[]` 80 → 160
+  - `ProfessionalExperienceItem.role_title` 120 → 200
+  - `ProfessionalExperienceItem.company` 120 → 200
+  - `ProfessionalExperienceItem.bullets[]` 400 → 600
+  - `KeyProject.bullets[]` 400 → 600
+  - `KeyProject.technologies[]` 60 → 100
+  - `EducationItem.details[]` 300 → 500
+  - `LeadershipInterestItem.description` 400 → 600
+  - `cv_content.profile` 800 → 1400
+  - `cover_letter_content.paragraphs[]` 1500 → 2000
+  - `what_we_did_checklist[]` 300 → 500
+  - `insufficient_input_reason` 800 → 2000 (separate failure mode, see [18] entries)
+  Trigger: three consecutive `llm_invalid_output` failures on the same paid generation — `industry_context`, `profile`, `technical_skills.skills[0]`, then `fit_assessment.reasoning`. Each round was throwing away a complete, successful, web-researched generation worth ~$0.50 because of validation tuning, not output quality.
 
 ---
 
