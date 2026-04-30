@@ -6,6 +6,10 @@
 //   - Inline + toast error rendering for the route's error envelope
 // On success the route returns 202 + { id, queue_position }; we route
 // straight to /application/[id] so the user lands on the live view.
+//
+// User notes intentionally not collected here. The route still accepts
+// `user_notes` as an optional field for callers that pass it; this form
+// is a single-purpose JD-paste surface.
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
@@ -50,7 +54,6 @@ export function NewApplicationForm() {
   const router = useRouter();
   const toast = useToast();
   const [jd, setJd] = useState("");
-  const [notes, setNotes] = useState("");
   const [pending, setPending] = useState(false);
   const [debounced, setDebounced] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +61,8 @@ export function NewApplicationForm() {
   const jdWords = wordCount(jd);
   const strength = classify(jd, jdWords);
   const meta = STRENGTH_META[strength];
+  const submitDisabled =
+    pending || debounced || strength === "too_short" || strength === "empty";
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -77,10 +82,7 @@ export function NewApplicationForm() {
       const res = await fetch("/api/applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          job_description: jd,
-          user_notes: notes.trim() || undefined,
-        }),
+        body: JSON.stringify({ job_description: jd }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
@@ -103,31 +105,32 @@ export function NewApplicationForm() {
 
   return (
     <form onSubmit={submit} className="space-y-6">
-      <label className="block">
-        <span className="flex items-baseline justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+      <div>
+        <div className="flex items-baseline justify-between">
+          <label htmlFor="jd-input" className="eyebrow">
             Job description
-          </span>
+          </label>
           <span className="flex items-baseline gap-3 text-[11px]">
             <span className={meta.tone}>{meta.label}</span>
             <span className="text-muted-foreground">{jdWords} words</span>
           </span>
-        </span>
+        </div>
         <textarea
+          id="jd-input"
           value={jd}
           onChange={(e) => setJd(e.target.value)}
           required
-          rows={14}
-          placeholder="Paste the full posting here, including responsibilities and requirements."
-          className="mt-2 block w-full resize-y rounded-sm border border-border bg-dark3 p-3 text-sm text-text placeholder:text-dim focus:border-orange focus:outline-none"
+          rows={16}
+          placeholder="Paste the full posting here — title, company, responsibilities, requirements, the whole thing."
+          className="mt-3 block w-full resize-y rounded-2xl border border-border bg-dark2/60 p-5 text-sm leading-relaxed text-text backdrop-blur-sm placeholder:text-muted-foreground focus:border-orange/60 focus:outline-none focus:ring-2 focus:ring-orange/20"
         />
-        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-dark2">
+        <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-dark3">
           <div
             className={`h-full transition-all duration-300 ${STRENGTH_BAR[strength]}`}
             style={{ width: `${meta.bar}%` }}
           />
         </div>
-        <p className="mt-1.5 min-h-[1rem] text-xs">
+        <p className="mt-2 min-h-[1.25rem] text-xs">
           {strength === "too_short" && (
             <span className="text-danger">
               We need at least {MIN_JD_CHARS} characters before submitting.
@@ -135,8 +138,8 @@ export function NewApplicationForm() {
           )}
           {strength === "short" && (
             <span className="text-warn">
-              That looks short. Recruiters often paste partial postings; we
-              work better with the full thing ({COMFORTABLE_JD_WORDS}+ words is
+              Looks short. Recruiters often paste partial postings; we work
+              better with the full thing ({COMFORTABLE_JD_WORDS}+ words is
               ideal).
             </span>
           )}
@@ -146,20 +149,7 @@ export function NewApplicationForm() {
             </span>
           )}
         </p>
-      </label>
-
-      <label className="block">
-        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
-          Notes (optional)
-        </span>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={4}
-          placeholder="Anything you want emphasised or downplayed (e.g. 'lean into AWS work', 'leaving the recruiter context out')."
-          className="mt-2 block w-full resize-y rounded-sm border border-border bg-dark3 p-3 text-sm text-text placeholder:text-dim focus:border-orange focus:outline-none"
-        />
-      </label>
+      </div>
 
       {error && (
         <p role="alert" className="text-sm text-danger">
@@ -170,8 +160,8 @@ export function NewApplicationForm() {
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="submit"
-          disabled={pending || debounced || strength === "too_short" || strength === "empty"}
-          className="inline-flex items-center gap-2 rounded-sm bg-orange px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange-light disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={submitDisabled}
+          className="btn-primary"
         >
           {pending && (
             <span
@@ -179,9 +169,7 @@ export function NewApplicationForm() {
               className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white"
             />
           )}
-          {pending
-            ? "Submitting…"
-            : "Submit. We'll tailor your CV and cover letter."}
+          {pending ? "Submitting…" : "Tailor my CV and cover letter"}
         </button>
         {debounced && !pending && (
           <span className="text-xs text-muted-foreground">
