@@ -7,9 +7,13 @@
 // caller (Inngest call-llm step) rather than this wrapper. The locked
 // CLAUDE.md interface contract is updated accordingly.
 //
-// Decision Log step 8 DP-C: prompt caching is not enabled in v1.
-// `cache_control` breakpoints are not set; cache_creation/read counts
-// from the response are still surfaced for accurate cost accounting.
+// Decision Log step 8 DP-C (REVISED 2026-04-30): system prompt caching
+// is now enabled. The system prompt is large (~30K chars / ~7–8K tokens)
+// and stable across every call; sending it as a single text block with
+// `cache_control: { type: "ephemeral" }` cuts ~$0.025 of input cost off
+// every cache hit (5-min TTL is plenty for back-to-back retries and the
+// handful of submissions we run within any given window). Cache token
+// counts already feed into calculateCost so billing remains accurate.
 //
 // Decision Log step 8 DP-D: web_search_count comes from
 // usage.server_tool_use.web_search_requests, which matches Anthropic's
@@ -35,7 +39,10 @@ export type CallLLMOptions = {
   system: string;
   userMessage: string;
   tools: Anthropic.Messages.ToolUnion[];
-  toolChoice: Anthropic.ToolChoiceAuto | Anthropic.ToolChoiceTool;
+  toolChoice:
+    | Anthropic.ToolChoiceAuto
+    | Anthropic.ToolChoiceTool
+    | Anthropic.ToolChoiceAny;
   applicationId: string;
   maxTokens?: number;
 };
@@ -63,7 +70,17 @@ export async function callLLM(opts: CallLLMOptions): Promise<CallLLMResult> {
     response = await client.messages.create({
       model: MODEL,
       max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
-      system: opts.system,
+      // System prompt sent as a single cached text block. Anthropic
+      // caches the prefix up to and including the cache_control marker
+      // so subsequent calls within the 5-min TTL hit at $0.30/MTok
+      // instead of $3/MTok.
+      system: [
+        {
+          type: "text",
+          text: opts.system,
+          cache_control: { type: "ephemeral" },
+        },
+      ],
       tools: opts.tools,
       tool_choice: opts.toolChoice,
       messages: [{ role: "user", content: opts.userMessage }],

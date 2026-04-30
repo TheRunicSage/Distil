@@ -46,26 +46,29 @@ export default async function DashboardPage() {
   const apps = appsRes.data ?? [];
 
   return (
-    <div className="space-y-10">
-      <header>
-        <h1 className="text-2xl font-semibold text-text">Welcome back.</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Tailor your CV and cover letter for a specific role.
+    <div className="space-y-12">
+      <header className="text-center">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-orange">
+          Welcome back
+        </p>
+        <h1 className="mt-3 font-serif text-4xl font-light leading-[1.15] tracking-tight text-text">
+          Pick up where you left off.
+        </h1>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Your CV, stripped to its sharpest form. ATS ready, recruiter approved.
         </p>
       </header>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="rounded-lg border border-border bg-dark3 p-6">
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+        <div className="rounded-2xl border border-border bg-dark2/60 p-7 backdrop-blur-sm transition-colors hover:border-orange/40">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange">
             Master CV
           </p>
           {hasCv ? (
             <>
-              <p className="mt-3 text-sm text-text">
-                On file as {cvRes.data?.mime_type === "application/pdf"
-                  ? "PDF"
-                  : "DOCX"}{" "}
-                ·{" "}
+              <p className="mt-4 text-[15px] text-text">
+                On file as{" "}
+                {cvRes.data?.mime_type === "application/pdf" ? "PDF" : "DOCX"} ·{" "}
                 {Math.round((cvRes.data?.file_size_bytes ?? 0) / 1024)} KB
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -78,20 +81,22 @@ export default async function DashboardPage() {
               </p>
               <Link
                 href="/upload"
-                className="mt-4 inline-block text-sm text-orange hover:text-orange-light"
+                className="mt-5 inline-block text-sm text-orange transition-colors hover:text-orange-light"
               >
                 Replace master CV →
               </Link>
             </>
           ) : (
             <>
-              <p className="mt-3 text-sm text-text">No master CV uploaded.</p>
+              <p className="mt-4 text-[15px] text-text">
+                No master CV uploaded.
+              </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Upload one PDF or DOCX (≤3MB) to start tailoring.
               </p>
               <Link
                 href="/upload"
-                className="mt-4 inline-block rounded-sm bg-orange px-4 py-2 text-sm font-medium text-white hover:bg-orange-light"
+                className="mt-5 inline-block rounded-xl bg-orange px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-light"
               >
                 Upload CV
               </Link>
@@ -99,22 +104,22 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        <div className="rounded-lg border border-border bg-dark3 p-6">
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+        <div className="rounded-2xl border border-border bg-dark2/60 p-7 backdrop-blur-sm transition-colors hover:border-orange/40">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange">
             New application
           </p>
-          <p className="mt-3 text-sm text-text">
-            Paste a job description, get a tailored CV and cover letter.
+          <p className="mt-4 text-[15px] text-text">
+            Paste a job description. Get a tailored CV and cover letter, both matched to the role.
           </p>
           {hasCv ? (
             <Link
               href="/application/new"
-              className="mt-4 inline-block rounded-sm bg-orange px-4 py-2 text-sm font-medium text-white hover:bg-orange-light"
+              className="mt-5 inline-block rounded-xl bg-orange px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-light"
             >
               Tailor a new application
             </Link>
           ) : (
-            <span className="mt-4 inline-block cursor-not-allowed rounded-sm border border-border bg-dark4 px-4 py-2 text-sm font-medium text-muted-foreground">
+            <span className="mt-5 inline-block cursor-not-allowed rounded-xl border border-border bg-dark4 px-5 py-2.5 text-sm font-medium text-muted-foreground">
               Upload a CV first
             </span>
           )}
@@ -123,18 +128,18 @@ export default async function DashboardPage() {
 
       <section>
         <div className="mb-4 flex items-baseline justify-between">
-          <h2 className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
             Recent
           </h2>
           <Link
             href="/history"
-            className="text-xs text-muted-foreground hover:text-text"
+            className="text-xs text-muted-foreground transition-colors hover:text-text"
           >
             View all →
           </Link>
         </div>
         {apps.length === 0 ? (
-          <div className="rounded-lg border border-border bg-dark3 p-12 text-center text-muted-foreground">
+          <div className="rounded-2xl border border-border bg-dark2/60 p-12 text-center text-sm text-muted-foreground backdrop-blur-sm">
             Your tailored applications will show up here.
           </div>
         ) : (
@@ -147,7 +152,7 @@ export default async function DashboardPage() {
                 <li key={app.id}>
                   <Link
                     href={`/application/${app.id}`}
-                    className="flex items-center justify-between rounded-sm border border-border bg-dark3 px-4 py-3 transition-colors hover:bg-dark4"
+                    className="flex items-center justify-between rounded-xl border border-border bg-dark2/60 px-4 py-3 backdrop-blur-sm transition-colors hover:border-orange/40 hover:bg-dark3/80"
                   >
                     <span className="font-mono text-xs text-text">
                       {app.id.slice(0, 8)}

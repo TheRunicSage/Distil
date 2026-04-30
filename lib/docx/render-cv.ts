@@ -26,7 +26,7 @@ import {
   roleHeader,
   sectionHeading,
 } from "./helpers";
-import { FONTS, PAGE, SIZES } from "./styles";
+import { FONTS, PAGE, SIZES, SPACING } from "./styles";
 
 type CvContent = ApplicationOutputSuccess["cv_content"];
 
@@ -68,7 +68,11 @@ export async function renderCV(content: CvContent): Promise<Buffer> {
             boldPrefixRun(`${group.category}: `),
             plainRun(group.skills.join(", ")),
           ],
-          spacing: { after: 80, line: 276, lineRule: "auto" },
+          spacing: {
+            after: SPACING.paragraph_after,
+            line: SPACING.line_115,
+            lineRule: "auto",
+          },
         }),
       );
     }
@@ -120,7 +124,11 @@ export async function renderCV(content: CvContent): Promise<Buffer> {
                 grey: true,
               }),
             ],
-            spacing: { after: 120, line: 276, lineRule: "auto" },
+            spacing: {
+              after: SPACING.paragraph_after,
+              line: SPACING.line_115,
+              lineRule: "auto",
+            },
           }),
         );
       }
@@ -152,7 +160,11 @@ export async function renderCV(content: CvContent): Promise<Buffer> {
             boldPrefixRun(`${item.title}: `),
             plainRun(item.description),
           ],
-          spacing: { after: 80, line: 276, lineRule: "auto" },
+          spacing: {
+            after: SPACING.paragraph_after,
+            line: SPACING.line_115,
+            lineRule: "auto",
+          },
         }),
       );
     }

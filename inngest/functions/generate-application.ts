@@ -10,7 +10,7 @@
 //   5.  cost-cap-check          (pre-call estimate, may throw)
 //   6.  call-llm                (retries: 0; logs token_usage)
 //   7.  cost-cap-postcheck      (warning only, never throws)
-//   8.  validate-output         (Zod + ATS superRefine)
+//   8.  validate-output         (Zod parse only; ATS coverage moved to quality-scan as a warning)
 //   9.  inject-date             (Pacific/Auckland today)
 //   10. quality-scan            (warnings only)
 //   then branch: success path vs insufficient_input path.
@@ -174,7 +174,16 @@ export const generateApplication = inngest.createFunction(
           system: SYSTEM_PROMPT,
           userMessage,
           tools: [submitApplicationTool, webSearchTool],
-          toolChoice: { type: "tool", name: SUBMIT_APPLICATION_TOOL_NAME },
+          // tool_choice: "any" requires the response to end on a tool call
+          // (no free text), but unlike { type: "tool", name: "..." } it
+          // lets the model invoke web_search (a server tool) for Phase 2
+          // company research before producing the final submit_application
+          // call. With { type: "tool", name: "submit_application" }, the
+          // model is forced to call submit_application as its very first
+          // move and web_search is unreachable, which made the model
+          // either bail or emit "let me run the research" prose into the
+          // insufficient_input_reason.
+          toolChoice: { type: "any" },
           applicationId: application_id,
         });
       } catch (err) {

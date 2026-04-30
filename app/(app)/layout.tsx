@@ -4,6 +4,7 @@
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AmbientBackground } from "@/components/app/AmbientBackground";
 import { AppShell } from "@/components/app/AppShell";
 import { createClient } from "@/lib/supabase/server";
 
@@ -24,12 +25,15 @@ export default async function AppLayout({
 
   return (
     <AppShell>
-      <div className="flex flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-[50px] shrink-0 items-center justify-between border-b border-border bg-dark2/95 px-6 backdrop-blur-sm">
-          <Link href="/dashboard" className="flex items-baseline gap-2">
-            <span className="font-serif italic text-lg text-text">Distil</span>
-            <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-orange/80">
-              by Curiosum
+      <AmbientBackground />
+      <div className="relative z-10 flex flex-1 flex-col">
+        <header className="sticky top-0 z-30 flex h-[56px] shrink-0 items-center justify-between border-b border-border/50 bg-dark/70 px-6 backdrop-blur-md">
+          <Link href="/dashboard" className="flex items-baseline gap-3">
+            <span className="font-serif text-2xl font-light tracking-tight text-text">
+              Distil
+            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange">
+              Curiosum.ai
             </span>
           </Link>
           <nav className="flex items-center gap-1">
@@ -37,7 +41,7 @@ export default async function AppLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-sm px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-dark4 hover:text-text"
+                className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-dark3 hover:text-text"
               >
                 {item.label}
               </Link>
@@ -54,8 +58,8 @@ export default async function AppLayout({
             </span>
           </nav>
         </header>
-        <main className="flex-1 overflow-y-auto px-6 py-8">
-          <div className="mx-auto max-w-[1200px]">{children}</div>
+        <main className="flex-1 overflow-y-auto px-6 py-12">
+          <div className="mx-auto max-w-[720px]">{children}</div>
         </main>
       </div>
     </AppShell>

@@ -61,13 +61,33 @@ export const POST = withLogging(
       .upload(storagePath, buffer, { contentType: mime, upsert: false });
     if (uploadErr) throw new ApiError("storage_failed", uploadErr.message);
 
-    // Mark previous current row superseded (if any), then insert new.
+    // Three-step supersede + insert:
+    //   1. Stamp `superseded_at` on the old current row (no FK pointer
+    //      yet — `superseded_by` references master_cvs.id and the new
+    //      row doesn't exist, so setting it now would trip the FK).
+    //   2. Insert the new row. The old row is no longer in the partial
+    //      unique index `master_cvs_one_current_per_user` (which
+    //      filters `where superseded_at is null`), so the insert is
+    //      free to claim the "current" slot.
+    //   3. Stamp `superseded_by` on the old row, now that the new id
+    //      exists. This is bookkeeping only — the old row's
+    //      `superseded_at` already removed it from the index.
+    // Each step checks for errors; the original code awaited and
+    // discarded the update result, which silently swallowed FK
+    // violations and produced a confusing "duplicate key" error two
+    // statements later.
     const nowIso = new Date().toISOString();
-    await service
+
+    const { data: supersededRows, error: supersedeErr } = await service
       .from("master_cvs")
-      .update({ superseded_at: nowIso, superseded_by: cvId })
+      .update({ superseded_at: nowIso })
       .eq("user_id", userId)
-      .is("superseded_at", null);
+      .is("superseded_at", null)
+      .select("id");
+    if (supersedeErr) {
+      await service.storage.from(BUCKET).remove([storagePath]);
+      throw new ApiError("database_error", supersedeErr.message);
+    }
 
     const { error: insertErr } = await service.from("master_cvs").insert({
       id: cvId,
@@ -78,10 +98,34 @@ export const POST = withLogging(
       parsed_text: parsedText,
     });
     if (insertErr) {
-      // Roll back the storage object so the next upload doesn't get a
-      // unique-path collision.
+      // Roll back: undo the storage upload and re-clear superseded_at
+      // on the old row(s) so the user keeps their previous CV.
       await service.storage.from(BUCKET).remove([storagePath]);
+      if (supersededRows && supersededRows.length > 0) {
+        await service
+          .from("master_cvs")
+          .update({ superseded_at: null })
+          .in(
+            "id",
+            supersededRows.map((r) => r.id),
+          );
+      }
       throw new ApiError("database_error", insertErr.message);
+    }
+
+    // Step 3: write the back-pointer now that the new row exists.
+    // Failure here is non-fatal — the new row is live, the old row is
+    // already out of the unique index. Worst case: superseded_by stays
+    // null, which is fine for the existing queries (none of them rely
+    // on the back-pointer for correctness, only for orphan cleanup).
+    if (supersededRows && supersededRows.length > 0) {
+      await service
+        .from("master_cvs")
+        .update({ superseded_by: cvId })
+        .in(
+          "id",
+          supersededRows.map((r) => r.id),
+        );
     }
 
     void emitTelemetry(

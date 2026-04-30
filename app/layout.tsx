@@ -1,24 +1,27 @@
 import type { Metadata } from "next";
-import { DM_Sans, Instrument_Serif } from "next/font/google";
+import { Fraunces, Outfit } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
+// Outfit — body sans. Geometric, friendly, holds at small sizes.
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
 });
 
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
+// Fraunces — display serif. Optical sizing 9..144 lets the same family
+// span tiny labels and 42pt hero titles without losing character.
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
-  weight: "400",
+  weight: ["300", "400", "500", "600", "700"],
   style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
   title: "Distil",
-  description: "Tailored CVs and cover letters, end to end.",
+  description: "Your CV, stripped to its sharpest form. ATS ready, recruiter approved.",
 };
 
 export default function RootLayout({
@@ -29,7 +32,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("dark h-full", dmSans.variable, instrumentSerif.variable)}
+      className={cn("dark h-full", outfit.variable, fraunces.variable)}
     >
       <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>

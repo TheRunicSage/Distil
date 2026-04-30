@@ -35,8 +35,9 @@ export function nameHeading(fullName: string): Paragraph {
   });
 }
 
-// Contact paragraph with a light-grey bottom rule. The rule is the only
-// "decoration" in the CV; everything else is plain text.
+// Contact paragraph with a brand-orange bottom rule on the closing line.
+// The orange rule is the document's main brand signature; the rest of
+// the body stays black for ATS reliability and readability.
 export function contactLine(text: string, withRule: boolean): Paragraph {
   return new Paragraph({
     children: [
@@ -55,10 +56,10 @@ export function contactLine(text: string, withRule: boolean): Paragraph {
     border: withRule
       ? {
           bottom: {
-            color: COLOURS.rule,
+            color: COLOURS.brand_orange,
             space: 4,
             style: BorderStyle.SINGLE,
-            size: 6, // eighths-of-a-point: 6 = 0.75pt
+            size: 8, // eighths-of-a-point: 8 = 1pt
           },
         }
       : undefined,
@@ -66,7 +67,9 @@ export function contactLine(text: string, withRule: boolean): Paragraph {
 }
 
 // Section heading: "PROFILE", "TECHNICAL SKILLS", etc. Bold all-caps
-// 13pt with a bottom rule. ATS parsers tolerate this style well.
+// in Curiosum brand orange with a paler-orange bottom rule. ATS parsers
+// tolerate solid-color heading text well; the bold + caps + rule
+// combination is the textual cue parsers actually key on.
 export function sectionHeading(text: string): Paragraph {
   return new Paragraph({
     children: [
@@ -75,6 +78,7 @@ export function sectionHeading(text: string): Paragraph {
         bold: true,
         font: FONTS.heading,
         size: SIZES.section_heading,
+        color: COLOURS.brand_orange,
         characterSpacing: 10, // ~0.5pt tracking, very light
       }),
     ],
@@ -84,7 +88,7 @@ export function sectionHeading(text: string): Paragraph {
     },
     border: {
       bottom: {
-        color: COLOURS.rule,
+        color: COLOURS.brand_orange_dim,
         space: 2,
         style: BorderStyle.SINGLE,
         size: 6,
@@ -131,7 +135,7 @@ export function bullet(text: string): Paragraph {
     bullet: { level: 0 },
     indent: { left: SPACING.bullet_indent, hanging: SPACING.bullet_indent },
     spacing: {
-      after: 80, // 4pt after each bullet, per spec
+      after: SPACING.bullet_after,
       line: SPACING.line_115,
       lineRule: "auto",
     },
