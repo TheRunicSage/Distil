@@ -37,25 +37,30 @@ export type SizeProfile = {
   readonly name_heading: number;
 };
 
-// Graduate / Junior size profile. Mirrors what a user gets by selecting
-// all body text in Word and pressing the "decrease font size" preset:
-// 10.5 → 10pt body, 12 → 11pt section heading, 16 → 15pt name heading.
-// Empirically, that single click was enough to drop a typical graduate
-// CV from 3 pages to 2 (2026-05-01 user report). 9pt small/contact_line
-// is at the ATS floor — acceptable for one-line meta text under role
-// headers, but we don't push body below 10pt for the same reason.
-export const SIZES_GRADUATE: SizeProfile = {
-  body: 20, // 10pt (was 10.5pt)
+// Dense size profile — the CV default since 2026-05-01. Mirrors what a
+// user gets by selecting all body text in Word and pressing the
+// "decrease font size" preset once: 10.5 → 10pt body, 12 → 11pt
+// section heading, 16 → 15pt name heading. Originally graduate-only
+// (Decision Log [9] 2026-04-30); user feedback was "I can easily
+// read it and it's more information packed instead of cramped",
+// so it now applies to every CV. Cover letter stays at the canonical
+// SIZES profile above for the more polished/spacious feel.
+//
+// 9pt small/contact_line is at the ATS floor — only used for one-line
+// meta text under role headers and the contact line, never for body.
+// Body stays at 10pt minimum.
+export const SIZES_DENSE: SizeProfile = {
+  body: 20, // 10pt (was 10.5pt in canonical)
   small: 18, // 9pt (was 9.5pt) — at the ATS floor
   contact_line: 18, // 9pt
   section_heading: 22, // 11pt (was 12pt)
   name_heading: 30, // 15pt (was 16pt)
 } as const;
 
-export function getSizesForSeniority(seniority: SeniorityLike): SizeProfile {
-  return seniority === "Graduate" || seniority === "Junior"
-    ? SIZES_GRADUATE
-    : SIZES;
+// Future-flex hook (see getSpacingForSeniority above): every CV uses
+// the dense profile today, regardless of seniority.
+export function getSizesForSeniority(_seniority: SeniorityLike): SizeProfile {
+  return SIZES_DENSE;
 }
 
 // Curiosum brand orange (#E85A0E) drives the visual signature: section
@@ -102,19 +107,19 @@ export type SpacingProfile = {
   readonly line_15: number;
 };
 
-// Graduate / Junior density profile. Same fonts, same line-height,
-// same heading rhythm — only the inter-paragraph and inter-bullet gaps
-// shrink. The §4.4 Graduate page target is "1 to 2 pages, never more
-// than 2", and graduate content (3-5 projects + internships + education
-// detail + skills) tends to overflow at the default density. This is
-// the renderer-side safety net; the system prompt's content budget is
-// the primary lever (see Decision Log [9] 2026-04-30 follow-up).
-export const SPACING_GRADUATE: SpacingProfile = {
-  paragraph_after: 60, // 3pt (was 4pt)
+// Dense density profile — the CV default since 2026-05-01. Originally
+// introduced as a graduate-only safety net (Decision Log [9]
+// 2026-04-30); user feedback was "more information packed instead of
+// cramped, prefer this throughout", so it now applies to every CV
+// regardless of seniority. The canonical SPACING above is retained
+// for the cover letter and any future caller that wants the older
+// looser profile.
+export const SPACING_DENSE: SpacingProfile = {
+  paragraph_after: 60, // 3pt (was 4pt in canonical)
   section_after: 180,
   heading_before: 180,
   heading_after: 60,
-  bullet_after: 20, // 1pt (was 2pt)
+  bullet_after: 20, // 1pt (was 2pt in canonical)
   bullet_indent: 360,
   line_115: 276,
   line_15: 360,
@@ -128,12 +133,14 @@ type SeniorityLike =
   | "Lead"
   | "Principal";
 
+// CV always uses the dense profile now; the seniority parameter is
+// retained as a future-flex hook (e.g. Lead/Principal could opt back
+// to the looser canonical if a different rhythm reads better at the
+// strategic level).
 export function getSpacingForSeniority(
-  seniority: SeniorityLike,
+  _seniority: SeniorityLike,
 ): SpacingProfile {
-  return seniority === "Graduate" || seniority === "Junior"
-    ? SPACING_GRADUATE
-    : SPACING;
+  return SPACING_DENSE;
 }
 
 // A4 in twips: 11906 x 16838. 850 twips ≈ 1.5cm = 15mm. Tighter than

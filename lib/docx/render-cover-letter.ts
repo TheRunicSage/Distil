@@ -14,6 +14,7 @@ import {
 import type { ApplicationOutputSuccess } from "@/lib/llm/output-schema";
 import {
   bodyParagraph,
+  contactLine,
   pipeJoin,
   plainRun,
 } from "./helpers";
@@ -27,6 +28,9 @@ export async function renderCoverLetter(
   const children: Paragraph[] = [];
 
   // 1. Sender block: name (bold), then phone | email | linkedin | location.
+  // The contact line carries the brand-orange bottom rule via the shared
+  // contactLine helper, mirroring the CV's contact-block treatment so the
+  // two documents share a visual signature.
   children.push(
     new Paragraph({
       children: [plainRun(content.header.full_name, { bold: true })],
@@ -40,16 +44,7 @@ export async function renderCoverLetter(
     content.header.location,
   ]);
   if (senderContact) {
-    children.push(
-      new Paragraph({
-        children: [plainRun(senderContact, { small: true, grey: true })],
-        spacing: {
-          after: SPACING.section_after,
-          line: SPACING.line_115,
-          lineRule: "auto",
-        },
-      }),
-    );
+    children.push(contactLine(senderContact, true));
   }
 
   // 2. Date — already resolved server-side (Pacific/Auckland today).

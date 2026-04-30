@@ -450,16 +450,24 @@ Full layout spec in `app_handoff_v8.md §5`. Key rules that cause bugs if missed
   (#E85A0E); everything else is black/grey for ATS reliability. Sizes were tightened 2026-04-30
   to land typical Mid/Senior CVs on 2 pages instead of 3 — see Decision Log entry below.
 - All constants already defined in `lib/docx/styles.ts` — use them, do not hardcode values
-- Per-seniority spacing AND sizes: `getSpacingForSeniority(seniority)` returns
-  `SPACING_GRADUATE` for Graduate / Junior (paragraph_after 4pt → 3pt,
-  bullet_after 2pt → 1pt) and the canonical `SPACING` profile for everything
-  Mid and above. `getSizesForSeniority(seniority)` returns `SIZES_GRADUATE`
-  (body 10pt, small 9pt, contact_line 9pt, section_heading 11pt,
-  name_heading 15pt) for Graduate / Junior and the canonical `SIZES` profile
-  (10.5/9.5/9.5/12/16) for everything else. Line-height (1.15) and fonts
-  (Calibri) are unchanged across seniorities. `renderCV` takes `seniority`
-  and threads both profiles through every helper that emits a paragraph,
+- CV vs cover letter profiles: every CV uses the **dense** profile
+  (`SPACING_DENSE` + `SIZES_DENSE`) regardless of seniority since
+  2026-05-01 — paragraph_after 3pt, bullet_after 1pt, body 10pt,
+  small / contact_line 9pt, section_heading 11pt, name_heading 15pt.
+  The cover letter uses the **canonical** profile (`SPACING` + `SIZES`)
+  — paragraph_after 4pt, bullet_after 2pt, body 10.5pt,
+  small 9.5pt, section_heading 12pt, name_heading 16pt — for the more
+  polished/spacious feel on a one-page document. Line-height (1.15)
+  and fonts (Calibri) are identical across both. `getSpacingForSeniority`
+  and `getSizesForSeniority` retain their `seniority` parameter as a
+  future-flex hook (e.g. Lead/Principal could opt back to the looser
+  canonical) but currently always return the dense profile. `renderCV`
+  threads both profiles through every helper that emits a paragraph,
   plus the Document `default.document.run.size`.
+- Cover letter brand rule: the sender contact line carries the same
+  brand-orange bottom border as the CV's contact block (via the shared
+  `contactLine(text, withRule=true)` helper), so both documents share
+  a visual signature.
 
 ---
 
@@ -737,6 +745,14 @@ New `SizeProfile` type and `getSizesForSeniority(seniority)` helper. `lib/docx/h
 Why 9pt is acceptable for `small`/`contact_line`: those fields are limited to single-line meta text (`Auckland | 2024 to 2025`, contact pipe-joined fields). The 9pt ATS floor applies primarily to body content, where 10pt remains the new graduate floor. Calibri at 9pt is also slightly larger visually than Times at 9pt, which is what most ATS guidance is calibrated against. Mid+ stays at 10.5pt body / 9.5pt meta; this profile is opt-in via seniority.
 
 What was not changed: line-height (1.15 still — going below feels cramped at 10pt), margins, fonts, spacing-graduate (still in place; the two profiles compose), the §4.4 prompt content budget (still primary lever — a verbose graduate output at 10pt will still overflow). Cover letter renderer is unaffected (passes the canonical defaults).
+
+[9] Promote dense profile to all seniorities + brand the cover letter (2026-05-01, follow-up to the same-day SIZES_GRADUATE work). Two changes after the user reviewed a real graduate generation:
+
+1. The dense font/spacing profile is now the CV default for every seniority. Originally introduced as a graduate-only safety net, the user reported "I can easily read it and it's more information packed instead of cramped, prefer this throughout." `SPACING_GRADUATE` renamed to `SPACING_DENSE`, `SIZES_GRADUATE` renamed to `SIZES_DENSE`. `getSpacingForSeniority` and `getSizesForSeniority` retain the `seniority` argument as a future-flex hook but currently always return the dense profile. The canonical `SPACING` / `SIZES` constants are kept untouched and continue to drive the cover letter and the helper defaults — so any caller that wants the looser/larger profile gets it for free, and the cover letter is unaffected by this change.
+
+2. Cover letter sender block now carries the same brand-orange bottom rule as the CV's contact block. Replaced the bespoke `Paragraph` construction in `lib/docx/render-cover-letter.ts` with the shared `contactLine(text, withRule=true)` helper, so both documents share a visual signature without duplicating the border setup. Color, weight, and spacing of the rule are identical across CV and cover letter (1pt brand-orange under the contact pipe-joined line).
+
+What was not changed: helpers' canonical defaults (still SPACING / SIZES, so cover letter and any future caller stays on the larger profile by default), cover letter spacing/sizes (intentionally larger than the CV — one page already, no density pressure), the §4.4 prompt content budget, the §0 advocate posture, fonts, margins, line-height, the ATS rules.
 
 [7] Output-schema cap and superRefine tuning (2026-04-30, `lib/llm/output-schema.ts`):
 - ATS keyword coverage `superRefine` (hard-reject below 60%) **removed entirely**. It conflicted with §0.2 — a weak-fit candidate's CV will have lower direct keyword matching by design, and failing the generation on that ratio means the user gets nothing for their paid attempt. Coverage now reported as a non-blocking warning by `lib/quality/scan.ts` (warns whenever `< 60%`), still surfaced in `request_logs.metadata` for ops visibility but never blocks delivery.

@@ -20,9 +20,9 @@ import {
 } from "./styles";
 
 // Helpers default to the canonical SPACING + SIZES profiles. The CV
-// renderer passes explicit profiles (e.g. SPACING_GRADUATE +
-// SIZES_GRADUATE) when seniority calls for tighter density and smaller
-// type; cover letter renderer keeps the defaults.
+// renderer passes the dense profiles (SPACING_DENSE + SIZES_DENSE)
+// for every seniority since 2026-05-01; cover letter renderer keeps
+// the canonical defaults for the more polished/spacious feel.
 
 // Filters out null/undefined/empty values, then joins with " | ". Used
 // for contact lines and "Location | Dates" sub-rows. Without the filter
