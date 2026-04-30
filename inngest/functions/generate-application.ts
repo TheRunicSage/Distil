@@ -179,11 +179,18 @@ export const generateApplication = inngest.createFunction(
         });
       } catch (err) {
         // NonRetriableError prevents Inngest's default per-step retry
-        // from re-spending against Anthropic.
-        throw new NonRetriableError(
-          err instanceof Error ? err.message : "llm_failed",
-          { cause: err },
-        );
+        // from re-spending against Anthropic. Prefer the cause's
+        // message so the Inngest run / request_logs surface what
+        // Anthropic actually returned (the outer ApiError message is
+        // the friendly user-facing text and hides the real cause).
+        const cause = (err as { cause?: unknown })?.cause;
+        const message =
+          cause instanceof Error
+            ? `${cause.name}: ${cause.message}`
+            : err instanceof Error
+              ? err.message
+              : "llm_failed";
+        throw new NonRetriableError(message, { cause: err });
       }
     });
     const llmDurationMs = Date.now() - llmStartedAt;
