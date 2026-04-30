@@ -15,12 +15,14 @@ import {
   FONTS,
   SIZES,
   SPACING,
+  type SizeProfile,
   type SpacingProfile,
 } from "./styles";
 
-// Helpers default to the canonical SPACING profile. The CV renderer
-// passes an explicit profile (e.g. SPACING_GRADUATE) when seniority
-// calls for tighter density; cover letter renderer keeps the default.
+// Helpers default to the canonical SPACING + SIZES profiles. The CV
+// renderer passes explicit profiles (e.g. SPACING_GRADUATE +
+// SIZES_GRADUATE) when seniority calls for tighter density and smaller
+// type; cover letter renderer keeps the defaults.
 
 // Filters out null/undefined/empty values, then joins with " | ". Used
 // for contact lines and "Location | Dates" sub-rows. Without the filter
@@ -34,6 +36,7 @@ export function pipeJoin(
 export function nameHeading(
   fullName: string,
   spacing: SpacingProfile = SPACING,
+  sizes: SizeProfile = SIZES,
 ): Paragraph {
   return new Paragraph({
     children: [
@@ -41,7 +44,7 @@ export function nameHeading(
         text: fullName,
         bold: true,
         font: FONTS.heading,
-        size: SIZES.name_heading,
+        size: sizes.name_heading,
       }),
     ],
     spacing: { after: spacing.paragraph_after },
@@ -55,13 +58,14 @@ export function contactLine(
   text: string,
   withRule: boolean,
   spacing: SpacingProfile = SPACING,
+  sizes: SizeProfile = SIZES,
 ): Paragraph {
   return new Paragraph({
     children: [
       new TextRun({
         text,
         font: FONTS.body,
-        size: SIZES.contact_line,
+        size: sizes.contact_line,
         color: COLOURS.dark_grey,
       }),
     ],
@@ -90,6 +94,7 @@ export function contactLine(
 export function sectionHeading(
   text: string,
   spacing: SpacingProfile = SPACING,
+  sizes: SizeProfile = SIZES,
 ): Paragraph {
   return new Paragraph({
     children: [
@@ -97,7 +102,7 @@ export function sectionHeading(
         text: text.toUpperCase(),
         bold: true,
         font: FONTS.heading,
-        size: SIZES.section_heading,
+        size: sizes.section_heading,
         color: COLOURS.brand_orange,
         characterSpacing: 10, // ~0.5pt tracking, very light
       }),
@@ -125,15 +130,17 @@ export function bodyParagraph(
     justified?: boolean;
     afterTwips?: number;
     spacing?: SpacingProfile;
+    sizes?: SizeProfile;
   } = {},
 ): Paragraph {
   const spacing = opts.spacing ?? SPACING;
+  const sizes = opts.sizes ?? SIZES;
   return new Paragraph({
     children: [
       new TextRun({
         text,
         font: FONTS.body,
-        size: SIZES.body,
+        size: sizes.body,
         color: COLOURS.black,
       }),
     ],
@@ -150,13 +157,14 @@ export function bodyParagraph(
 export function bullet(
   text: string,
   spacing: SpacingProfile = SPACING,
+  sizes: SizeProfile = SIZES,
 ): Paragraph {
   return new Paragraph({
     children: [
       new TextRun({
         text,
         font: FONTS.body,
-        size: SIZES.body,
+        size: sizes.body,
         color: COLOURS.black,
       }),
     ],
@@ -192,13 +200,14 @@ export function roleHeader(
 export function metaLine(
   text: string,
   spacing: SpacingProfile = SPACING,
+  sizes: SizeProfile = SIZES,
 ): Paragraph {
   return new Paragraph({
     children: [
       new TextRun({
         text,
         font: FONTS.body,
-        size: SIZES.small,
+        size: sizes.small,
         color: COLOURS.medium_grey,
       }),
     ],
@@ -213,26 +222,36 @@ export function metaLine(
 
 // Bold prefix + plain remainder. Used for "Category: skill, skill" rows
 // and for the "Project Name | Context (italic)" header line.
-export function boldPrefixRun(prefix: string): TextRun {
+export function boldPrefixRun(
+  prefix: string,
+  sizes: SizeProfile = SIZES,
+): TextRun {
   return new TextRun({
     text: prefix,
     bold: true,
     font: FONTS.body,
-    size: SIZES.body,
+    size: sizes.body,
     color: COLOURS.black,
   });
 }
 
 export function plainRun(
   text: string,
-  opts: { italic?: boolean; bold?: boolean; small?: boolean; grey?: boolean } = {},
+  opts: {
+    italic?: boolean;
+    bold?: boolean;
+    small?: boolean;
+    grey?: boolean;
+    sizes?: SizeProfile;
+  } = {},
 ): TextRun {
+  const sizes = opts.sizes ?? SIZES;
   return new TextRun({
     text,
     italics: opts.italic,
     bold: opts.bold,
     font: FONTS.body,
-    size: opts.small ? SIZES.small : SIZES.body,
+    size: opts.small ? sizes.small : sizes.body,
     color: opts.grey ? COLOURS.medium_grey : COLOURS.black,
   });
 }

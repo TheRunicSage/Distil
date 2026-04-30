@@ -450,12 +450,16 @@ Full layout spec in `app_handoff_v8.md §5`. Key rules that cause bugs if missed
   (#E85A0E); everything else is black/grey for ATS reliability. Sizes were tightened 2026-04-30
   to land typical Mid/Senior CVs on 2 pages instead of 3 — see Decision Log entry below.
 - All constants already defined in `lib/docx/styles.ts` — use them, do not hardcode values
-- Per-seniority spacing: `getSpacingForSeniority(seniority)` returns `SPACING_GRADUATE`
-  for Graduate / Junior (paragraph_after 4pt → 3pt, bullet_after 2pt → 1pt) and the
-  canonical `SPACING` profile for everything Mid and above. Fonts and line-height are
-  unchanged across seniorities; only the inter-paragraph and inter-bullet gaps shrink
-  for graduate. `renderCV` takes `seniority` and threads the chosen profile through
-  every helper that emits a paragraph.
+- Per-seniority spacing AND sizes: `getSpacingForSeniority(seniority)` returns
+  `SPACING_GRADUATE` for Graduate / Junior (paragraph_after 4pt → 3pt,
+  bullet_after 2pt → 1pt) and the canonical `SPACING` profile for everything
+  Mid and above. `getSizesForSeniority(seniority)` returns `SIZES_GRADUATE`
+  (body 10pt, small 9pt, contact_line 9pt, section_heading 11pt,
+  name_heading 15pt) for Graduate / Junior and the canonical `SIZES` profile
+  (10.5/9.5/9.5/12/16) for everything else. Line-height (1.15) and fonts
+  (Calibri) are unchanged across seniorities. `renderCV` takes `seniority`
+  and threads both profiles through every helper that emits a paragraph,
+  plus the Document `default.document.run.size`.
 
 ---
 
@@ -720,6 +724,19 @@ Renderer (safety net, mild):
 Prompt (primary lever): §4.4 Graduate / Junior block rewritten as a content budget rather than a content list. Profile defaults to 3 sentences (not 4), Key Projects to 2–3 (not 3–5), bullets per role to 2–3 (cap 4 only for the most relevant role), Technical Skills to 3–4 categories with ≤25 skills total. New "Selection over inclusion" framing makes explicit that the master CV is the archive and the tailored CV is the recruiter's two-minute scan. New §10 self-check item 21 forces the model to mentally render the page count for Graduate/Junior outputs and trim before returning.
 
 What was *not* changed: schema caps in `lib/llm/output-schema.ts` (would trip [7]), font sizes (would risk the 9pt ATS floor), margins, line-height, the §0 advocate posture, or the §7.0/§7.1/§7.3 stop-and-reconsider gate. Trim is by selection of the strongest items, not by gap-acknowledgement or refusal. Cover letter rendering is unaffected (one page already, no density change).
+
+[9] Graduate font-size profile (2026-05-01, follow-up to the 2026-04-30 graduate work). The renderer-side `SPACING_GRADUATE` density tweak plus the §4.4 prompt budget were not enough on their own — a real graduate generation was still landing at 3 pages. The user empirically tested by selecting all body text in Word and pressing the "decrease font size" preset (one click); the result fit naturally on 2 pages. Ported that into the renderer as `SIZES_GRADUATE` in `lib/docx/styles.ts`:
+
+- body: 21 → 20 (10.5pt → 10pt)
+- small / contact_line: 19 → 18 (9.5pt → 9pt — at the ATS floor; only used for one-line meta text under role headers and the contact line, never for body content)
+- section_heading: 24 → 22 (12pt → 11pt)
+- name_heading: 32 → 30 (16pt → 15pt)
+
+New `SizeProfile` type and `getSizesForSeniority(seniority)` helper. `lib/docx/helpers.ts`: every helper that emits a `TextRun` now takes an optional `sizes: SizeProfile = SIZES` argument; default behaviour for any caller that doesn't pass one (cover letter renderer, future callers) is unchanged. `lib/docx/render-cv.ts` threads `sizes` through every helper call, the inline `TextRun` for professional-experience role headers, and the Document `default.document.run.size`.
+
+Why 9pt is acceptable for `small`/`contact_line`: those fields are limited to single-line meta text (`Auckland | 2024 to 2025`, contact pipe-joined fields). The 9pt ATS floor applies primarily to body content, where 10pt remains the new graduate floor. Calibri at 9pt is also slightly larger visually than Times at 9pt, which is what most ATS guidance is calibrated against. Mid+ stays at 10.5pt body / 9.5pt meta; this profile is opt-in via seniority.
+
+What was not changed: line-height (1.15 still — going below feels cramped at 10pt), margins, fonts, spacing-graduate (still in place; the two profiles compose), the §4.4 prompt content budget (still primary lever — a verbose graduate output at 10pt will still overflow). Cover letter renderer is unaffected (passes the canonical defaults).
 
 [7] Output-schema cap and superRefine tuning (2026-04-30, `lib/llm/output-schema.ts`):
 - ATS keyword coverage `superRefine` (hard-reject below 60%) **removed entirely**. It conflicted with §0.2 — a weak-fit candidate's CV will have lower direct keyword matching by design, and failing the generation on that ratio means the user gets nothing for their paid attempt. Coverage now reported as a non-blocking warning by `lib/quality/scan.ts` (warns whenever `< 60%`), still surfaced in `request_logs.metadata` for ops visibility but never blocks delivery.

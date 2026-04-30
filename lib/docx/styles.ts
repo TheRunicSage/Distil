@@ -26,6 +26,38 @@ export const SIZES = {
   name_heading: 32, // 16pt
 } as const;
 
+// Structural type so alternative size profiles (SIZES_GRADUATE, future
+// per-seniority variants) aren't pinned to the literal numbers in the
+// canonical profile.
+export type SizeProfile = {
+  readonly body: number;
+  readonly small: number;
+  readonly contact_line: number;
+  readonly section_heading: number;
+  readonly name_heading: number;
+};
+
+// Graduate / Junior size profile. Mirrors what a user gets by selecting
+// all body text in Word and pressing the "decrease font size" preset:
+// 10.5 → 10pt body, 12 → 11pt section heading, 16 → 15pt name heading.
+// Empirically, that single click was enough to drop a typical graduate
+// CV from 3 pages to 2 (2026-05-01 user report). 9pt small/contact_line
+// is at the ATS floor — acceptable for one-line meta text under role
+// headers, but we don't push body below 10pt for the same reason.
+export const SIZES_GRADUATE: SizeProfile = {
+  body: 20, // 10pt (was 10.5pt)
+  small: 18, // 9pt (was 9.5pt) — at the ATS floor
+  contact_line: 18, // 9pt
+  section_heading: 22, // 11pt (was 12pt)
+  name_heading: 30, // 15pt (was 16pt)
+} as const;
+
+export function getSizesForSeniority(seniority: SeniorityLike): SizeProfile {
+  return seniority === "Graduate" || seniority === "Junior"
+    ? SIZES_GRADUATE
+    : SIZES;
+}
+
 // Curiosum brand orange (#E85A0E) drives the visual signature: section
 // headings and the contact rule. brand_orange_dim is a paler tint for
 // the section-heading bottom rule so the orange line doesn't fight the
