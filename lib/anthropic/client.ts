@@ -68,11 +68,27 @@ export async function callLLM(opts: CallLLMOptions): Promise<CallLLMResult> {
       tool_choice: opts.toolChoice,
       messages: [{ role: "user", content: opts.userMessage }],
     });
-  } catch {
-    // The SDK throws on non-2xx and on network errors. Either way the
-    // user-facing surface is the same: the LLM didn't respond. The
-    // detailed cause is captured by Sentry / withLogging upstream.
-    throw new ApiError("llm_failed");
+  } catch (err) {
+    // The SDK throws on non-2xx and on network errors. The user-facing
+    // surface stays "llm_failed" (spec error_message), but we attach
+    // the original error as `cause` so the Inngest run, request_logs,
+    // and Sentry can see what Anthropic actually said. Also log to
+    // stderr so it shows up immediately in `npm run dev` output.
+    console.error(
+      "[anthropic.callLLM] Anthropic SDK error for application",
+      opts.applicationId,
+      "-",
+      err instanceof Error ? `${err.name}: ${err.message}` : String(err),
+    );
+    if (err instanceof Error && (err as { status?: number }).status) {
+      console.error(
+        "[anthropic.callLLM] HTTP status:",
+        (err as { status?: number }).status,
+      );
+    }
+    const apiErr = new ApiError("llm_failed");
+    (apiErr as Error & { cause?: unknown }).cause = err;
+    throw apiErr;
   }
 
   const toolUseBlock = response.content.find(
