@@ -394,6 +394,10 @@ After any terminal state: fires `application/generation.completed` event.
 **Critical spec rule**: every terminal state transition MUST set `metadata_expires_at = now() + 1 year`.
 Affects: finalize-insufficient, onFailure handler, watchdog, abandon route.
 
+**Watchdog now has TWO passes** (Decision Log step 12 DP — adds a second pass on top of the spec):
+- Pass A (spec): `status='running'` >30min → `error`. Resumes paused, fires `generation.completed`.
+- Pass B (added): `status='queued'` >60min with `started_at IS NULL` → `cancelled`. Catches rows orphaned because Inngest never picked them up (dev server off, kill-switch flipped, worker crashed before claim). Same `metadata_expires_at` discipline; same guarded update; fires `generation.completed` so the queue trigger advances.
+
 ---
 
 ## Database: Key Rules
@@ -508,7 +512,7 @@ Follow this order exactly. Each step depends on the previous.
 [x] 3.  lib/env.ts — Zod env validation, fails fast
 [x] 4.  supabase/migrations/0001_initial.sql — run the full SQL from app_handoff_v8.md §6.2
 [x] 5.  lib/supabase/{browser,server,service,middleware}.ts — three clients (+ proxy.ts wired)
-[~] 6.  Login page + admin user setup + UPDATE profiles SET is_admin = true   (page + actions done; awaiting admin user creation in Supabase)
+[x] 6.  Login page + admin user setup + UPDATE profiles SET is_admin = true   (admin user created and is_admin flipped; smoke-test login confirmed)
 [x] 7.  Shared modules (in this order):
         lib/errors/codes.ts
         lib/errors/api-error.ts
@@ -622,6 +626,22 @@ Format: `[step number] DECISION POINT title: Option chosen — brief reason`
 [17] Daily summary delivery order: Resend (if both `RESEND_API_KEY` and `ADMIN_EMAIL` and `EMAIL_FROM_ADDRESS` are set) → Slack webhook (if `SLACK_WEBHOOK_URL` is set) → no-op (operator still has the admin panel). Cron fires at `0 21 * * *` UTC = 09:00 NZT. Body includes window, totals, status breakdown, and top error code if any.
 [18] Manual verification gate: process step, not code. Checklist at `docs/manual-verification.md` covers cover letter (date, salutation, sign-off, banned phrases, story-led paragraph 2), CV (profile length per seniority, no fabrication, ATS-safe formatting), fit assessment, and the "what we did" checklist. Three real generations must pass before opening to the team.
 [19] End-to-end smoke test: process step, not code. Checklist at `docs/smoke-test.md` covers happy path (upload → submit → SSE → success → download) and failure paths (insufficient_input retry, attempt-3 cap, queue cap, cost cap pre-check, kill switch, daily ceiling). Each path has a verification step that mutates a Vercel env var temporarily and requires reverting after.
+
+[14] DECISION POINT History/Dashboard visibility scope: filter on `started_at IS NOT NULL`. Pre-LLM rows (queued, paused-from-start, abandoned/cancelled while still queued) are excluded from `/history` and the Dashboard "Recent" widget. The application detail page still server-renders pre-LLM rows by direct URL so the new-application redirect flow is unaffected. Reason: exploratory submissions made while Inngest or the API key were misconfigured were polluting the user's record and reading like real generations. `started_at` is written by the `mark-running` step (`inngest/steps/finalize.ts:107`) immediately before `call-llm`, so it's the precise "handed to LLM" moment. Side-effect: HistoryList "Active" pill renamed to "In progress" and narrowed to running/rendering only, since queued/paused can no longer reach the list.
+
+[14] UX pass — nav cleanup, AppShell, interactive elements: locked in this session.
+- Topbar reduced to `Dashboard | History | Settings` (sticky with backdrop blur). Admin moved into Settings as a gated section; sign-out lives only there. Admin layout stripped of its duplicate full-height topbar (was stacking under the parent shell) — replaced with an inline sub-nav + "Back to Settings" link.
+- New `components/app/AppShell.tsx` (client wrapper) hosts a Toast provider (`components/ui/toast.tsx`) and global keyboard shortcuts (`N` new app, `D` dashboard, `H` history, `S` settings, `?` help). Shortcuts ignored while typing in inputs/textareas/contentEditable.
+- Drag-and-drop master CV upload with three states (idle / drag-over / file ready). Toast on success and failure.
+- `ApplicationLiveView` replaces the bare spinner with a four-phase checklist (research → cover letter → render → wrap up) plus live elapsed timer. Active step pulses orange; completed steps go green.
+- New-application form gains a four-band JD strength gauge (`empty` / `too_short` / `short` / `ok`) driving a coloured progress bar; submit button stays disabled below minimum.
+- `components/app/CopyId.tsx` ghost chip replaces static truncated mono spans for application IDs (extensible to other ids later).
+
+[12] DECISION POINT Watchdog Pass B for stuck queued rows: extend the existing watchdog cron (`*/15 * * * *`) with a second pass that catches rows in `status='queued'` for >60min with `started_at IS NULL`, marks them `cancelled`, and fires `application/generation.completed`. Reason: queue-cap query at `app/api/applications/route.ts:86` counts `(queued, paused, running, rendering)`; rows orphaned because Inngest was off / worker crashed / kill-switch flipped during submit will sit in `queued` forever and lock the user out at the cap. Spec only had Pass A (running >30min → error). Implementation: same `withCronLog` envelope; both passes return separate counts (`recoveredRunning`, `recoveredQueued`) for the cron-log row. Update is guarded with `.eq('status','queued').is('started_at', null)` so a row that just got claimed is never stomped.
+
+[12] Supabase SQL Editor `auth.uid()` gotcha (operational note for future cleanup queries): the SQL Editor runs as the `postgres` role, not as a logged-in user, so `auth.uid()` returns NULL. Cleanup queries that filter `where user_id = auth.uid()` silently match zero rows and report "0 rows affected" — not an error. For one-off cleanup against a single-user demo, filter by status / `started_at` only, or paste the admin user's literal UUID from Authentication → Users.
+
+[10] Inngest client dev-mode flag: `inngest/client.ts` now passes `isDev: process.env.NODE_ENV !== "production"` and only attaches `eventKey` in prod. Without this, the SDK refuses to send events locally because `INNGEST_EVENT_KEY` is unset (the Inngest dev server doesn't need one, but the SDK doesn't auto-detect that from the absence of the key — it errors out with "Failed to send event ... we couldn't find an event key"). Symptom: `applications.submit` logs `internal_error` with the event-key message; the application row is created but `application/generate.requested` is never delivered, so the row sits in `queued` forever (Pass B watchdog now catches these after 60min — Decision Log step 12). The webhook handler `app/api/inngest/route.ts` reads `isDev` from the same client instance, so no separate change is needed there. `lib/env.ts` keeps `INNGEST_EVENT_KEY` / `INNGEST_SIGNING_KEY` required only when `NODE_ENV === 'production'`.
 
 **Standing principle (set in this session):** prefer the latest *stable* version of any tool we adopt; when spec sample code targets an older version, modify the code to match the current API rather than pinning to the older version.
 
