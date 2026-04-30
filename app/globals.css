@@ -241,12 +241,15 @@
     @apply text-xs text-muted-foreground;
   }
 
-  /* Surface primitives */
+  /* Surface primitives. Tailwind v4's @apply only resolves utilities,
+     not other component classes — so .surface-card-interactive
+     repeats the .surface-card properties rather than composing via
+     @apply. */
   .surface-card {
     @apply rounded-2xl border border-border bg-dark2/60 p-7 backdrop-blur-sm;
   }
   .surface-card-interactive {
-    @apply surface-card transition-colors hover:border-orange/40;
+    @apply rounded-2xl border border-border bg-dark2/60 p-7 backdrop-blur-sm transition-colors hover:border-orange/40;
   }
   .surface-row {
     @apply flex items-center justify-between rounded-xl border border-border bg-dark2/60 px-4 py-3 backdrop-blur-sm transition-colors hover:border-orange/40 hover:bg-dark3/80;
