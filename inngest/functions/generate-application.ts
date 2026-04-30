@@ -111,11 +111,26 @@ export const generateApplication = inngest.createFunction(
     );
     if (!enabled) return { halted: "generation_disabled" };
 
-    // 2. Acquire slot.
+    // 2. Acquire slot. If we're not at the front of the user's queue,
+    // re-fire `generate.requested` for the actual front row so the queue
+    // self-heals (covers the dead-lock case where the front row's
+    // original event was lost). Inngest concurrency:1-per-user prevents
+    // a duplicate run when the front row is already in flight.
     const slot = await withInngestStep(step, "acquire-slot", stepCtx, () =>
       checkSlot(application_id, user_id),
     );
-    if (!slot.atFrontOfQueue) return { halted: "not_at_front_of_queue" };
+    if (!slot.atFrontOfQueue) {
+      if (slot.actualFrontId && slot.actualFrontId !== application_id) {
+        await step.sendEvent("nudge-front-of-queue", {
+          name: "application/generate.requested",
+          data: { application_id: slot.actualFrontId, user_id },
+        });
+      }
+      return {
+        halted: "not_at_front_of_queue",
+        nudged: slot.actualFrontId,
+      };
+    }
 
     // 3. Load context.
     const ctx = await withInngestStep(step, "load-context", stepCtx, () =>
