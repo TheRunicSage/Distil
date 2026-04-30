@@ -10,7 +10,17 @@ import {
   TextRun,
   type ParagraphChild,
 } from "docx";
-import { COLOURS, FONTS, SIZES, SPACING } from "./styles";
+import {
+  COLOURS,
+  FONTS,
+  SIZES,
+  SPACING,
+  type SpacingProfile,
+} from "./styles";
+
+// Helpers default to the canonical SPACING profile. The CV renderer
+// passes an explicit profile (e.g. SPACING_GRADUATE) when seniority
+// calls for tighter density; cover letter renderer keeps the default.
 
 // Filters out null/undefined/empty values, then joins with " | ". Used
 // for contact lines and "Location | Dates" sub-rows. Without the filter
@@ -21,7 +31,10 @@ export function pipeJoin(
   return parts.filter((p): p is string => Boolean(p && p.trim())).join(" | ");
 }
 
-export function nameHeading(fullName: string): Paragraph {
+export function nameHeading(
+  fullName: string,
+  spacing: SpacingProfile = SPACING,
+): Paragraph {
   return new Paragraph({
     children: [
       new TextRun({
@@ -31,14 +44,18 @@ export function nameHeading(fullName: string): Paragraph {
         size: SIZES.name_heading,
       }),
     ],
-    spacing: { after: SPACING.paragraph_after },
+    spacing: { after: spacing.paragraph_after },
   });
 }
 
 // Contact paragraph with a brand-orange bottom rule on the closing line.
 // The orange rule is the document's main brand signature; the rest of
 // the body stays black for ATS reliability and readability.
-export function contactLine(text: string, withRule: boolean): Paragraph {
+export function contactLine(
+  text: string,
+  withRule: boolean,
+  spacing: SpacingProfile = SPACING,
+): Paragraph {
   return new Paragraph({
     children: [
       new TextRun({
@@ -49,8 +66,8 @@ export function contactLine(text: string, withRule: boolean): Paragraph {
       }),
     ],
     spacing: {
-      after: withRule ? SPACING.section_after : SPACING.paragraph_after,
-      line: SPACING.line_115,
+      after: withRule ? spacing.section_after : spacing.paragraph_after,
+      line: spacing.line_115,
       lineRule: "auto",
     },
     border: withRule
@@ -70,7 +87,10 @@ export function contactLine(text: string, withRule: boolean): Paragraph {
 // in Curiosum brand orange with a paler-orange bottom rule. ATS parsers
 // tolerate solid-color heading text well; the bold + caps + rule
 // combination is the textual cue parsers actually key on.
-export function sectionHeading(text: string): Paragraph {
+export function sectionHeading(
+  text: string,
+  spacing: SpacingProfile = SPACING,
+): Paragraph {
   return new Paragraph({
     children: [
       new TextRun({
@@ -83,8 +103,8 @@ export function sectionHeading(text: string): Paragraph {
       }),
     ],
     spacing: {
-      before: SPACING.heading_before,
-      after: SPACING.heading_after,
+      before: spacing.heading_before,
+      after: spacing.heading_after,
     },
     border: {
       bottom: {
@@ -101,8 +121,13 @@ export function sectionHeading(text: string): Paragraph {
 // Plain body paragraph (Profile, Referees, single-paragraph items).
 export function bodyParagraph(
   text: string,
-  opts: { justified?: boolean; afterTwips?: number } = {},
+  opts: {
+    justified?: boolean;
+    afterTwips?: number;
+    spacing?: SpacingProfile;
+  } = {},
 ): Paragraph {
+  const spacing = opts.spacing ?? SPACING;
   return new Paragraph({
     children: [
       new TextRun({
@@ -114,15 +139,18 @@ export function bodyParagraph(
     ],
     alignment: opts.justified ? AlignmentType.JUSTIFIED : AlignmentType.LEFT,
     spacing: {
-      after: opts.afterTwips ?? SPACING.paragraph_after,
-      line: SPACING.line_115,
+      after: opts.afterTwips ?? spacing.paragraph_after,
+      line: spacing.line_115,
       lineRule: "auto",
     },
   });
 }
 
 // Bullet item via Word's List Bullet style. 0.25in indent, hanging.
-export function bullet(text: string): Paragraph {
+export function bullet(
+  text: string,
+  spacing: SpacingProfile = SPACING,
+): Paragraph {
   return new Paragraph({
     children: [
       new TextRun({
@@ -133,10 +161,10 @@ export function bullet(text: string): Paragraph {
       }),
     ],
     bullet: { level: 0 },
-    indent: { left: SPACING.bullet_indent, hanging: SPACING.bullet_indent },
+    indent: { left: spacing.bullet_indent, hanging: spacing.bullet_indent },
     spacing: {
-      after: SPACING.bullet_after,
-      line: SPACING.line_115,
+      after: spacing.bullet_after,
+      line: spacing.line_115,
       lineRule: "auto",
     },
   });
@@ -144,13 +172,16 @@ export function bullet(text: string): Paragraph {
 
 // "Role Title, Company" bold first line of a role block. keepNext keeps
 // the role header on the same page as its first bullet.
-export function roleHeader(parts: ReadonlyArray<TextRun>): Paragraph {
+export function roleHeader(
+  parts: ReadonlyArray<TextRun>,
+  spacing: SpacingProfile = SPACING,
+): Paragraph {
   return new Paragraph({
     children: parts as unknown as ParagraphChild[],
     spacing: {
-      before: SPACING.paragraph_after,
+      before: spacing.paragraph_after,
       after: 0,
-      line: SPACING.line_115,
+      line: spacing.line_115,
       lineRule: "auto",
     },
     keepNext: true,
@@ -158,7 +189,10 @@ export function roleHeader(parts: ReadonlyArray<TextRun>): Paragraph {
 }
 
 // 10pt grey "Location | Dates" line under a role / education / project.
-export function metaLine(text: string): Paragraph {
+export function metaLine(
+  text: string,
+  spacing: SpacingProfile = SPACING,
+): Paragraph {
   return new Paragraph({
     children: [
       new TextRun({
@@ -169,8 +203,8 @@ export function metaLine(text: string): Paragraph {
       }),
     ],
     spacing: {
-      after: SPACING.paragraph_after,
-      line: SPACING.line_115,
+      after: spacing.paragraph_after,
+      line: spacing.line_115,
       lineRule: "auto",
     },
     keepNext: true,

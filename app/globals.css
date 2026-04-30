@@ -208,6 +208,77 @@
 }
 
 /* ============================================================
+   Design system — reusable component classes.
+   Goal: one definition per visual primitive, used across every
+   (app) page so spacing/typography/colour stay in lockstep. New
+   pages should reach for these classes before writing one-off
+   Tailwind strings.
+
+   Scale conventions:
+   - radius: md (inputs/kbd) · xl (buttons, list rows, ID chips) ·
+     2xl (cards, panels) · full (pills)
+   - surfaces: dark (page bg) · dark2/60 (primary card) · dark3
+     (hover/active) · dark4 (popover only)
+   - eyebrow → display → section → body → meta is the type rhythm;
+     don't introduce sizes outside this scale without a reason.
+   ============================================================ */
+
+@layer components {
+  /* Type primitives */
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-orange;
+  }
+  .eyebrow-muted {
+    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground;
+  }
+  .heading-display {
+    @apply font-serif text-4xl font-light leading-[1.15] tracking-tight text-text;
+  }
+  .heading-section {
+    @apply font-serif text-2xl font-normal leading-tight tracking-tight text-text;
+  }
+  .text-meta {
+    @apply text-xs text-muted-foreground;
+  }
+
+  /* Surface primitives */
+  .surface-card {
+    @apply rounded-2xl border border-border bg-dark2/60 p-7 backdrop-blur-sm;
+  }
+  .surface-card-interactive {
+    @apply surface-card transition-colors hover:border-orange/40;
+  }
+  .surface-row {
+    @apply flex items-center justify-between rounded-xl border border-border bg-dark2/60 px-4 py-3 backdrop-blur-sm transition-colors hover:border-orange/40 hover:bg-dark3/80;
+  }
+
+  /* Button primitives */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-orange px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-light disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-dark3/60 px-5 py-2.5 text-sm font-medium text-text transition-colors hover:border-orange/40 hover:bg-dark3 disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-dark3 hover:text-text;
+  }
+  .btn-icon {
+    @apply inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-dark3 hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40;
+  }
+  .btn-link-orange {
+    @apply text-sm text-orange transition-colors hover:text-orange-light;
+  }
+  .btn-disabled-shell {
+    @apply inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-border bg-dark4 px-5 py-2.5 text-sm font-medium text-muted-foreground;
+  }
+
+  /* Status pill (used for application.status badges) */
+  .status-pill {
+    @apply inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.05em];
+  }
+}
+
+/* ============================================================
    Ambient background blobs — see components/app/AmbientBackground.tsx.
    The float keyframes drift the blobs so the otherwise-static dark
    surface has a subtle sense of life without distracting from

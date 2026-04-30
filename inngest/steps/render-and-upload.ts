@@ -29,7 +29,7 @@ export async function renderAndUpload(
   userId: string,
 ): Promise<RenderAndUploadResult> {
   const [cvBuffer, letterBuffer] = await Promise.all([
-    renderCV(output.cv_content).catch(() => {
+    renderCV(output.cv_content, output.jd_analysis.seniority).catch(() => {
       throw new ApiError("rendering_failed");
     }),
     renderCoverLetter(output.cover_letter_content).catch(() => {

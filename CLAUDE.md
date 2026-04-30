@@ -450,6 +450,12 @@ Full layout spec in `app_handoff_v8.md §5`. Key rules that cause bugs if missed
   (#E85A0E); everything else is black/grey for ATS reliability. Sizes were tightened 2026-04-30
   to land typical Mid/Senior CVs on 2 pages instead of 3 — see Decision Log entry below.
 - All constants already defined in `lib/docx/styles.ts` — use them, do not hardcode values
+- Per-seniority spacing: `getSpacingForSeniority(seniority)` returns `SPACING_GRADUATE`
+  for Graduate / Junior (paragraph_after 4pt → 3pt, bullet_after 2pt → 1pt) and the
+  canonical `SPACING` profile for everything Mid and above. Fonts and line-height are
+  unchanged across seniorities; only the inter-paragraph and inter-bullet gaps shrink
+  for graduate. `renderCV` takes `seniority` and threads the chosen profile through
+  every helper that emits a paragraph.
 
 ---
 
@@ -640,6 +646,22 @@ Format: `[step number] DECISION POINT title: Option chosen — brief reason`
 
 [14] DECISION POINT History/Dashboard visibility scope: filter on `started_at IS NOT NULL`. Pre-LLM rows (queued, paused-from-start, abandoned/cancelled while still queued) are excluded from `/history` and the Dashboard "Recent" widget. The application detail page still server-renders pre-LLM rows by direct URL so the new-application redirect flow is unaffected. Reason: exploratory submissions made while Inngest or the API key were misconfigured were polluting the user's record and reading like real generations. `started_at` is written by the `mark-running` step (`inngest/steps/finalize.ts:107`) immediately before `call-llm`, so it's the precise "handed to LLM" moment. Side-effect: HistoryList "Active" pill renamed to "In progress" and narrowed to running/rendering only, since queued/paused can no longer reach the list.
 
+[14] IA pass + design system — nav restructure (2026-04-30, follow-up to the earlier UX pass below). User-reported friction: `Distil` wordmark and `Dashboard` nav item both pointed to `/dashboard`, the topbar had no primary action, and the dashboard was doing dual duty as both "home" and "master CV settings".
+
+Topbar shape changed to: `Distil` wordmark (left, the only "home" affordance) | `History` (text link, secondary nav) | `Settings` (gear icon button, collapses Settings/Admin/Sign-out behind one entry) | `+ New application` (primary orange CTA, always one click away). When the user has no master CV, the same primary slot renders as `Upload CV` linking to `/upload` with an upload icon — same button, contextual label, no dead-end "you need to upload first" friction. Auth layout fetches `master_cvs` once and threads `hasCv` into the topbar.
+
+Post-login routing: `signIn` server action now queries `master_cvs` after a successful sign-in and redirects no-CV users to `/upload` instead of `/dashboard`. First-session users land on the only screen that's actually meaningful at that moment.
+
+Dashboard restructure: `app/(app)/dashboard/page.tsx` no longer surfaces the Master CV card (moved to `/settings`). Three states: (1) no CV → full-width "Upload your master CV first" surface card with primary CTA; (2) has CV but zero history → full-width "Tailor your first application" CTA; (3) has CV + history → optional "In progress" panel (live: queued/paused/running/rendering) + "Recent" panel (terminal states only, last 5). The split prevents the same row appearing in both lists, and the live panel surfaces in-flight work without needing to dig into `/history`.
+
+Settings becomes the home for Master CV management: full-state display (format / size / upload date) inline, Replace CTA in the same surface card, plus existing Account / Admin tools / Sign-out sections — all using the new design-system classes for consistency.
+
+Design system classes added to `app/globals.css` under `@layer components`. One definition per visual primitive: `.eyebrow` / `.eyebrow-muted` (the orange uppercase micro-label used everywhere), `.heading-display` (Fraunces 4xl light, page hero), `.heading-section` (Fraunces 2xl, panel title), `.text-meta` (small grey timestamps/IDs), `.surface-card` / `.surface-card-interactive` (primary card pattern, with hover variant), `.surface-row` (clickable list rows), `.btn-primary` / `.btn-secondary` / `.btn-ghost` / `.btn-icon` / `.btn-link-orange` / `.btn-disabled-shell`, `.status-pill` (per-status badge shell). The radius scale is locked to `md` (inputs/kbd) → `xl` (buttons, list rows, ID chips) → `2xl` (cards, panels) → `full` (pills); surfaces are locked to `dark` (page bg) → `dark2/60` (primary card) → `dark3` (hover/active) → `dark4` (popover only). New (app) pages should reach for these classes before writing one-off Tailwind strings; out-of-scope pages (history, application/[id], admin, upload) still use bespoke styling and will migrate page-by-page rather than in one giant churn commit.
+
+Icons via `lucide-react` (`SettingsIcon`, `PlusIcon`, `UploadIcon`). Was originally inlined as SVG because the package was in `package.json` but not in `node_modules`; reinstalled in the same turn after the user asked whether any plugin/install would help. Tree-shakes per-icon so bundle stays small.
+
+What was not changed: AppShell (toast provider + keyboard shortcuts intact, including the `D` shortcut for `/dashboard`), AmbientBackground, the cover-letter renderer, any spec-locked behaviour. The (admin) prod move TODO from earlier [13] is still untouched — admin still lives inside (app) gated by `requireAdmin()` and now sits behind the Settings icon rather than a topbar item, which is closer to the prod target shape but not yet the route-group split.
+
 [14] UX pass — nav cleanup, AppShell, interactive elements: locked in this session.
 - Topbar reduced to `Dashboard | History | Settings` (sticky with backdrop blur). Admin moved into Settings as a gated section; sign-out lives only there. Admin layout stripped of its duplicate full-height topbar (was stacking under the parent shell) — replaced with an inline sub-nav + "Back to Settings" link.
 - New `components/app/AppShell.tsx` (client wrapper) hosts a Toast provider (`components/ui/toast.tsx`) and global keyboard shortcuts (`N` new app, `D` dashboard, `H` history, `S` settings, `?` help). Shortcuts ignored while typing in inputs/textareas/contentEditable.
@@ -687,6 +709,17 @@ Branding (subtle, ATS-safe — solid color text in headings is fine for ATS; the
 - Body, bullets, meta lines, name heading: unchanged (black/grey).
 
 Hardcoded magic numbers in `render-cv.ts` (`after: 80`, `after: 120`, `line: 276`) refactored to reference `SPACING.paragraph_after` / `SPACING.line_115` so future tuning lives in one place. CLAUDE.md DOCX Rendering Rules block updated to match the new sizes.
+
+[9] Graduate page-count fix (2026-04-30, follow-up to the same-day density+branding work). User-reported: a graduate with limited internships rendered at 3 pages, violating §4.4 "Graduate / Junior: 1 to 2 pages, never more than 2." Two layered changes (Option C of the Decision Point):
+
+Renderer (safety net, mild):
+- New `SPACING_GRADUATE` profile in `lib/docx/styles.ts`: identical to `SPACING` except `paragraph_after` 4pt → 3pt (80 → 60 twips) and `bullet_after` 2pt → 1pt (40 → 20 twips). Fonts, line-height, heading rhythm, margins all unchanged. New `getSpacingForSeniority(seniority)` helper returns `SPACING_GRADUATE` for `Graduate`/`Junior` and the canonical `SPACING` for everything else. New `SpacingProfile` type exported alongside.
+- `lib/docx/helpers.ts`: every paragraph builder (`nameHeading`, `contactLine`, `sectionHeading`, `bodyParagraph`, `bullet`, `roleHeader`, `metaLine`) now takes an optional `spacing: SpacingProfile = SPACING` final argument. Default behaviour for any caller that doesn't pass one is unchanged, so the cover letter renderer and any future caller stays on the canonical profile.
+- `lib/docx/render-cv.ts`: signature is now `renderCV(content, seniority)`. The function picks the spacing profile once and threads it through every helper call plus the inline `Paragraph` constructions for Technical Skills, Key Projects technologies, and Leadership/Interests. `inngest/steps/render-and-upload.ts` passes `output.jd_analysis.seniority`.
+
+Prompt (primary lever): §4.4 Graduate / Junior block rewritten as a content budget rather than a content list. Profile defaults to 3 sentences (not 4), Key Projects to 2–3 (not 3–5), bullets per role to 2–3 (cap 4 only for the most relevant role), Technical Skills to 3–4 categories with ≤25 skills total. New "Selection over inclusion" framing makes explicit that the master CV is the archive and the tailored CV is the recruiter's two-minute scan. New §10 self-check item 21 forces the model to mentally render the page count for Graduate/Junior outputs and trim before returning.
+
+What was *not* changed: schema caps in `lib/llm/output-schema.ts` (would trip [7]), font sizes (would risk the 9pt ATS floor), margins, line-height, the §0 advocate posture, or the §7.0/§7.1/§7.3 stop-and-reconsider gate. Trim is by selection of the strongest items, not by gap-acknowledgement or refusal. Cover letter rendering is unaffected (one page already, no density change).
 
 [7] Output-schema cap and superRefine tuning (2026-04-30, `lib/llm/output-schema.ts`):
 - ATS keyword coverage `superRefine` (hard-reject below 60%) **removed entirely**. It conflicted with §0.2 — a weak-fit candidate's CV will have lower direct keyword matching by design, and failing the generation on that ratio means the user gets nothing for their paid attempt. Coverage now reported as a non-blocking warning by `lib/quality/scan.ts` (warns whenever `< 60%`), still surfaced in `request_logs.metadata` for ops visibility but never blocks delivery.

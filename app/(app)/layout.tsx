@@ -1,18 +1,20 @@
-// Authenticated app shell. Topbar with primary nav and sign-out.
-// proxy.ts already gates protected paths; this component just paints
-// chrome around server-rendered children.
+// Authenticated app shell. Topbar uses the design-system classes from
+// globals.css so spacing/typography stay aligned across (app) pages.
+//
+// IA: the Distil wordmark is the only "home" affordance (links to
+// /dashboard); the History link is secondary nav; Settings collapses
+// behind a gear icon (account, master CV, admin, sign-out all live
+// there); "+ New application" is the always-visible primary action.
+// When the user has no master CV, the same button routes to /upload
+// with a context-appropriate label rather than dead-ending on a
+// "you need to upload first" message.
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PlusIcon, SettingsIcon, UploadIcon } from "lucide-react";
 import { AmbientBackground } from "@/components/app/AmbientBackground";
 import { AppShell } from "@/components/app/AppShell";
 import { createClient } from "@/lib/supabase/server";
-
-const NAV = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/history", label: "History" },
-  { href: "/settings", label: "Settings" },
-] as const;
 
 export default async function AppLayout({
   children,
@@ -23,39 +25,53 @@ export default async function AppLayout({
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) redirect("/login");
 
+  const { data: cv } = await supabase
+    .from("master_cvs")
+    .select("id")
+    .eq("user_id", userData.user.id)
+    .is("superseded_at", null)
+    .maybeSingle();
+  const hasCv = Boolean(cv);
+
   return (
     <AppShell>
       <AmbientBackground />
       <div className="relative z-10 flex flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-[56px] shrink-0 items-center justify-between border-b border-border/50 bg-dark/70 px-6 backdrop-blur-md">
-          <Link href="/dashboard" className="flex items-baseline gap-3">
+        <header className="sticky top-0 z-30 flex h-[60px] shrink-0 items-center justify-between border-b border-border/50 bg-dark/70 px-6 backdrop-blur-md">
+          <Link
+            href="/dashboard"
+            className="flex items-baseline gap-3 outline-none focus-visible:opacity-80"
+          >
             <span className="font-serif text-2xl font-light tracking-tight text-text">
               Distil
             </span>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange">
+            <span className="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-orange sm:inline">
               Curiosum.ai
             </span>
           </Link>
-          <nav className="flex items-center gap-1">
-            {NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-dark3 hover:text-text"
-              >
-                {item.label}
-              </Link>
-            ))}
-            <span
-              aria-hidden
-              className="ml-2 hidden text-[10px] text-muted-foreground sm:inline"
+          <nav className="flex items-center gap-2">
+            <Link href="/history" className="btn-ghost">
+              History
+            </Link>
+            <Link
+              href="/settings"
+              aria-label="Settings"
+              title="Settings"
+              className="btn-icon"
             >
-              Press{" "}
-              <kbd className="rounded-sm border border-border bg-dark3 px-1.5 py-0.5 font-mono text-[10px]">
-                ?
-              </kbd>{" "}
-              for shortcuts
-            </span>
+              <SettingsIcon size={16} aria-hidden />
+            </Link>
+            {hasCv ? (
+              <Link href="/application/new" className="btn-primary ml-1">
+                <PlusIcon size={14} aria-hidden />
+                New application
+              </Link>
+            ) : (
+              <Link href="/upload" className="btn-primary ml-1">
+                <UploadIcon size={14} aria-hidden />
+                Upload CV
+              </Link>
+            )}
           </nav>
         </header>
         <main className="flex-1 overflow-y-auto px-6 py-12">

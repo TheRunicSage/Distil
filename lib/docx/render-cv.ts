@@ -26,15 +26,20 @@ import {
   roleHeader,
   sectionHeading,
 } from "./helpers";
-import { FONTS, PAGE, SIZES, SPACING } from "./styles";
+import { FONTS, PAGE, SIZES, getSpacingForSeniority } from "./styles";
 
 type CvContent = ApplicationOutputSuccess["cv_content"];
+type Seniority = ApplicationOutputSuccess["jd_analysis"]["seniority"];
 
-export async function renderCV(content: CvContent): Promise<Buffer> {
+export async function renderCV(
+  content: CvContent,
+  seniority: Seniority,
+): Promise<Buffer> {
+  const spacing = getSpacingForSeniority(seniority);
   const children: Paragraph[] = [];
 
   // 1. Name
-  children.push(nameHeading(content.contact_details.full_name));
+  children.push(nameHeading(content.contact_details.full_name, spacing));
 
   // 2. Two contact lines, second one carries the bottom rule.
   const primaryContact = pipeJoin([
@@ -51,16 +56,18 @@ export async function renderCV(content: CvContent): Promise<Buffer> {
       ? `Availability: ${content.contact_details.availability}`
       : null,
   ]);
-  if (primaryContact) children.push(contactLine(primaryContact, false));
-  if (secondaryContact) children.push(contactLine(secondaryContact, true));
+  if (primaryContact)
+    children.push(contactLine(primaryContact, false, spacing));
+  if (secondaryContact)
+    children.push(contactLine(secondaryContact, true, spacing));
 
   // 3. Profile
-  children.push(sectionHeading("Profile"));
-  children.push(bodyParagraph(content.profile));
+  children.push(sectionHeading("Profile", spacing));
+  children.push(bodyParagraph(content.profile, { spacing }));
 
   // 4. Technical Skills (omit entirely if empty)
   if (content.technical_skills.length > 0) {
-    children.push(sectionHeading("Technical Skills"));
+    children.push(sectionHeading("Technical Skills", spacing));
     for (const group of content.technical_skills) {
       children.push(
         new Paragraph({
@@ -69,8 +76,8 @@ export async function renderCV(content: CvContent): Promise<Buffer> {
             plainRun(group.skills.join(", ")),
           ],
           spacing: {
-            after: SPACING.paragraph_after,
-            line: SPACING.line_115,
+            after: spacing.paragraph_after,
+            line: spacing.line_115,
             lineRule: "auto",
           },
         }),
@@ -79,41 +86,47 @@ export async function renderCV(content: CvContent): Promise<Buffer> {
   }
 
   // 5. Professional Experience
-  children.push(sectionHeading("Professional Experience"));
+  children.push(sectionHeading("Professional Experience", spacing));
   for (const role of content.professional_experience) {
     children.push(
-      roleHeader([
-        new TextRun({
-          text: `${role.role_title}, ${role.company}`,
-          bold: true,
-          font: FONTS.body,
-          size: SIZES.body,
-        }),
-      ]),
+      roleHeader(
+        [
+          new TextRun({
+            text: `${role.role_title}, ${role.company}`,
+            bold: true,
+            font: FONTS.body,
+            size: SIZES.body,
+          }),
+        ],
+        spacing,
+      ),
     );
     const meta = pipeJoin([
       role.location,
       `${role.start_date} to ${role.end_date}`,
     ]);
-    if (meta) children.push(metaLine(meta));
+    if (meta) children.push(metaLine(meta, spacing));
     for (const b of role.bullets) {
-      children.push(bullet(b));
+      children.push(bullet(b, spacing));
     }
   }
 
   // 6. Key Projects (omit entirely if empty)
   if (content.key_projects.length > 0) {
-    children.push(sectionHeading("Key Projects"));
+    children.push(sectionHeading("Key Projects", spacing));
     for (const project of content.key_projects) {
       children.push(
-        roleHeader([
-          plainRun(project.name, { bold: true }),
-          plainRun(" | "),
-          plainRun(project.context, { italic: true }),
-        ]),
+        roleHeader(
+          [
+            plainRun(project.name, { bold: true }),
+            plainRun(" | "),
+            plainRun(project.context, { italic: true }),
+          ],
+          spacing,
+        ),
       );
       for (const b of project.bullets) {
-        children.push(bullet(b));
+        children.push(bullet(b, spacing));
       }
       if (project.technologies.length > 0) {
         children.push(
@@ -125,8 +138,8 @@ export async function renderCV(content: CvContent): Promise<Buffer> {
               }),
             ],
             spacing: {
-              after: SPACING.paragraph_after,
-              line: SPACING.line_115,
+              after: spacing.paragraph_after,
+              line: spacing.line_115,
               lineRule: "auto",
             },
           }),
@@ -136,23 +149,24 @@ export async function renderCV(content: CvContent): Promise<Buffer> {
   }
 
   // 7. Education
-  children.push(sectionHeading("Education"));
+  children.push(sectionHeading("Education", spacing));
   for (const edu of content.education) {
     children.push(
-      roleHeader([
-        plainRun(`${edu.qualification}, ${edu.institution}`, { bold: true }),
-      ]),
+      roleHeader(
+        [plainRun(`${edu.qualification}, ${edu.institution}`, { bold: true })],
+        spacing,
+      ),
     );
     const meta = pipeJoin([edu.location, edu.dates]);
-    if (meta) children.push(metaLine(meta));
+    if (meta) children.push(metaLine(meta, spacing));
     for (const detail of edu.details) {
-      children.push(bullet(detail));
+      children.push(bullet(detail, spacing));
     }
   }
 
   // 8. Leadership and Interests (omit entirely if empty)
   if (content.leadership_and_interests.length > 0) {
-    children.push(sectionHeading("Leadership and Interests"));
+    children.push(sectionHeading("Leadership and Interests", spacing));
     for (const item of content.leadership_and_interests) {
       children.push(
         new Paragraph({
@@ -161,8 +175,8 @@ export async function renderCV(content: CvContent): Promise<Buffer> {
             plainRun(item.description),
           ],
           spacing: {
-            after: SPACING.paragraph_after,
-            line: SPACING.line_115,
+            after: spacing.paragraph_after,
+            line: spacing.line_115,
             lineRule: "auto",
           },
         }),
@@ -171,8 +185,8 @@ export async function renderCV(content: CvContent): Promise<Buffer> {
   }
 
   // 9. Referees
-  children.push(sectionHeading("Referees"));
-  children.push(bodyParagraph(content.referees));
+  children.push(sectionHeading("Referees", spacing));
+  children.push(bodyParagraph(content.referees, { spacing }));
 
   const section: ISectionOptions = {
     properties: {

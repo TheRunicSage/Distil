@@ -1,8 +1,17 @@
-// Dashboard. Landing page after sign-in. Three jobs:
-//   1. Show whether a master CV is on file (and prompt upload if not).
-//   2. Provide the primary "Tailor a new application" CTA.
-//   3. Surface recent applications so the user lands on the next obvious
-//      action (continue, retry, abandon).
+// Dashboard. Single job: show the user where they are and what to do
+// next. Master CV management lives in /settings, not here.
+//
+// Three states:
+//   1. No CV → full-width "upload to get started" card. (The post-login
+//      redirect routes here only if the topbar still got hit; this is a
+//      defensive empty-state.)
+//   2. Has CV, has live work → "In progress" panel + "Recent" list of
+//      terminal-state applications.
+//   3. Has CV, no live work, no history → "Tailor your first
+//      application" CTA.
+//
+// "Live" = queued | paused | running | rendering. "Recent" excludes
+// these so the same row isn't shown twice.
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -22,161 +31,165 @@ const STATUS_TONE: Record<string, string> = {
   error: "bg-danger/15 text-danger border-danger/25",
 };
 
+const LIVE_STATUSES = [
+  "queued",
+  "paused",
+  "running",
+  "rendering",
+] as const;
+
+type AppRow = {
+  id: string;
+  status: string;
+  attempt_number: number;
+  created_at: string;
+  completed_at: string | null;
+};
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleString("en-NZ", {
+    timeZone: "Pacific/Auckland",
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+function StatusPill({ status }: { status: string }) {
+  const tone =
+    STATUS_TONE[status] ?? "bg-dim/15 text-muted-foreground border-border";
+  return (
+    <span className={`status-pill ${tone}`}>{status.replace("_", " ")}</span>
+  );
+}
+
+function ApplicationRow({ app }: { app: AppRow }) {
+  return (
+    <Link href={`/application/${app.id}`} className="surface-row">
+      <span className="font-mono text-xs text-text">{app.id.slice(0, 8)}</span>
+      <span className="text-xs text-muted-foreground">
+        attempt {app.attempt_number}
+      </span>
+      <StatusPill status={app.status} />
+      <span className="text-xs text-muted-foreground">
+        {formatDate(app.created_at)}
+      </span>
+    </Link>
+  );
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) redirect("/login");
 
-  const [cvRes, appsRes] = await Promise.all([
+  const [cvRes, liveRes, recentRes] = await Promise.all([
     supabase
       .from("master_cvs")
-      .select("id, mime_type, file_size_bytes, created_at")
+      .select("id")
       .eq("user_id", userData.user.id)
       .is("superseded_at", null)
       .maybeSingle(),
     supabase
       .from("applications")
       .select("id, status, attempt_number, created_at, completed_at")
+      .in("status", LIVE_STATUSES as unknown as string[])
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("applications")
+      .select("id, status, attempt_number, created_at, completed_at")
       .not("started_at", "is", null)
+      .not("status", "in", `(${LIVE_STATUSES.join(",")})`)
       .order("created_at", { ascending: false })
       .limit(5),
   ]);
 
   const hasCv = Boolean(cvRes.data);
-  const apps = appsRes.data ?? [];
+  const live: AppRow[] = liveRes.data ?? [];
+  const recent: AppRow[] = recentRes.data ?? [];
+  const hasAnyHistory = live.length > 0 || recent.length > 0;
 
   return (
     <div className="space-y-12">
       <header className="text-center">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-orange">
-          Welcome back
-        </p>
-        <h1 className="mt-3 font-serif text-4xl font-light leading-[1.15] tracking-tight text-text">
-          Pick up where you left off.
-        </h1>
+        <p className="eyebrow">Welcome back</p>
+        <h1 className="heading-display mt-3">Pick up where you left off.</h1>
         <p className="mt-3 text-sm text-muted-foreground">
           Your CV, stripped to its sharpest form. ATS ready, recruiter approved.
         </p>
       </header>
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-dark2/60 p-7 backdrop-blur-sm transition-colors hover:border-orange/40">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange">
-            Master CV
+      {!hasCv && (
+        <section className="surface-card text-center">
+          <p className="eyebrow">Get started</p>
+          <h2 className="heading-section mt-3">
+            Upload your master CV first.
+          </h2>
+          <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
+            One PDF or DOCX, up to 3MB. We&apos;ll use it as the source of truth
+            for every tailored application.
           </p>
-          {hasCv ? (
-            <>
-              <p className="mt-4 text-[15px] text-text">
-                On file as{" "}
-                {cvRes.data?.mime_type === "application/pdf" ? "PDF" : "DOCX"} ·{" "}
-                {Math.round((cvRes.data?.file_size_bytes ?? 0) / 1024)} KB
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Uploaded{" "}
-                {new Date(cvRes.data?.created_at ?? "").toLocaleDateString(
-                  "en-NZ",
-                  { timeZone: "Pacific/Auckland" },
-                )}
-                .
-              </p>
-              <Link
-                href="/upload"
-                className="mt-5 inline-block text-sm text-orange transition-colors hover:text-orange-light"
-              >
-                Replace master CV →
-              </Link>
-            </>
-          ) : (
-            <>
-              <p className="mt-4 text-[15px] text-text">
-                No master CV uploaded.
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Upload one PDF or DOCX (≤3MB) to start tailoring.
-              </p>
-              <Link
-                href="/upload"
-                className="mt-5 inline-block rounded-xl bg-orange px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-light"
-              >
-                Upload CV
-              </Link>
-            </>
-          )}
-        </div>
+          <div className="mt-6 flex justify-center">
+            <Link href="/upload" className="btn-primary">
+              Upload CV
+            </Link>
+          </div>
+        </section>
+      )}
 
-        <div className="rounded-2xl border border-border bg-dark2/60 p-7 backdrop-blur-sm transition-colors hover:border-orange/40">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange">
-            New application
+      {hasCv && !hasAnyHistory && (
+        <section className="surface-card text-center">
+          <p className="eyebrow">Ready</p>
+          <h2 className="heading-section mt-3">
+            Tailor your first application.
+          </h2>
+          <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
+            Paste a job description. Get a tailored CV and cover letter, both
+            matched to the role.
           </p>
-          <p className="mt-4 text-[15px] text-text">
-            Paste a job description. Get a tailored CV and cover letter, both matched to the role.
-          </p>
-          {hasCv ? (
-            <Link
-              href="/application/new"
-              className="mt-5 inline-block rounded-xl bg-orange px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-light"
-            >
+          <div className="mt-6 flex justify-center">
+            <Link href="/application/new" className="btn-primary">
               Tailor a new application
             </Link>
-          ) : (
-            <span className="mt-5 inline-block cursor-not-allowed rounded-xl border border-border bg-dark4 px-5 py-2.5 text-sm font-medium text-muted-foreground">
-              Upload a CV first
-            </span>
-          )}
-        </div>
-      </section>
-
-      <section>
-        <div className="mb-4 flex items-baseline justify-between">
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-            Recent
-          </h2>
-          <Link
-            href="/history"
-            className="text-xs text-muted-foreground transition-colors hover:text-text"
-          >
-            View all →
-          </Link>
-        </div>
-        {apps.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-dark2/60 p-12 text-center text-sm text-muted-foreground backdrop-blur-sm">
-            Your tailored applications will show up here.
           </div>
-        ) : (
+        </section>
+      )}
+
+      {hasCv && live.length > 0 && (
+        <section>
+          <div className="mb-4 flex items-baseline justify-between">
+            <h2 className="eyebrow-muted">In progress</h2>
+            <span className="text-meta">
+              {live.length} {live.length === 1 ? "application" : "applications"}
+            </span>
+          </div>
           <ul className="space-y-2">
-            {apps.map((app) => {
-              const tone =
-                STATUS_TONE[app.status] ??
-                "bg-dim/15 text-muted-foreground border-border";
-              return (
-                <li key={app.id}>
-                  <Link
-                    href={`/application/${app.id}`}
-                    className="flex items-center justify-between rounded-xl border border-border bg-dark2/60 px-4 py-3 backdrop-blur-sm transition-colors hover:border-orange/40 hover:bg-dark3/80"
-                  >
-                    <span className="font-mono text-xs text-text">
-                      {app.id.slice(0, 8)}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      attempt {app.attempt_number}
-                    </span>
-                    <span
-                      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.05em] ${tone}`}
-                    >
-                      {app.status}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(app.created_at).toLocaleString("en-NZ", {
-                        timeZone: "Pacific/Auckland",
-                      })}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
+            {live.map((app) => (
+              <li key={app.id}>
+                <ApplicationRow app={app} />
+              </li>
+            ))}
           </ul>
-        )}
-      </section>
+        </section>
+      )}
+
+      {hasCv && recent.length > 0 && (
+        <section>
+          <div className="mb-4 flex items-baseline justify-between">
+            <h2 className="eyebrow-muted">Recent</h2>
+            <Link href="/history" className="text-meta hover:text-text">
+              View all →
+            </Link>
+          </div>
+          <ul className="space-y-2">
+            {recent.map((app) => (
+              <li key={app.id}>
+                <ApplicationRow app={app} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

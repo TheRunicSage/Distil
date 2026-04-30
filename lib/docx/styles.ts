@@ -56,6 +56,54 @@ export const SPACING = {
   line_15: 360,
 } as const;
 
+// Structural type rather than `typeof SPACING`, so alternative profiles
+// (SPACING_GRADUATE, future per-seniority variants) aren't pinned to the
+// literal numbers in the canonical profile.
+export type SpacingProfile = {
+  readonly paragraph_after: number;
+  readonly section_after: number;
+  readonly heading_before: number;
+  readonly heading_after: number;
+  readonly bullet_after: number;
+  readonly bullet_indent: number;
+  readonly line_115: number;
+  readonly line_15: number;
+};
+
+// Graduate / Junior density profile. Same fonts, same line-height,
+// same heading rhythm — only the inter-paragraph and inter-bullet gaps
+// shrink. The §4.4 Graduate page target is "1 to 2 pages, never more
+// than 2", and graduate content (3-5 projects + internships + education
+// detail + skills) tends to overflow at the default density. This is
+// the renderer-side safety net; the system prompt's content budget is
+// the primary lever (see Decision Log [9] 2026-04-30 follow-up).
+export const SPACING_GRADUATE: SpacingProfile = {
+  paragraph_after: 60, // 3pt (was 4pt)
+  section_after: 180,
+  heading_before: 180,
+  heading_after: 60,
+  bullet_after: 20, // 1pt (was 2pt)
+  bullet_indent: 360,
+  line_115: 276,
+  line_15: 360,
+} as const;
+
+type SeniorityLike =
+  | "Graduate"
+  | "Junior"
+  | "Mid"
+  | "Senior"
+  | "Lead"
+  | "Principal";
+
+export function getSpacingForSeniority(
+  seniority: SeniorityLike,
+): SpacingProfile {
+  return seniority === "Graduate" || seniority === "Junior"
+    ? SPACING_GRADUATE
+    : SPACING;
+}
+
 // A4 in twips: 11906 x 16838. 850 twips ≈ 1.5cm = 15mm. Tighter than
 // the original 20mm but still comfortably ATS-safe.
 export const PAGE = {

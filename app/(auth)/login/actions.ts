@@ -29,11 +29,27 @@ export async function signIn(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { error, data: signInData } =
+    await supabase.auth.signInWithPassword(parsed.data);
 
   if (error) {
     // Generic message — never reveal whether the email exists.
     return { error: "Those credentials didn't work. Try again." };
+  }
+
+  // First-session routing: a user with no master CV on file lands on
+  // /upload, since uploading the CV is the only thing they can do
+  // before the rest of the app is meaningful. Returning users with a
+  // CV go to /dashboard as before.
+  const userId = signInData.user?.id;
+  if (userId) {
+    const { data: cv } = await supabase
+      .from("master_cvs")
+      .select("id")
+      .eq("user_id", userId)
+      .is("superseded_at", null)
+      .maybeSingle();
+    if (!cv) redirect("/upload");
   }
 
   redirect("/dashboard");

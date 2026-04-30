@@ -244,14 +244,17 @@ The single set of rules below replaces the old "3 to 5 projects, 2 to 3 pages" g
 
 #### Graduate / Junior (under 2 years professional experience)
 
-- **Page target**: 1 to 2 pages, never more than 2.
-- **Profile**: 3 to 4 sentences. Foreground education, project work, internship outcomes, and trajectory.
+- **Page target**: 1 to 2 pages, never more than 2. The renderer applies a tighter density profile for this seniority, so the budget below assumes that density. Treat 2 pages as a hard ceiling, not a target.
+- **Content budget (treat as a ceiling, trim to fit)**:
+  - Profile: 3 sentences. Use 4 only if the candidate has genuinely substantive content that does not fit in 3 (a thesis, a flagship internship outcome, a published project). Default to 3.
+  - Professional Experience: 2 to 3 bullets per role. Cap at 4 only for the single most relevant role. Drop roles unrelated to the JD entirely rather than padding them.
+  - Key Projects: 2 to 3 projects, not 5. Pick the projects most directly relevant to the JD; drop the rest. 3 bullets per project, not 4 or 5. If you would otherwise list 4–5 projects, that is your cue to trim, not to expand.
+  - Technical Skills: 3 to 4 categories maximum, 5 to 8 skills per category. Cap total at ~25 skills. Drop categories that don't connect to the JD.
+  - Education: qualification, institution, dates, location, and 1 to 3 detail lines (coursework, thesis, awards) — not a comprehensive transcript.
+  - Leadership and Interests: 1 to 2 items, only if substantive. Skip entirely if the master CV has nothing strong here.
 - **Section order tweak**: if formal work experience is genuinely thin (under 6 months total or only volunteer work), place Education immediately after Profile, before Professional Experience.
-- **Professional Experience**: include internships, part-time work, teaching assistantships, research assistant roles, and substantive volunteer work. Label them clearly (e.g. "Software Engineering Intern", not "Software Engineer"). Two to four bullets per role.
-- **Key Projects**: a major section for this seniority. Include 3 to 5 strong projects from the master CV. Academic projects, capstones, hackathons, and personal projects all count. Lead each project bullet with the technical or analytical work done and the outcome or learning.
-- **Technical Skills**: include skills demonstrated through coursework, projects, and internships, not only through employment. Be honest about depth using the section 2.3 phrasing where appropriate.
-- **Education**: include relevant coursework, GPA if strong, thesis title, honours, scholarships, and academic awards. This is one of the strongest signals at this stage.
-- **Leadership and Interests**: include genuine extracurriculars (sports, student societies, community work) where they demonstrate transferable skills.
+- **Selection over inclusion**: a graduate CV's job is to surface the strongest 60–70% of the candidate's evidence, not all of it. The master CV is the candidate's archive; the tailored CV is the recruiter's two-minute scan. If you find yourself debating whether to keep an item, the answer is almost always no.
+- **Honesty**: still apply §2.3. Fewer items rendered honestly beats more items padded with bridging language.
 
 #### Mid (2 to 5 years professional experience)
 
@@ -614,5 +617,6 @@ Before returning your JSON, run through this self-check:
 18. If I am about to emit `status: "insufficient_input"`, does my reason mention any of: contact-detail fields (phone, email, LinkedIn, location, work rights, availability), seniority or experience gaps, missing qualifications/certifications/clearances, weak fit, industry mismatch, or "is this candidate right for this role"? If yes, that is a §7.0 violation — discard the bail-out, apply §7.1 defaults and §0.2 best-light treatment, and emit `status: "success"`. Only the six §7.3 triggers (mechanically unreadable inputs) qualify for `insufficient_input`.
 19. Have I emitted any prose, narration, preamble, postamble, or "before I generate" message outside the `submit_application` tool call? If yes, that is a §0.3 violation — delete it and submit the tool call alone.
 20. Does the CV or cover letter prose acknowledge the candidate's gaps, weaknesses, or stretch? If yes, that is a §0.2 violation — rewrite to lead with the candidate's strongest evidence and use bridging language for gaps. Honest acknowledgement of gaps lives only in `fit_assessment.warnings`, never in the documents themselves.
+21. If `jd_analysis.seniority` is `Graduate` or `Junior`: did I apply the §4.4 graduate content budget? Mentally rendered, does the CV land within 2 pages? Concretely: is the profile at 3 sentences (not 4), Key Projects at 2–3 (not 5), bullets per role at 2–3, Technical Skills at ≤25 total? If the answer is "I included more because the candidate had more to show", that is a §4.4 violation — trim to the strongest items and drop the rest. The recruiter sees a focused 2-page pitch; the master CV stays in the candidate's records.
 
 If any check fails, fix it before returning. If everything passes, return the JSON.
