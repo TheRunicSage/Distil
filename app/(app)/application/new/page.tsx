@@ -23,24 +23,28 @@ export default async function NewApplicationPage() {
   if (!cv) redirect("/upload");
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <header>
+    <div className="space-y-10">
+      <header className="text-center">
         <Link
           href="/dashboard"
-          className="text-xs text-muted-foreground hover:text-text"
+          className="inline-block text-xs text-muted-foreground transition-colors hover:text-text"
         >
           ← Back to Dashboard
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-text">
-          New application
+        <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.18em] text-orange">
+          Step 2 of 2
+        </p>
+        <h1 className="mt-3 font-serif text-4xl font-light leading-[1.15] tracking-tight text-text">
+          Now, the role you&apos;re after.
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          We&apos;ll research the company, calibrate to seniority, and
-          tailor the CV and cover letter.
+        <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
+          Paste the full job description. Include the title, company,
+          and every detail from the listing. We&apos;ll reverse-engineer
+          exactly what they&apos;re looking for.
         </p>
       </header>
 
-      <section className="rounded-lg border border-border bg-dark3 p-6">
+      <section className="rounded-2xl border border-border bg-dark2/60 p-7 backdrop-blur-sm">
         <NewApplicationForm />
       </section>
     </div>

@@ -2,6 +2,7 @@
 // the upload form (client component) for the actual POST.
 
 import { redirect } from "next/navigation";
+import { ProTip } from "@/components/app/ProTip";
 import { UploadForm } from "@/components/upload/UploadForm";
 import { createClient } from "@/lib/supabase/server";
 
@@ -20,18 +21,24 @@ export default async function UploadPage() {
     .maybeSingle();
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
-      <header>
-        <h1 className="text-2xl font-semibold text-text">Master CV</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          One CV on file at a time. Each tailored application snapshots
-          the current version.
+    <div className="space-y-10">
+      <header className="text-center">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-orange">
+          Step 1 of 2
+        </p>
+        <h1 className="mt-3 font-serif text-4xl font-light leading-[1.15] tracking-tight text-text">
+          Start with everything you have.
+        </h1>
+        <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
+          Upload your master CV with all your experience, skills, and
+          accomplishments. Don&apos;t hold back. The more we know, the
+          sharper the result.
         </p>
       </header>
 
       {existing && (
-        <div className="rounded-lg border border-border bg-dark3 p-5">
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+        <div className="rounded-2xl border border-orange/30 bg-[var(--color-orange-subtle)] p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange">
             Currently on file
           </p>
           <p className="mt-2 text-sm text-text">
@@ -43,19 +50,23 @@ export default async function UploadPage() {
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
             Replacing the CV won&apos;t affect applications already in
-            the queue — they keep using the snapshot from when they
-            were submitted.
+            the queue. They keep using the snapshot from when they were
+            submitted.
           </p>
         </div>
       )}
 
-      <section className="rounded-lg border border-border bg-dark3 p-6">
-        <h2 className="text-base font-semibold text-text">
-          {existing ? "Replace master CV" : "Upload master CV"}
+      <section className="rounded-2xl border border-border bg-dark2/60 p-7 backdrop-blur-sm">
+        <h2 className="font-serif text-xl font-normal text-text">
+          {existing ? "Replace master CV" : "Upload your master CV"}
         </h2>
-        <div className="mt-4">
+        <div className="mt-5">
           <UploadForm />
         </div>
+        <ProTip className="mt-6">
+          Include every project, certification, and skill you can think
+          of. We&apos;ll pick the ones that matter for each role.
+        </ProTip>
       </section>
     </div>
   );
