@@ -63,6 +63,27 @@ export function getSizesForSeniority(_seniority: SeniorityLike): SizeProfile {
   return SIZES_DENSE;
 }
 
+// Cover letter size profile (2026-05-01 user feedback). The cover
+// letter is a one-page document with a generous header and four
+// body paragraphs, so it can carry slightly larger body type than
+// the CV while keeping the contact-line meta tight.
+//
+// Header: name 15pt and contact_line 9pt match the CV's dense
+// profile so a candidate's name reads at the same visual weight in
+// both documents (previously the name was at body size, ~10.5pt,
+// which felt small next to the CV's 15pt name heading).
+//
+// Body: 11pt is one preset above the CV's 10pt — gives the
+// four-paragraph flow more breathing room without forcing a
+// second page.
+export const SIZES_COVER_LETTER: SizeProfile = {
+  body: 22, // 11pt
+  small: 18, // 9pt — meta only (sender contact line)
+  contact_line: 18, // 9pt — matches CV
+  section_heading: 22, // unused by cover letter; kept for type completeness
+  name_heading: 30, // 15pt — matches CV
+} as const;
+
 // Curiosum brand orange (#E85A0E) drives the visual signature: section
 // headings and the contact rule. brand_orange_dim is a paler tint for
 // the section-heading bottom rule so the orange line doesn't fight the

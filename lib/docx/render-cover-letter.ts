@@ -3,6 +3,11 @@
 // arrives already-resolved here; the inject-date Inngest step replaces
 // the LLM's `{{TODAY}}` placeholder upstream. The signoff string carries
 // embedded `\n` separators which we split into discrete paragraphs.
+//
+// Sizes use SIZES_COVER_LETTER (15pt name, 9pt contact line, 11pt body)
+// so the header reads at the same visual weight as the CV's header
+// while the body carries one preset above the CV's 10pt for breathing
+// room on a one-page document.
 
 import {
   AlignmentType,
@@ -15,28 +20,30 @@ import type { ApplicationOutputSuccess } from "@/lib/llm/output-schema";
 import {
   bodyParagraph,
   contactLine,
+  nameHeading,
   pipeJoin,
   plainRun,
 } from "./helpers";
-import { FONTS, PAGE, SIZES, SPACING } from "./styles";
+import {
+  FONTS,
+  PAGE,
+  SIZES_COVER_LETTER,
+  SPACING,
+} from "./styles";
 
 type CoverLetterContent = ApplicationOutputSuccess["cover_letter_content"];
+
+const SIZES = SIZES_COVER_LETTER;
 
 export async function renderCoverLetter(
   content: CoverLetterContent,
 ): Promise<Buffer> {
   const children: Paragraph[] = [];
 
-  // 1. Sender block: name (bold), then phone | email | linkedin | location.
-  // The contact line carries the brand-orange bottom rule via the shared
-  // contactLine helper, mirroring the CV's contact-block treatment so the
-  // two documents share a visual signature.
-  children.push(
-    new Paragraph({
-      children: [plainRun(content.header.full_name, { bold: true })],
-      spacing: { after: 0, line: SPACING.line_115, lineRule: "auto" },
-    }),
-  );
+  // 1. Sender block: name as a heading (matches the CV's name visual
+  // weight), then phone | email | linkedin | location with the brand-
+  // orange bottom rule via the shared contactLine helper.
+  children.push(nameHeading(content.header.full_name, SPACING, SIZES));
   const senderContact = pipeJoin([
     content.header.phone,
     content.header.email,
@@ -44,13 +51,13 @@ export async function renderCoverLetter(
     content.header.location,
   ]);
   if (senderContact) {
-    children.push(contactLine(senderContact, true));
+    children.push(contactLine(senderContact, true, SPACING, SIZES));
   }
 
   // 2. Date — already resolved server-side (Pacific/Auckland today).
   children.push(
     new Paragraph({
-      children: [plainRun(content.header.date)],
+      children: [plainRun(content.header.date, { sizes: SIZES })],
       spacing: {
         after: SPACING.section_after,
         line: SPACING.line_115,
@@ -73,7 +80,7 @@ export async function renderCoverLetter(
     const isLast = i === recipientLines.length - 1;
     children.push(
       new Paragraph({
-        children: [plainRun(line)],
+        children: [plainRun(line, { sizes: SIZES })],
         spacing: {
           after: isLast ? SPACING.section_after : 0,
           line: SPACING.line_115,
@@ -86,7 +93,7 @@ export async function renderCoverLetter(
   // 4. Salutation
   children.push(
     new Paragraph({
-      children: [plainRun(content.salutation)],
+      children: [plainRun(content.salutation, { sizes: SIZES })],
       spacing: {
         after: SPACING.section_after,
         line: SPACING.line_115,
@@ -98,7 +105,12 @@ export async function renderCoverLetter(
   // 5. Body paragraphs (locked at 4 by Zod). Left-aligned, not justified
   // — recruiters in NZ expect ragged-right body copy in cover letters.
   for (const para of content.paragraphs) {
-    children.push(bodyParagraph(para, { afterTwips: SPACING.section_after }));
+    children.push(
+      bodyParagraph(para, {
+        afterTwips: SPACING.section_after,
+        sizes: SIZES,
+      }),
+    );
   }
 
   // 6. Sign-off. The string contains "\n"; split into one paragraph per
@@ -107,7 +119,7 @@ export async function renderCoverLetter(
   for (const line of content.signoff.split("\n")) {
     children.push(
       new Paragraph({
-        children: [plainRun(line)],
+        children: [plainRun(line, { sizes: SIZES })],
         alignment: AlignmentType.LEFT,
         spacing: { after: 0, line: SPACING.line_115, lineRule: "auto" },
       }),

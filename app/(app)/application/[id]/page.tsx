@@ -96,12 +96,9 @@ export default async function ApplicationPage({ params }: RouteCtx) {
           >
             {app.status}
           </span>
-          <span className="text-xs text-muted-foreground">
-            attempt {app.attempt_number}
-          </span>
           {app.parent_application_id && (
             <span className="text-xs text-muted-foreground">
-              · retry of {app.parent_application_id.slice(0, 8)}
+              retry of {app.parent_application_id.slice(0, 8)}
             </span>
           )}
         </div>
@@ -291,7 +288,7 @@ function SuccessView({
         </a>
         <a
           href={`/api/applications/${applicationId}/download/cover_letter`}
-          className="btn-secondary"
+          className="btn-primary"
         >
           Download cover letter
         </a>
@@ -305,23 +302,25 @@ function SuccessView({
         )}
       </section>
 
-      <details className="rounded-2xl border border-border bg-dark2/60 p-2 backdrop-blur-sm" open>
-        <summary className="cursor-pointer px-4 py-2 eyebrow">
-          CV preview
-        </summary>
-        <div className="p-4">
-          <CvPreview content={success.cv_content} />
+      {/* Side-by-side previews. The (app) layout caps content at 720px;
+          this section breaks out to ~viewport width via a 50vw negative-
+          margin trick so the CV and cover letter sit next to each other
+          on wide screens. Stacks vertically below 1024px. Always-open —
+          previously each was inside a <details> the user had to expand. */}
+      <section className="relative left-1/2 right-1/2 -mx-[50vw] w-screen px-6">
+        <div className="mx-auto max-w-[1280px]">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="surface-card">
+              <p className="eyebrow mb-4">CV preview</p>
+              <CvPreview content={success.cv_content} />
+            </div>
+            <div className="surface-card">
+              <p className="eyebrow mb-4">Cover letter preview</p>
+              <CoverLetterPreview content={success.cover_letter_content} />
+            </div>
+          </div>
         </div>
-      </details>
-
-      <details className="rounded-2xl border border-border bg-dark2/60 p-2 backdrop-blur-sm">
-        <summary className="cursor-pointer px-4 py-2 eyebrow">
-          Cover letter preview
-        </summary>
-        <div className="p-4">
-          <CoverLetterPreview content={success.cover_letter_content} />
-        </div>
-      </details>
+      </section>
     </div>
   );
 }

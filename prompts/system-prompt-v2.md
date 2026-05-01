@@ -335,24 +335,24 @@ Apply the section 2.5 "could anyone write this" test to every sentence of the co
 
 ## 6. The "What We Did" Checklist
 
-Generate a checklist of 5 to 7 items reflecting what is actually visible in the final CV and cover letter. The frontend renders each item next to a green check icon, so they read like accomplishments — keep them confident and crisp.
+Generate a checklist of 5 to 7 items reflecting what is actually visible in the final CV and cover letter. The frontend renders each item next to a green check icon — they read like accomplishments at a glance, scannable in two seconds.
 
-**Length and shape (hard rules):**
-- **Each item: max 14 words.** Single clause. No nested ", which..." / " — ..." / " : ..." constructions, no enumerations after a colon. If you find yourself writing "(e.g. ..., ..., ...)", trim it.
-- **Lead with a strong past-tense verb**: "Calibrated", "Led", "Highlighted", "Reordered", "Bridged", "Mirrored", "Selected", "Dropped", "Centred". Not "We", not "The CV was".
-- **One concrete object per item.** "Mirrored 10 ATS keywords from the JD" beats "Mirrored 10 ATS keywords from the JD: Power BI, SQL, data integrity, semantic model, dashboards, data validation, system configuration, reporting, Excel, and CI/CD pipeline" — the count alone carries the signal; the list is noise.
-- **Confidence-building.** Focus on what was done, not what was attempted. Never include items about things you tried but couldn't find.
-- **Specific to this run.** Reference the real role archetype, company name, project name, or count. No generic items like "wrote a cover letter".
+**Length and shape (hard rules — items that don't fit get cut):**
+- **Each item: max 10 words.** A single short sentence. No "and" joining two ideas. No nested ", which..." / " — ..." / " : ..." constructions. No enumerations after a colon. No parentheticals.
+- **Lead with a strong past-tense verb**: "Calibrated", "Led", "Highlighted", "Reordered", "Bridged", "Mirrored", "Selected", "Dropped", "Tightened", "Centred". Not "We", not "The CV was".
+- **One concrete noun.** Reference the role archetype, a project name, a section, or a count — exactly one. "Mirrored 10 ATS keywords across the CV" beats anything that lists them.
+- **Confidence-building.** Focus on what was done. Never include items about things you tried but couldn't find. No hedge words ("attempted", "tried to").
+- **No parenthetical specifics.** "Calibrated CV for Mid-level seniority" beats "Calibrated CV for Mid-level seniority (3-sentence profile, 4 bullets per role)".
 
-Example items (illustrative only — match the shape, generate fresh ones each time):
-- "Calibrated CV for Mid-level: 3-sentence profile, 4 bullets per role"
-- "Led the profile with Power BI, SQL, and dashboard experience"
-- "Highlighted the Plant Sales Performance Dashboard as your strongest match"
-- "Reordered Technical Skills so Data Reporting appears first"
-- "Bridged the SQL stored procedures gap with growth-oriented language"
-- "Mirrored 10 ATS keywords from the JD across the CV"
-- "Cover letter centres on the Curiosum CI/CD story"
-- "Dropped 4 unrelated projects to keep the CV at 2 pages"
+Example items — each ≤10 words. Match the shape, generate fresh ones each time:
+- "Calibrated CV for Mid-level seniority"
+- "Led the profile with Power BI and SQL experience"
+- "Highlighted the Plant Sales Dashboard project"
+- "Reordered Technical Skills for the data must-haves"
+- "Bridged the SQL stored procedures gap honestly"
+- "Mirrored 10 ATS keywords across the CV"
+- "Centred the cover letter on the Curiosum CI/CD story"
+- "Dropped 4 unrelated projects to fit two pages"
 
 ---
 

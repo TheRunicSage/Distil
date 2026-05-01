@@ -698,6 +698,24 @@ What was not changed: AppShell (toast provider + keyboard shortcuts intact, incl
 
 [18] `insufficient_input_reason` Zod cap raised from 800 → 2000 chars in `lib/llm/output-schema.ts`. An over-cautious model emitted a long enumeration of contact-detail concerns that overflowed 800 chars and failed `validate-output` as `llm_invalid_output` — masking the real "model bailed when it shouldn't" signal. The reason field is rendered as a paragraph to the user; verbose-but-readable is fine, opaque is not.
 
+[18] Output-page polish + cover letter sizing (2026-05-01). User pass on the success-view UX:
+
+* "What we did" cap tightened. §6 of `prompts/system-prompt-v2.md` now requires each item to be a single short sentence at ≤10 words (was ≤14). Examples cut accordingly. Schema cap at 500 chars unchanged — prompt rule does the bound. Reason: "scannable in two seconds" was the intent and 14 words was still letting the model emit nested clauses.
+* "Attempt N" line removed from the header block on `app/(app)/application/[id]/page.tsx`. It carried no signal for fresh generations (always `attempt 1`) and the chain disclosure on `/dashboard` and `/history` already covers retries via `parent_application_id`. The "retry of …" inline link stays since it's only rendered when there *is* a parent.
+* "Download cover letter" button promoted from `.btn-secondary` → `.btn-primary`. The two outputs are equal-rank deliverables; rendering one as primary and the other as secondary undersold the cover letter.
+* CV + cover letter previews always-open and side-by-side. Used to live under separate `<details>` (CV open by default, cover letter collapsed). New layout drops both `<details>`, wraps the previews in a 2-col grid (`grid-cols-1 lg:grid-cols-2`), and breaks out of the (app) layout's `max-w-[720px]` constraint via the `relative left-1/2 right-1/2 -mx-[50vw] w-screen` viewport-breakout pattern so the two columns get real estate to render at. Stacks vertically below `lg`. Each preview wrapped in a `.surface-card` with an eyebrow label.
+
+Cover letter sizing (`lib/docx/render-cover-letter.ts` + `lib/docx/styles.ts`):
+
+* New `SIZES_COVER_LETTER` profile in `styles.ts`:
+    body 22 (11pt) — one preset above the CV's 10pt
+    small / contact_line 18 (9pt) — matches the CV's dense profile
+    name_heading 30 (15pt) — matches the CV's dense profile
+* Cover letter renderer now uses `nameHeading()` for the candidate's name (was bespoke bold body text at ~10.5pt). Visual weight finally matches the CV's name heading.
+* All body / recipient / salutation / paragraph / signoff calls thread `SIZES_COVER_LETTER` explicitly. Document `default.document.run.size` follows. SPACING stays canonical (4pt paragraph_after) — bigger 11pt body fits naturally without spacing tweaks.
+
+What was *not* changed: cover letter content paragraphs (still locked at 4 by Zod), CV renderer (uses dense profile per [9]), the schema caps, the §0 advocate posture, line-height (1.15).
+
 [14] Light-mode cascade fix + warm palette (2026-05-01, follow-up to the same-day theme-toggle work). The previous turn shipped a `:root` block that redefined the brand tokens (`--color-dark`, `--color-dark2`, etc.) to light values. Bug: that block's selector specificity was 0,0,1 and source-order-tied with the @theme-emitted `:root` rule, so the light values won unconditionally — including in dark mode, which meant `--color-dark` resolved to `#fbfaf6` (white) and the whole dark theme rendered with white surfaces.
 
 Fix: the light-mode brand-token redefinitions moved to `:root:not(.dark)` (specificity 0,1,1, only matches when html lacks `.dark`). @theme dark defaults now win in dark mode; the new selector wins in light mode. The previous shadcn semantic tokens in `:root` are unchanged — they don't conflict because they target different variable names.
