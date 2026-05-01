@@ -1,11 +1,21 @@
 "use client";
 
-// Site-wide ambient dot field. Sits fixed behind content (z-1, above
-// AmbientBackground blobs at z-0, below the z-10 content layer). Dots
-// at rest are nearly invisible; within ~150px of the cursor they
-// brighten and push away in the cursor-to-dot direction. The
-// interaction is gentle — the system reads as alive but never as a
-// game element.
+// Site-wide ambient dot field with a cushioned cursor halo. Sits fixed
+// behind content (z-1, above AmbientBackground blobs at z-0, below the
+// z-10 content layer).
+//
+// Behaviour (2026-05-01 redesign):
+//   - Dots at rest are softly visible (REST_OPACITY = 0.22) so the grid
+//     reads as part of the surface, not a "did the page even load" trick.
+//   - Within RANGE_PX of the cursor, dots brighten, grow slightly, and
+//     push away. Falloff is smoothstep (cubic ease) rather than linear,
+//     so the influence eases in gently and tapers off at the edge —
+//     the "cushioned" feel.
+//   - Dot displacement and opacity lerp toward target each frame
+//     (LERP_FACTOR = 0.18), so dots ease back to rest after the cursor
+//     leaves rather than snapping.
+//   - A soft orange cursor halo (radial-gradient div) follows the mouse
+//     with the same lerp easing — the visible centre of the field.
 //
 // Self-contained: owns its RAF, mousemove listener, and matchMedia
 // gates. No dependency on the landing-page MotionRoot, so this
@@ -15,20 +25,26 @@
 // Performance budget:
 //   - One mousemove listener (RAF-throttled)
 //   - One requestAnimationFrame loop
-//   - DOT_CAP DOM writes per frame max (~300)
+//   - DOT_CAP DOM writes per frame (~360); cushioned animation means
+//     every dot is touched every frame, but at 360 circles that's well
+//     within budget on any modern desktop.
 //   - Auto-disabled on touch / prefers-reduced-motion / viewport <1024px
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const CELL_PX = 80;
-const DOT_R = 1.5;
-const REST_OPACITY = 0.14;
-const ACTIVE_OPACITY = 0.55;
-const RANGE_PX = 150;
-const MAX_PUSH_PX = 14;
-const DOT_CAP = 360;
+const DOT_R = 1.7;
+const REST_OPACITY = 0.22;
+const ACTIVE_OPACITY = 0.7;
+const RANGE_PX = 220;
+const MAX_PUSH_PX = 18;
+const MAX_GROW = 1.6; // active dots scale up to 1.6x rest size
+const LERP_FACTOR = 0.18; // cushion factor — smaller = softer return
+const HALO_SIZE_PX = 360; // soft glow that follows the cursor
+const DOT_CAP = 400;
 
 type Dot = { cx: number; cy: number };
+type DotState = { ox: number; oy: number; opacity: number; scale: number };
 
 function buildDots(width: number, height: number): Dot[] {
   if (width <= 0 || height <= 0) return [];
@@ -49,13 +65,25 @@ function buildDots(width: number, height: number): Dot[] {
   return dots;
 }
 
+// smoothstep — cubic ease curve, 0..1 → 0..1 with eased shoulders.
+// Gives the proximity falloff a cushioned feel rather than a linear ramp.
+function smoothstep(t: number): number {
+  return t * t * (3 - 2 * t);
+}
+
 export function MagneticDots() {
   const [enabled, setEnabled] = useState(false);
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
   const dotRefs = useRef<(SVGCircleElement | null)[]>([]);
-  const mouseRef = useRef<{ x: number; y: number }>({ x: -10000, y: -10000 });
+  const dotStateRef = useRef<DotState[]>([]);
+  const mouseRef = useRef<{ x: number; y: number; active: boolean }>({
+    x: -10000,
+    y: -10000,
+    active: false,
+  });
+  const haloPosRef = useRef<{ x: number; y: number }>({ x: -10000, y: -10000 });
+  const haloRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
-  const lastTouchedRef = useRef<Set<number>>(new Set());
 
   // Gate motion on viewport width + reduced-motion. Touch devices fall
   // back to the static rest state — no cursor proximity, but the dots
@@ -78,9 +106,7 @@ export function MagneticDots() {
     };
   }, []);
 
-  // Keep the dot grid sized to the viewport. Updates on resize; uses
-  // window dimensions (not container) since the SVG is fixed-position
-  // covering the viewport.
+  // Keep the dot grid sized to the viewport.
   useEffect(() => {
     function measure() {
       setSize({ w: window.innerWidth, h: window.innerHeight });
@@ -92,60 +118,93 @@ export function MagneticDots() {
 
   const dots = useMemo(() => buildDots(size.w, size.h), [size.w, size.h]);
 
-  // Trim stale refs when the grid shrinks.
+  // Trim stale refs / states when the grid shrinks.
   useEffect(() => {
     dotRefs.current = dotRefs.current.slice(0, dots.length);
+    dotStateRef.current = dotStateRef.current.slice(0, dots.length);
   }, [dots.length]);
 
   useEffect(() => {
     if (!enabled) return;
 
     function onMouseMove(e: MouseEvent) {
-      mouseRef.current = { x: e.clientX, y: e.clientY };
+      mouseRef.current = { x: e.clientX, y: e.clientY, active: true };
+    }
+    function onMouseLeave() {
+      mouseRef.current = { x: -10000, y: -10000, active: false };
     }
 
     function tick() {
-      const { x: mx, y: my } = mouseRef.current;
+      const { x: mx, y: my, active } = mouseRef.current;
       const refs = dotRefs.current;
-      const touched = lastTouchedRef.current;
-      const newTouched = new Set<number>();
+      const states = dotStateRef.current;
+
+      // Lerp the halo toward the mouse — same cushioning as the dots,
+      // so the visible halo eases into place rather than snapping.
+      haloPosRef.current.x +=
+        (mx - haloPosRef.current.x) * LERP_FACTOR;
+      haloPosRef.current.y +=
+        (my - haloPosRef.current.y) * LERP_FACTOR;
+      if (haloRef.current) {
+        const hx = haloPosRef.current.x - HALO_SIZE_PX / 2;
+        const hy = haloPosRef.current.y - HALO_SIZE_PX / 2;
+        haloRef.current.style.transform = `translate3d(${hx.toFixed(
+          1,
+        )}px, ${hy.toFixed(1)}px, 0)`;
+        haloRef.current.style.opacity = active ? "1" : "0";
+      }
 
       for (let i = 0; i < refs.length; i++) {
         const el = refs[i];
         const dot = dots[i];
         if (!el || !dot) continue;
-        const dx = mx - dot.cx;
-        const dy = my - dot.cy;
-        const dist = Math.hypot(dx, dy);
-        if (dist > RANGE_PX) continue;
-        const factor = 1 - dist / RANGE_PX;
-        const len = dist || 1;
-        // Push away (negate the direction-to-cursor vector).
-        const ox = -(dx / len) * MAX_PUSH_PX * factor;
-        const oy = -(dy / len) * MAX_PUSH_PX * factor;
-        el.style.transform = `translate(${ox}px, ${oy}px)`;
-        el.style.opacity = String(REST_OPACITY + (ACTIVE_OPACITY - REST_OPACITY) * factor);
-        newTouched.add(i);
-      }
 
-      // Reset any dots that were animated last frame but are now out of
-      // range — keeps the rest state genuinely at rest, no stuck offsets.
-      for (const i of touched) {
-        if (newTouched.has(i)) continue;
-        const el = refs[i];
-        if (!el) continue;
-        el.style.transform = "";
-        el.style.opacity = String(REST_OPACITY);
+        let targetOx = 0;
+        let targetOy = 0;
+        let targetOp = REST_OPACITY;
+        let targetScale = 1;
+
+        if (active) {
+          const dx = mx - dot.cx;
+          const dy = my - dot.cy;
+          const dist = Math.hypot(dx, dy);
+          if (dist <= RANGE_PX) {
+            const t = 1 - dist / RANGE_PX;
+            const factor = smoothstep(t);
+            const len = dist || 1;
+            targetOx = -(dx / len) * MAX_PUSH_PX * factor;
+            targetOy = -(dy / len) * MAX_PUSH_PX * factor;
+            targetOp =
+              REST_OPACITY + (ACTIVE_OPACITY - REST_OPACITY) * factor;
+            targetScale = 1 + (MAX_GROW - 1) * factor;
+          }
+        }
+
+        let s = states[i];
+        if (!s) {
+          s = { ox: 0, oy: 0, opacity: REST_OPACITY, scale: 1 };
+          states[i] = s;
+        }
+        s.ox += (targetOx - s.ox) * LERP_FACTOR;
+        s.oy += (targetOy - s.oy) * LERP_FACTOR;
+        s.opacity += (targetOp - s.opacity) * LERP_FACTOR;
+        s.scale += (targetScale - s.scale) * LERP_FACTOR;
+
+        el.style.transform = `translate(${s.ox.toFixed(
+          2,
+        )}px, ${s.oy.toFixed(2)}px) scale(${s.scale.toFixed(3)})`;
+        el.style.opacity = s.opacity.toFixed(3);
       }
-      lastTouchedRef.current = newTouched;
 
       rafRef.current = requestAnimationFrame(tick);
     }
 
     window.addEventListener("mousemove", onMouseMove, { passive: true });
+    document.addEventListener("mouseleave", onMouseLeave);
     rafRef.current = requestAnimationFrame(tick);
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseleave", onMouseLeave);
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
@@ -157,42 +216,67 @@ export function MagneticDots() {
           el.style.opacity = String(REST_OPACITY);
         }
       }
-      lastTouchedRef.current.clear();
+      dotStateRef.current = [];
+      if (haloRef.current) haloRef.current.style.opacity = "0";
     };
   }, [enabled, dots]);
 
   if (size.w === 0 || size.h === 0) return null;
 
   return (
-    <svg
-      aria-hidden
-      width={size.w}
-      height={size.h}
-      viewBox={`0 0 ${size.w} ${size.h}`}
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
-        pointerEvents: "none",
-        zIndex: 1,
-      }}
-    >
-      {dots.map((dot, i) => (
-        <circle
-          key={i}
-          ref={(el) => {
-            dotRefs.current[i] = el;
-          }}
-          cx={dot.cx}
-          cy={dot.cy}
-          r={DOT_R}
-          fill="var(--color-orange)"
-          opacity={REST_OPACITY}
-          style={{ transition: "opacity 0.4s ease-out" }}
-        />
-      ))}
-    </svg>
+    <>
+      {/* Soft cursor halo — the visible centre of the field. Renders as
+          a radial-gradient that fades to transparent. transform-only
+          updates each frame keep it on the GPU compositor. */}
+      <div
+        ref={haloRef}
+        aria-hidden
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: HALO_SIZE_PX,
+          height: HALO_SIZE_PX,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(circle, var(--color-orange-glow) 0%, var(--color-orange-subtle) 35%, transparent 70%)",
+          opacity: 0,
+          transition: "opacity 0.3s ease-out",
+          mixBlendMode: "screen",
+          willChange: "transform, opacity",
+          zIndex: 1,
+        }}
+      />
+      <svg
+        aria-hidden
+        width={size.w}
+        height={size.h}
+        viewBox={`0 0 ${size.w} ${size.h}`}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          pointerEvents: "none",
+          zIndex: 1,
+        }}
+      >
+        {dots.map((dot, i) => (
+          <circle
+            key={i}
+            ref={(el) => {
+              dotRefs.current[i] = el;
+            }}
+            cx={dot.cx}
+            cy={dot.cy}
+            r={DOT_R}
+            fill="var(--color-orange)"
+            opacity={REST_OPACITY}
+            style={{ transformOrigin: `${dot.cx}px ${dot.cy}px` }}
+          />
+        ))}
+      </svg>
+    </>
   );
 }

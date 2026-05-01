@@ -208,6 +208,8 @@ function SuccessView({
   const fit = success.fit_assessment;
   const salary = success.salary_band;
   const fitTone = FIT_TONE[fit.score];
+  const firstName =
+    success.cv_content.contact_details.full_name.trim().split(/\s+/)[0] ?? "";
 
   return (
     <div className="space-y-8">
@@ -305,6 +307,24 @@ function SuccessView({
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Warm sign-off. Sits at the very bottom of the success view; first
+          name is extracted from contact_details.full_name. Tone matches the
+          NZ register of the cover letter (Kia ora / Nga mihi) — explicit
+          "good luck" because the user expects to see it as a closing line. */}
+      <section className="pt-6 text-center">
+        <p className="font-serif text-2xl font-light leading-snug text-text sm:text-3xl">
+          {firstName
+            ? `Good luck with your application, ${firstName}.`
+            : "Good luck with your application."}
+        </p>
+        <p className="mt-3 font-serif text-base italic text-orange sm:text-lg">
+          Kia kaha — you've got this.
+        </p>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Send it through and back yourself.
+        </p>
       </section>
     </div>
   );
