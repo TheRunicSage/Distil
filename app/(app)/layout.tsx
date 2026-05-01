@@ -39,20 +39,17 @@ export default async function AppLayout({
       <AmbientBackground />
       <div className="relative z-10 flex flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-[60px] shrink-0 items-center justify-between border-b border-border/50 bg-dark/70 px-6 backdrop-blur-md">
-          <div className="flex items-center gap-2">
-            <Link
-              href="/dashboard"
-              className="flex items-baseline gap-3 outline-none focus-visible:opacity-80"
-            >
-              <span className="font-serif text-2xl font-light tracking-tight text-text">
-                Distil
-              </span>
-              <span className="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-orange sm:inline">
-                Curiosum.ai
-              </span>
-            </Link>
-            <ThemeToggle />
-          </div>
+          <Link
+            href="/dashboard"
+            className="flex items-baseline gap-3 outline-none focus-visible:opacity-80"
+          >
+            <span className="font-serif text-2xl font-light tracking-tight text-text">
+              Distil
+            </span>
+            <span className="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-orange sm:inline">
+              Curiosum.ai
+            </span>
+          </Link>
           <nav className="flex items-center gap-2">
             {hasCv ? (
               <Link href="/application/new" className="btn-primary">
@@ -68,6 +65,7 @@ export default async function AppLayout({
             <Link href="/history" className="btn-ghost">
               History
             </Link>
+            <ThemeToggle />
             <Link
               href="/settings"
               aria-label="Settings"
