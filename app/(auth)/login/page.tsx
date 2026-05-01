@@ -5,6 +5,7 @@
 // version per step 6. Generic error message (no user enumeration).
 
 import { useActionState } from "react";
+import { MagneticDots } from "@/components/app/MagneticDots";
 import { signIn, type SignInResult } from "./actions";
 
 const initialState: SignInResult = undefined;
@@ -16,6 +17,7 @@ export default function LoginPage() {
     <main className="relative flex flex-1 items-center justify-center px-6 py-16">
       <div className="ambient-blob ambient-blob-orange" aria-hidden />
       <div className="ambient-blob ambient-blob-violet" aria-hidden />
+      <MagneticDots />
       <div className="relative z-10 w-full max-w-md">
         <header className="mb-12 text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange">

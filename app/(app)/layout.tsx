@@ -14,6 +14,7 @@ import { redirect } from "next/navigation";
 import { PlusIcon, SettingsIcon, UploadIcon } from "lucide-react";
 import { AmbientBackground } from "@/components/app/AmbientBackground";
 import { AppShell } from "@/components/app/AppShell";
+import { MagneticDots } from "@/components/app/MagneticDots";
 import { ThemeToggle } from "@/components/app/ThemeToggle";
 import { createClient } from "@/lib/supabase/server";
 
@@ -37,6 +38,7 @@ export default async function AppLayout({
   return (
     <AppShell>
       <AmbientBackground />
+      <MagneticDots />
       <div className="relative z-10 flex flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-[60px] shrink-0 items-center justify-between border-b border-border/50 bg-dark/70 px-6 backdrop-blur-md">
           <Link
