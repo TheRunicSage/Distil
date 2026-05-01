@@ -4,6 +4,7 @@
 
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/service";
+import { userPillLabel, userPillTone } from "@/lib/admin/user-pill";
 
 export const dynamic = "force-dynamic";
 
@@ -211,8 +212,12 @@ export default async function AdminUsagePage({
                   <td className="whitespace-nowrap px-3 py-3 font-mono text-xs">
                     {row.id.slice(0, 8)}
                   </td>
-                  <td className="hidden whitespace-nowrap px-3 py-3 font-mono text-xs text-muted-foreground lg:table-cell">
-                    {row.user_id ? row.user_id.slice(0, 8) : "—"}
+                  <td className="hidden whitespace-nowrap px-3 py-3 lg:table-cell">
+                    <span
+                      className={`inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold ${userPillTone(row.user_id)}`}
+                    >
+                      {userPillLabel(row.user_id)}
+                    </span>
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
                     <span

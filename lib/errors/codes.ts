@@ -90,7 +90,7 @@ export const ERROR_CODES = {
     http_status: 409,
     category: "conflict",
     user_message:
-      "You already have 3 applications in progress. Wait for one to finish before submitting another.",
+      "An application is already generating. Wait for it to finish before submitting another.",
     client_retryable: false,
   },
   idempotency_key_conflict: {

@@ -5,6 +5,7 @@
 // rows the admin actually wants to inspect.
 
 import { createServiceClient } from "@/lib/supabase/service";
+import { userPillLabel, userPillTone } from "@/lib/admin/user-pill";
 
 export const dynamic = "force-dynamic";
 
@@ -66,11 +67,17 @@ export default async function AdminLogsPage() {
                 className="border-t border-border first:border-t-0"
               >
                 <details className="group">
-                  <summary className="grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 px-4 py-2.5 text-xs transition-colors hover:bg-dark4">
+                  <summary className="grid cursor-pointer grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center gap-3 px-4 py-2.5 text-xs transition-colors hover:bg-dark4">
                     <span
                       className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.05em] ${tone}`}
                     >
                       {row.source.replace("_", " ")}
+                    </span>
+                    <span
+                      className={`hidden items-center rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold sm:inline-flex ${userPillTone(row.user_id)}`}
+                      title={row.user_id ? `user ${row.user_id}` : "no user"}
+                    >
+                      {userPillLabel(row.user_id)}
                     </span>
                     <span className="flex min-w-0 items-baseline gap-2">
                       <span className="shrink-0 font-mono text-text">
@@ -93,7 +100,7 @@ export default async function AdminLogsPage() {
                         {row.error_message}
                       </pre>
                     )}
-                    <div className="mt-3 flex flex-wrap gap-4 text-[11px] text-muted-foreground">
+                    <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
                       <span>{row.duration_ms}ms</span>
                       {row.application_id && (
                         <span className="font-mono">
@@ -101,8 +108,11 @@ export default async function AdminLogsPage() {
                         </span>
                       )}
                       {row.user_id && (
-                        <span className="font-mono">
-                          user {row.user_id.slice(0, 8)}
+                        <span
+                          className={`inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold ${userPillTone(row.user_id)}`}
+                          title={`user ${row.user_id}`}
+                        >
+                          {userPillLabel(row.user_id)}
                         </span>
                       )}
                     </div>

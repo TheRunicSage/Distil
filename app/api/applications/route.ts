@@ -39,7 +39,14 @@ const SubmitSchema = z.object({
   user_notes: z.string().max(2000).optional(),
 });
 
-const QUEUE_CAP = 3;
+// Concurrency cap dropped to 1 (was 3): one generation at a time per
+// user. The `queue_*` naming is preserved since the DB column and the
+// trigger-next-in-queue function still exist for back-compat with
+// in-flight rows, but conceptually there is no queue any more — a
+// submission either runs immediately or gets a 409 telling the user to
+// wait for the current one to finish. The user explicitly drives what
+// happens; the system never enqueues work behind active runs.
+const QUEUE_CAP = 1;
 const ACTIVE_STATUSES = ["queued", "paused", "running", "rendering"] as const;
 
 export const POST = withLogging(

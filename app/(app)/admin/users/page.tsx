@@ -5,6 +5,7 @@
 // app, plus when they signed up and last signed in.
 
 import { createServiceClient } from "@/lib/supabase/service";
+import { userPillLabel, userPillTone } from "@/lib/admin/user-pill";
 
 export const dynamic = "force-dynamic";
 
@@ -63,22 +64,23 @@ export default async function AdminUsersPage() {
         <Stat label="Account deletions" value={String(deletions.length)} />
       </section>
 
-      <section className="overflow-hidden rounded-lg border border-border bg-dark3">
-        <table className="w-full text-sm">
+      <section className="overflow-x-auto rounded-lg border border-border bg-dark3">
+        <table className="w-full table-auto text-sm">
           <thead className="bg-dark2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
             <tr>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Created</th>
-              <th className="px-4 py-3">Last sign-in</th>
-              <th className="px-4 py-3">Confirmed</th>
-              <th className="px-4 py-3 text-right">Role</th>
+              <th className="whitespace-nowrap px-3 py-3">User</th>
+              <th className="whitespace-nowrap px-3 py-3">Email</th>
+              <th className="whitespace-nowrap px-3 py-3">Created</th>
+              <th className="hidden whitespace-nowrap px-3 py-3 lg:table-cell">Last sign-in</th>
+              <th className="hidden whitespace-nowrap px-3 py-3 sm:table-cell">Confirmed</th>
+              <th className="whitespace-nowrap px-3 py-3 text-right">Role</th>
             </tr>
           </thead>
           <tbody>
             {sorted.length === 0 && (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   className="px-4 py-8 text-center text-muted-foreground"
                 >
                   No registered users.
@@ -92,23 +94,31 @@ export default async function AdminUsersPage() {
                   key={u.id}
                   className="border-t border-border text-text/90"
                 >
-                  <td className="px-4 py-3 text-xs">
+                  <td className="whitespace-nowrap px-3 py-3">
+                    <span
+                      className={`inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold ${userPillTone(u.id)}`}
+                      title={`user ${u.id}`}
+                    >
+                      {userPillLabel(u.id)}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 text-xs">
                     {u.email ?? <span className="text-muted-foreground">—</span>}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
+                  <td className="whitespace-nowrap px-3 py-3 text-xs text-muted-foreground">
                     {formatDate(u.created_at)}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
+                  <td className="hidden whitespace-nowrap px-3 py-3 text-xs text-muted-foreground lg:table-cell">
                     {formatDate(u.last_sign_in_at ?? null)}
                   </td>
-                  <td className="px-4 py-3 text-xs">
+                  <td className="hidden px-3 py-3 text-xs sm:table-cell">
                     {u.email_confirmed_at ? (
                       <span className="text-success">Yes</span>
                     ) : (
                       <span className="text-muted-foreground">No</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right text-xs">
+                  <td className="whitespace-nowrap px-3 py-3 text-right text-xs">
                     {profile?.is_admin ? (
                       <span className="text-orange">Admin</span>
                     ) : (

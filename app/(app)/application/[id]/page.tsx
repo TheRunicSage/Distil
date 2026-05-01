@@ -13,7 +13,7 @@
 
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { CheckCircleIcon } from "lucide-react";
+import { AlarmClockOffIcon, CheckCircleIcon } from "lucide-react";
 import { CopyId } from "@/components/app/CopyId";
 import { ApplicationLiveView } from "@/components/application/ApplicationLiveView";
 import { CoverLetterPreview } from "@/components/application/CoverLetterPreview";
@@ -113,6 +113,8 @@ export default async function ApplicationPage({ params }: RouteCtx) {
         <ApplicationLiveView
           applicationId={id}
           initialStatus={app.status}
+          startedAt={app.started_at}
+          createdAt={app.created_at}
         />
       )}
 
@@ -147,26 +149,36 @@ export default async function ApplicationPage({ params }: RouteCtx) {
       )}
 
       {(app.status === "error" || app.status === "cancelled") && (
-        <section className="rounded-lg border border-danger/25 bg-danger/10 p-6">
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-danger">
-            {app.status === "cancelled"
-              ? "This run was cancelled"
-              : "Something went wrong"}
-          </p>
-          <p className="mt-2 text-sm text-text">
-            {app.status === "cancelled"
-              ? "The system never picked this run up — usually because it was offline at submit time. Retry now and it'll go straight through."
-              : (app.error_message ??
-                "We couldn't finish this run. Retry now or start fresh from the new-application screen.")}
-          </p>
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <RetryFailedButton
-              applicationId={id}
-              canRetry={app.attempt_number < 3}
-            />
-            <Link href="/application/new" className="btn-secondary">
-              New application
-            </Link>
+        <section className="rounded-2xl border border-danger/30 bg-danger/10 p-7">
+          <div className="flex items-start gap-4">
+            <div
+              aria-hidden
+              className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-danger/40 bg-danger/15 text-danger"
+            >
+              <AlarmClockOffIcon size={22} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-danger">
+                {app.status === "cancelled"
+                  ? "Run cancelled before it started"
+                  : "Generation didn’t finish"}
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-text">
+                {app.status === "cancelled"
+                  ? "The system never picked this run up — usually because the worker was offline at submit time. Retry now and it’ll go straight through."
+                  : (app.error_message ??
+                    "We couldn’t finish this run. Retry now or start fresh from the new-application screen.")}
+              </p>
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <RetryFailedButton
+                  applicationId={id}
+                  canRetry={app.attempt_number < 3}
+                />
+                <Link href="/application/new" className="btn-secondary">
+                  New application
+                </Link>
+              </div>
+            </div>
           </div>
         </section>
       )}

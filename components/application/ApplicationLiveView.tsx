@@ -127,6 +127,12 @@ const POLL_AFTER_SILENCE_MS = 10_000;
 type Props = {
   applicationId: string;
   initialStatus: string;
+  // ISO strings from the server so the elapsed timer reflects real
+  // generation time, not "time since this component mounted". Without
+  // this anchor the timer reset to 0s on every page refresh, which
+  // made the waiting screen feel disconnected from reality.
+  startedAt: string | null;
+  createdAt: string;
 };
 
 function formatElapsed(seconds: number): string {
@@ -150,7 +156,12 @@ function phaseForStatus(status: string): Phase {
   return "queued";
 }
 
-export function ApplicationLiveView({ applicationId, initialStatus }: Props) {
+export function ApplicationLiveView({
+  applicationId,
+  initialStatus,
+  startedAt,
+  createdAt,
+}: Props) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>(phaseForStatus(initialStatus));
   const [status, setStatus] = useState<string>(initialStatus);
@@ -158,16 +169,23 @@ export function ApplicationLiveView({ applicationId, initialStatus }: Props) {
   const [elapsed, setElapsed] = useState(0);
   const lastEventAt = useRef<number>(Date.now());
 
-  // Elapsed timer (1s tick). Distinct from the phrase rotation tick so
-  // the spinner readout updates at human speed without racing the
-  // 3.2s phrase swap.
+  // Elapsed timer (1s tick) anchored to whichever server timestamp is
+  // most representative: prefer started_at (LLM started), fall back to
+  // created_at (row submitted). This keeps the readout consistent
+  // across page refreshes — refresh on a 90s-old run still reads ~90s,
+  // not 0s.
+  const anchorMs = useMemo(() => {
+    const iso = startedAt ?? createdAt;
+    const t = new Date(iso).getTime();
+    return Number.isFinite(t) ? t : Date.now();
+  }, [startedAt, createdAt]);
+
   useEffect(() => {
-    const startedAt = Date.now();
-    const tick = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - startedAt) / 1000));
-    }, 1000);
+    const compute = () => Math.max(0, Math.floor((Date.now() - anchorMs) / 1000));
+    setElapsed(compute());
+    const tick = setInterval(() => setElapsed(compute()), 1000);
     return () => clearInterval(tick);
-  }, []);
+  }, [anchorMs]);
 
   // Phrase rotation. Resets to index 0 whenever the phase changes so the
   // first phrase of the new pool is what the user sees.
@@ -200,6 +218,12 @@ export function ApplicationLiveView({ applicationId, initialStatus }: Props) {
             es.close();
             router.refresh();
           }, 600);
+        } else {
+          // Non-terminal phase transitions still mean the server-side
+          // status has likely advanced (queued → running → rendering).
+          // Refreshing keeps the header pill, status badge, and any
+          // downstream views in sync with what the live view shows.
+          router.refresh();
         }
       } catch {
         // ignore malformed events
@@ -222,9 +246,12 @@ export function ApplicationLiveView({ applicationId, initialStatus }: Props) {
         const body = (await res.json()) as { status: string };
         if (body.status !== status) {
           setStatus(body.status);
+          // Always refresh the server component on any status change so
+          // the header pill, queue context, and any downstream views
+          // stay in sync — not just on terminal transitions.
+          router.refresh();
           if (TERMINAL.has(body.status)) {
             es.close();
-            router.refresh();
           }
         }
       } catch {
