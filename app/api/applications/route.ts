@@ -8,6 +8,16 @@
 //   6. daily cost ceiling (sum cost_usd for last 24h)
 //   7. insert applications row with master_cv_id snapshot + queue_position
 //   8. fire 'application/generate.requested' (idempotent because withIdempotency wraps the whole thing)
+//
+// Inngest-send failure handling (added after a real prod incident where
+// invalid INNGEST_EVENT_KEY caused inngest.send() to throw 401/404 AFTER
+// the row was inserted, leaving orphaned `queued` rows that blocked the
+// queue cap and never reached a worker): we mark the just-inserted row
+// `error` with an explicit error_message + completed_at + 1y
+// metadata_expires_at, then re-throw so the user sees the 5xx and the
+// admin error log fires. The compensating action keeps the queue cap
+// honest (errored rows aren't in ACTIVE_STATUSES) and gives the user a
+// retry button on the failed row.
 
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
@@ -128,12 +138,41 @@ export const POST = withLogging(
         });
         if (insertErr) throw new ApiError("database_error", insertErr.message);
 
-        await inngest.send({
-          name: "application/generate.requested",
-          data: { application_id: id, user_id: userId },
-        });
-
+        // Tag the request log with the new id BEFORE attempting the
+        // Inngest send so a failed enqueue still correlates to the
+        // orphan row in admin/usage.
         ctx.application_id = id;
+
+        try {
+          await inngest.send({
+            name: "application/generate.requested",
+            data: { application_id: id, user_id: userId },
+          });
+        } catch (sendErr) {
+          // Compensating action: mark the row errored so it stops
+          // counting against the queue cap and the user can retry it
+          // from the application detail page. Best-effort — if the
+          // database is also down, the watchdog Pass B catches it
+          // within ~10 minutes.
+          const sanitised =
+            sendErr instanceof Error ? sendErr.message : String(sendErr);
+          const nowIso = new Date().toISOString();
+          const metadataExpiresAt = new Date(
+            Date.now() + 365 * 24 * 60 * 60 * 1000,
+          ).toISOString();
+          await service
+            .from("applications")
+            .update({
+              status: "error",
+              error_message: `Could not enqueue generation: ${sanitised}`,
+              completed_at: nowIso,
+              metadata_expires_at: metadataExpiresAt,
+            })
+            .eq("id", id)
+            .eq("status", "queued"); // guard
+          throw sendErr;
+        }
+
         return { id, queue_position: queuePosition };
       },
     );

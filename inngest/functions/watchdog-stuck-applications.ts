@@ -1,10 +1,20 @@
 // Watchdog: every 15 minutes, recovers two classes of orphaned rows:
 //   A. status='running' for >30min → mark errored
 //      (the LLM call hung or the function crashed mid-flight)
-//   B. status='queued' for >60min with started_at IS NULL → mark cancelled
-//      (Inngest never picked the row up — typically because the dev
-//      server was off, the kill switch was flipped, or the worker
-//      crashed before the row was claimed)
+//   B. status='queued' for >10min with started_at IS NULL → mark cancelled
+//      (Inngest accepted the event but never invoked the function —
+//      typically because Inngest Cloud function registration is stale,
+//      the dev server is off, the kill switch was flipped, or the
+//      worker crashed before the row was claimed)
+//
+// Pass B used to be 60 minutes, but a real prod incident showed users
+// hitting the 3-deep queue cap with three orphaned `queued` rows that
+// took an hour each to clean up. 10 minutes is enough margin to absorb
+// a slow Inngest cold-start / function-sync window without leaving
+// users blocked. The submit route also has compensating logic that
+// marks the row errored synchronously when inngest.send() throws, so
+// Pass B is the safety net for the silent-drop case (event accepted by
+// Inngest, function never runs).
 //
 // Critical rules (apply to both passes):
 //   1. The update MUST guard with the originating status so a row that
@@ -22,7 +32,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { inngest } from "../client";
 
 const THIRTY_MINUTES_MS = 30 * 60 * 1000;
-const SIXTY_MINUTES_MS = 60 * 60 * 1000;
+const TEN_MINUTES_MS = 10 * 60 * 1000;
 const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
 export const watchdogStuckApplications = inngest.createFunction(
@@ -38,7 +48,7 @@ export const watchdogStuckApplications = inngest.createFunction(
         Date.now() - THIRTY_MINUTES_MS,
       ).toISOString();
       const queuedCutoff = new Date(
-        Date.now() - SIXTY_MINUTES_MS,
+        Date.now() - TEN_MINUTES_MS,
       ).toISOString();
       const metadataExpiresAt = new Date(
         Date.now() + ONE_YEAR_MS,
@@ -81,7 +91,7 @@ export const watchdogStuckApplications = inngest.createFunction(
       }
 
       // Pass B: stuck queued rows that never reached the LLM. Created
-      // >60min ago, started_at still null. Mark cancelled (terminal,
+      // >10min ago, started_at still null. Mark cancelled (terminal,
       // pre-LLM) so they stop counting toward the user's queue cap.
       const { data: stuckQueued } = await supabase
         .from("applications")
