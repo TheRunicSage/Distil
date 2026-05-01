@@ -698,6 +698,22 @@ What was not changed: AppShell (toast provider + keyboard shortcuts intact, incl
 
 [18] `insufficient_input_reason` Zod cap raised from 800 → 2000 chars in `lib/llm/output-schema.ts`. An over-cautious model emitted a long enumeration of contact-detail concerns that overflowed 800 chars and failed `validate-output` as `llm_invalid_output` — masking the real "model bailed when it shouldn't" signal. The reason field is rendered as a paragraph to the user; verbose-but-readable is fine, opaque is not.
 
+[14] Topbar reorder, account deletion, admin users page (2026-05-01).
+
+Topbar order changed to `Distil` wordmark | `+ New application` (primary CTA) | `History` | `Settings` (gear icon). The primary action is now leftmost after the wordmark — closer to the eye when scanning the bar — while the icon-only Settings still sits at the right edge. `app/(app)/layout.tsx` is the only file affected.
+
+Account deletion shipped (was deferred per the original spec). New `app/(app)/settings/actions.ts` Server Action `deleteAccount` requires the user to retype their email, hashes it for the `account_deletions` audit table (already in the v1 schema), then calls `supabase.auth.admin.deleteUser(userId)` via the service-role client. Schema cascades clean up profiles / master_cvs / applications / generation_events / token_usage / idempotency_keys; request_logs and telemetry_events SET NULL so operational logs survive. New `components/settings/DeleteAccountForm.tsx` is a two-step client component (reveal → typed-email confirmation), with the destructive button disabled until the typed email exactly matches the session email. Added a "Danger zone" section in `app/(app)/settings/page.tsx`.
+
+Admin Users page (`app/(app)/admin/users/page.tsx`) reads every registered email from `auth.users` via `service.auth.admin.listUsers()` and joins each row to its matching `profiles` entry for the `is_admin` flag inline. Stats: registered count, admin count, recent-deletion count. A "Recent deletions" panel below the table shows the timeline from `account_deletions` (email is hashed sha256 in the table; the panel surfaces ids + timestamps only). Sub-nav in `app/(app)/admin/layout.tsx` gains a fourth entry.
+
+Admin Usage status filter (`app/(app)/admin/usage/page.tsx`) — server-side via `?status=` search param. Pill nav above the table; filter pushed into the SQL `.in('status', [...])` clause so the row cap (50) is applied after filtering rather than before.
+
+Admin Errors compaction (`app/(app)/admin/logs/page.tsx`) — replaced the per-error `<article>` with a single-row `<details>`/`<summary>` per row in a contiguous list. Default-collapsed view is one line per error (source pill + name + truncated message + error_code + time). Click to expand for the full message and footer (duration, application id, user id). Same data, ~3x denser at rest.
+
+Admin Telemetry "Other events" — added bar chart per row, mirroring the funnel section's treatment. Bars use `bg-orange/70` so they read as secondary to the funnel bars (which are full-orange).
+
+What was *not* changed: schema (no migration needed — `account_deletions` already exists per the original spec), the (admin) prod move TODO from Decision Log [13] (still pending), the consumer-facing topbar items (History link still secondary text, gear icon still icon-only).
+
 [14] History as chains, not flat rows (2026-05-01). User-reported on the dashboard "Recent" panel: rows showed cryptic IDs ("7a7eb09d") and an "attempt 1" tag that was visual noise — every fresh generation is attempt 1, so the field carried no signal until a retry happened, and even then it duplicated information already implied by the `parent_application_id` chain.
 
 Three changes:

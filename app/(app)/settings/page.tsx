@@ -6,6 +6,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/(auth)/login/actions";
+import { DeleteAccountForm } from "@/components/settings/DeleteAccountForm";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -153,6 +154,13 @@ export default async function SettingsPage() {
             Sign out
           </button>
         </form>
+      </section>
+
+      <section className="surface-card border-danger/30">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-danger">
+          Danger zone
+        </p>
+        <DeleteAccountForm email={userData.user.email ?? ""} />
       </section>
     </div>
   );

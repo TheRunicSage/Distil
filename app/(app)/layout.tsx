@@ -50,6 +50,17 @@ export default async function AppLayout({
             </span>
           </Link>
           <nav className="flex items-center gap-2">
+            {hasCv ? (
+              <Link href="/application/new" className="btn-primary">
+                <PlusIcon size={14} aria-hidden />
+                New application
+              </Link>
+            ) : (
+              <Link href="/upload" className="btn-primary">
+                <UploadIcon size={14} aria-hidden />
+                Upload CV
+              </Link>
+            )}
             <Link href="/history" className="btn-ghost">
               History
             </Link>
@@ -61,17 +72,6 @@ export default async function AppLayout({
             >
               <SettingsIcon size={16} aria-hidden />
             </Link>
-            {hasCv ? (
-              <Link href="/application/new" className="btn-primary ml-1">
-                <PlusIcon size={14} aria-hidden />
-                New application
-              </Link>
-            ) : (
-              <Link href="/upload" className="btn-primary ml-1">
-                <UploadIcon size={14} aria-hidden />
-                Upload CV
-              </Link>
-            )}
           </nav>
         </header>
         <main className="flex-1 overflow-y-auto px-6 py-12">

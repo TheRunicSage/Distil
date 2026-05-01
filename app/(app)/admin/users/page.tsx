@@ -1,0 +1,166 @@
+// Admin users page. Reads auth.users via the service-role client's
+// admin API (supabase.auth.admin.listUsers) and joins each row to its
+// matching profile so we can show the is_admin flag inline. The point
+// of this page: a single place to see every email registered with the
+// app, plus when they signed up and last signed in.
+
+import { createServiceClient } from "@/lib/supabase/service";
+
+export const dynamic = "force-dynamic";
+
+const LIST_PAGE_SIZE = 200;
+
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-NZ", {
+    timeZone: "Pacific/Auckland",
+  });
+}
+
+export default async function AdminUsersPage() {
+  const service = createServiceClient();
+
+  const [usersRes, profilesRes, deletionsRes] = await Promise.all([
+    service.auth.admin.listUsers({ page: 1, perPage: LIST_PAGE_SIZE }),
+    service.from("profiles").select("id, is_admin"),
+    service
+      .from("account_deletions")
+      .select("id, deleted_at")
+      .order("deleted_at", { ascending: false })
+      .limit(50),
+  ]);
+
+  const users = usersRes.data?.users ?? [];
+  const profileById = new Map<string, { is_admin: boolean | null }>();
+  for (const p of profilesRes.data ?? []) {
+    profileById.set(p.id, { is_admin: p.is_admin });
+  }
+  const deletions = deletionsRes.data ?? [];
+
+  const sorted = [...users].sort((a, b) => {
+    const aAt = new Date(a.created_at ?? 0).getTime();
+    const bAt = new Date(b.created_at ?? 0).getTime();
+    return bAt - aAt;
+  });
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-semibold text-text">Users</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Every email registered with the app. {sorted.length} total.
+        </p>
+      </div>
+
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Stat label="Registered" value={String(sorted.length)} />
+        <Stat
+          label="Admins"
+          value={String(
+            sorted.filter((u) => profileById.get(u.id)?.is_admin).length,
+          )}
+        />
+        <Stat label="Account deletions" value={String(deletions.length)} />
+      </section>
+
+      <section className="overflow-hidden rounded-lg border border-border bg-dark3">
+        <table className="w-full text-sm">
+          <thead className="bg-dark2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
+            <tr>
+              <th className="px-4 py-3">Email</th>
+              <th className="px-4 py-3">Created</th>
+              <th className="px-4 py-3">Last sign-in</th>
+              <th className="px-4 py-3">Confirmed</th>
+              <th className="px-4 py-3 text-right">Role</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.length === 0 && (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="px-4 py-8 text-center text-muted-foreground"
+                >
+                  No registered users.
+                </td>
+              </tr>
+            )}
+            {sorted.map((u) => {
+              const profile = profileById.get(u.id);
+              return (
+                <tr
+                  key={u.id}
+                  className="border-t border-border text-text/90"
+                >
+                  <td className="px-4 py-3 text-xs">
+                    {u.email ?? <span className="text-muted-foreground">—</span>}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
+                    {formatDate(u.created_at)}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
+                    {formatDate(u.last_sign_in_at ?? null)}
+                  </td>
+                  <td className="px-4 py-3 text-xs">
+                    {u.email_confirmed_at ? (
+                      <span className="text-success">Yes</span>
+                    ) : (
+                      <span className="text-muted-foreground">No</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right text-xs">
+                    {profile?.is_admin ? (
+                      <span className="text-orange">Admin</span>
+                    ) : (
+                      <span className="text-muted-foreground">User</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </section>
+
+      {deletions.length > 0 && (
+        <section className="rounded-lg border border-border bg-dark3 p-6">
+          <h2 className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+            Recent deletions
+          </h2>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Email addresses are stored hashed (sha256) for privacy; this list
+            shows the timeline only.
+          </p>
+          <ul className="mt-4 divide-y divide-border text-xs">
+            {deletions.map((d) => (
+              <li
+                key={d.id}
+                className="flex items-center justify-between py-2"
+              >
+                <span className="font-mono text-text/80">
+                  {d.id.slice(0, 8)}
+                </span>
+                <span className="text-muted-foreground">
+                  {new Date(d.deleted_at).toLocaleString("en-NZ", {
+                    timeZone: "Pacific/Auckland",
+                  })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border bg-dark3 p-4">
+      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+        {label}
+      </p>
+      <p className="mt-1 text-2xl font-semibold text-text">{value}</p>
+    </div>
+  );
+}

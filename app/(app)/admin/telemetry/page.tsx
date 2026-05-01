@@ -108,21 +108,32 @@ export default async function AdminTelemetryPage() {
             Nothing else recorded in the window.
           </p>
         ) : (
-          <table className="mt-3 w-full text-sm">
-            <tbody>
-              {otherEvents.map(([name, count]) => (
-                <tr
-                  key={name}
-                  className="border-t border-border first:border-t-0"
-                >
-                  <td className="py-2 font-mono text-xs text-text">{name}</td>
-                  <td className="py-2 text-right font-mono text-xs text-muted-foreground">
-                    {count}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ul className="mt-4 space-y-3">
+            {(() => {
+              const otherMax = Math.max(1, ...otherEvents.map(([, c]) => c));
+              return otherEvents.map(([name, count]) => {
+                const pct = (count / otherMax) * 100;
+                return (
+                  <li key={name}>
+                    <div className="flex items-baseline justify-between text-sm">
+                      <span className="font-mono text-xs text-text">
+                        {name}
+                      </span>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {count}
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-dark4">
+                      <div
+                        className="h-full rounded-full bg-orange/70"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </li>
+                );
+              });
+            })()}
+          </ul>
         )}
       </section>
     </div>
