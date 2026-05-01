@@ -913,6 +913,18 @@ What was not changed: helpers' canonical defaults (still SPACING / SIZES, so cov
 
   Audit of remaining count-based caps: kept strict for `paragraphs.length(4)` (intentional, schema and prompt both say exactly four), `professional_experience.bullets.max(8)` (comfortably above prompt's 3-5), `key_projects.max(5)` (comfortably above prompt's 2-3), `what_we_did_checklist.min(5).max(8)` vs prompt "5 to 7" (already has cushion). No other tight matches identified.
 
+[14] ApplicationLiveView redesign for the ~2-minute wait (2026-05-01). User feedback after a real generation: the centre block read as small and top-anchored, the 1-2-3-4 stage indicator was visibly left-justified (rails consumed flex-1 to the right of each circle, leaving the last quarter empty), and the phrase pool was thin enough that the same six research phrases were looping ~5 times during a 2-minute wait. Fix in `components/application/ApplicationLiveView.tsx`:
+
+  - Stage indicator rebuilt on a 4-col CSS grid with the connecting rail absolutely positioned at top-14px between 12.5%-87.5% (the centres of quarters 1 and 4). Active fill on the rail tweens via width: `calc((87.5% - 12.5%) * fill)`. Result: stages are at 12.5%, 37.5%, 62.5%, 87.5% — visually centred. Replaced the old "flex-1 li with rail-after" pattern that was responsible for the left-skew.
+  - Hero block: dual-ring spinner now sits inside a radial-gradient halo (orange-glow, breathing 2.6s loop). Two stacked radial-gradient backdrops on the section give the card a luminous "warm centre" feel without adding image assets. Phrase typography promoted to font-serif text-2xl with an "Now happening" eyebrow. Spinner glyph now switches per-phase (·, ?, ✎, ▤, ✓).
+  - "In this step" panel: 4 mini-bullet captions per phase, dot-marker list with staggered fade-in. Gives the user something specific to read about *what is currently being done* rather than just a phrase rotation.
+  - "Did you know" rotating tip carousel on an independent 6.5s timer. 15 product-confident, factually-grounded tips (covers research, content rules, ATS keywords, fit-score honesty, file-expiry, cost cap, cache, observability). Two streams of fresh copy means the page never feels static.
+  - Phrase pools expanded: research 6 → 28 (~90s before repeat at 3.2s/phrase), generation 5 → 8, render 2 → 4, wrap 2 → 4. Research is the dominant phase (LLM call ~90s of the wait); 28 phrases × 3.2s = 89.6s, longer than the typical wait.
+  - Elapsed timer line gains "typically 1m 30s to 2m" so users have a wall-clock expectation.
+  - Visual polish: card switched from `surface-card` to a custom rounded-2xl + dark2/60 + backdrop-blur shell so the gradient halos read through. Active stage circle gains an orange shadow-glow and ping ring.
+
+  What was *not* changed: SSE / polling-fallback logic, phase event mapping, terminal-state guard, router.refresh() behaviour. The animation timings live inside scoped `<style jsx>` blocks per sub-component and are uniquely-prefixed (`live-fade-up`, `live-pulse`, `live-spin`, `live-fade-in`, `live-tip`) so they don't collide with any existing globals.
+
 ---
 
 ## Known Gaps to Watch
