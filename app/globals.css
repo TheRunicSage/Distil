@@ -398,14 +398,12 @@
   }
 }
 
-/* Ambient blobs are tuned for the dark canvas. On the light canvas
-   the same alpha values produce a stronger colour cast, so dim the
-   whole mount to roughly 35% of the dark intensity — keeps a hint of
-   brand warmth in the corners without overwhelming the off-white
-   surfaces. */
-:root:not(.dark) .ambient-blob {
-  opacity: 0.35;
-}
+/* Ambient blobs render at full intensity in both modes. The orange
+   glow at rgba(226,97,59,0.18) reads as warmth on either canvas:
+   blends to a soft peach gradient on the off-white light surfaces
+   and as a corner haze on the dark surfaces. The earlier 35% dim
+   for light mode killed too much of the brand accent — user feedback
+   was "I want the orange accent in light mode too". */
 
 .ambient-blob-violet {
   bottom: -20%;
