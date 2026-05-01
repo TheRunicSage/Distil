@@ -236,6 +236,12 @@
     @apply bg-background text-foreground font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Clip rather than hide so right-edge viewport breakouts (admin
+       layout, application success preview grid, ambient layers) don't
+       trigger a horizontal scrollbar. `clip` does not establish a
+       containing block, so the topbar's `position: sticky` keeps
+       working. */
+    overflow-x: clip;
   }
   /* Serif headings inherit the brand voice — Fraunces light/regular at
      larger sizes is the Distil signature. Use .font-serif explicitly
@@ -322,6 +328,69 @@
   .status-pill {
     @apply inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.05em];
   }
+}
+
+/* ============================================================
+   Custom scrollbars — site-wide, theme-aware.
+   Dark mode: orange-tinted thumb on transparent track (warm Curiosum
+   accent against the warm-grey surface). Light mode: a slightly
+   stronger peach so the thumb stays legible against off-white.
+   The padding-box border trick gives the thumb a 3px gap from the
+   track edge so it reads as a floating pill rather than a slab.
+   ============================================================ */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-orange-glow) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+  background: transparent;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  border: none;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-orange-glow);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  transition: background-color 0.18s ease-out;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-orange);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--color-orange-light);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Light mode — same orange family, raised opacity so the thumb stays
+   visible against the warm off-white canvas. */
+:root:not(.dark) {
+  scrollbar-color: rgba(226, 97, 59, 0.32) transparent;
+}
+
+:root:not(.dark) ::-webkit-scrollbar-thumb {
+  background-color: rgba(226, 97, 59, 0.32);
+}
+
+:root:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-orange);
+}
+
+:root:not(.dark) ::-webkit-scrollbar-thumb:active {
+  background-color: var(--color-orange-light);
 }
 
 /* ============================================================
