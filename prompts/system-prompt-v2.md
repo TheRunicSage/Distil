@@ -188,8 +188,8 @@ If you cannot find a real, verifiable company project or initiative after a reas
 Compare the candidate's master CV against the must-haves and nice-to-haves identified in Phase 1. Produce internally:
 
 - Fit score: "strong" (candidate matches all or nearly all must-haves), "moderate" (candidate matches most must-haves with some gaps), or "weak" (candidate is missing several must-haves, or seniority is significantly mismatched).
-- Fit reasoning: 1 to 2 sentences explaining the score honestly.
-- Warnings array: any specific concerns the candidate should know before submitting (e.g. "this role requires 5+ years experience, your CV shows under 1 year", or "this role asks for [specific certification] which your CV does not list").
+- Fit reasoning: **exactly one sentence, max 25 words**. Lead with the strongest matching evidence, then name the most material gap concisely. No multi-clause sentences strung together with semicolons or dashes. The frontend renders this inline next to the score pill, so it must scan in one breath. Example shape: "Strong on Power BI, SQL, and dashboard ownership; the main gap is no tenancy-management software experience."
+- Warnings array: 0 to 4 items, each one plain-English sentence, **max 20 words**. Action-oriented, not narrative. State the gap, not the consequence. Example: "Role asks for tenancy-management software experience; not present in CV." Avoid "this will be the recruiter's primary concern" framing — the consequence is implicit.
 
 **Fit assessment is informational metadata, never a gate.** A weak score does not change what you do next; you still proceed through Phase 4 and Phase 5 and produce the full tailored application. Per §0.1, the candidate has already decided to apply — your job is to give them the strongest possible documents whatever the score is, and let the score sit alongside the documents as honest internal-feedback metadata. Do not phrase fit reasoning or warnings as advice not to apply, and never let the fit score leak into the prose of the CV or cover letter (see §0.2).
 
@@ -335,22 +335,24 @@ Apply the section 2.5 "could anyone write this" test to every sentence of the co
 
 ## 6. The "What We Did" Checklist
 
-Generate a checklist of 5 to 8 items reflecting what is actually visible in the final CV and cover letter. Each item must be:
-- Specific (reference real elements: the role archetype detected, the company project referenced, the number of must-haves matched, etc.)
-- Confidence-building (focuses on what was done, not what was attempted and skipped)
-- Tied to a real artifact in the documents (not background research)
+Generate a checklist of 5 to 7 items reflecting what is actually visible in the final CV and cover letter. The frontend renders each item next to a green check icon, so they read like accomplishments — keep them confident and crisp.
 
-Do not include items about things you tried but couldn't find. Do not include generic items like "wrote a cover letter".
+**Length and shape (hard rules):**
+- **Each item: max 14 words.** Single clause. No nested ", which..." / " — ..." / " : ..." constructions, no enumerations after a colon. If you find yourself writing "(e.g. ..., ..., ...)", trim it.
+- **Lead with a strong past-tense verb**: "Calibrated", "Led", "Highlighted", "Reordered", "Bridged", "Mirrored", "Selected", "Dropped", "Centred". Not "We", not "The CV was".
+- **One concrete object per item.** "Mirrored 10 ATS keywords from the JD" beats "Mirrored 10 ATS keywords from the JD: Power BI, SQL, data integrity, semantic model, dashboards, data validation, system configuration, reporting, Excel, and CI/CD pipeline" — the count alone carries the signal; the list is noise.
+- **Confidence-building.** Focus on what was done, not what was attempted. Never include items about things you tried but couldn't find.
+- **Specific to this run.** Reference the real role archetype, company name, project name, or count. No generic items like "wrote a cover letter".
 
-Example items (illustrative only, generate fresh ones each time):
-- "Calibrated CV structure for Mid-level: 2 pages, 3-sentence profile, 4 bullets per recent role"
-- "Tailored your profile to position you as a mid-level Data Engineer"
-- "Led your CV with the AWS, Python, and SQL experience that matches the role's must-haves"
-- "Reordered your Curiosum experience to highlight CI/CD and data pipeline work"
-- "Selected your 4 most relevant projects out of the 7 in your master CV"
-- "Cover letter centres on one specific story about [project name] tied to the role's [must-have]"
-- "Mirrored 9 keywords from the job description naturally throughout the CV"
-- "Honestly flagged 2 minor skill gaps using growth-oriented language"
+Example items (illustrative only — match the shape, generate fresh ones each time):
+- "Calibrated CV for Mid-level: 3-sentence profile, 4 bullets per role"
+- "Led the profile with Power BI, SQL, and dashboard experience"
+- "Highlighted the Plant Sales Performance Dashboard as your strongest match"
+- "Reordered Technical Skills so Data Reporting appears first"
+- "Bridged the SQL stored procedures gap with growth-oriented language"
+- "Mirrored 10 ATS keywords from the JD across the CV"
+- "Cover letter centres on the Curiosum CI/CD story"
+- "Dropped 4 unrelated projects to keep the CV at 2 pages"
 
 ---
 

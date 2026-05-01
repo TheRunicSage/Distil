@@ -13,6 +13,7 @@
 
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { CheckCircleIcon } from "lucide-react";
 import { CopyId } from "@/components/app/CopyId";
 import { ApplicationLiveView } from "@/components/application/ApplicationLiveView";
 import { CoverLetterPreview } from "@/components/application/CoverLetterPreview";
@@ -23,6 +24,12 @@ import type {
   ApplicationOutput,
   ApplicationOutputSuccess,
 } from "@/lib/llm/output-schema";
+
+const FIT_TONE: Record<"strong" | "moderate" | "weak", string> = {
+  strong: "bg-success/15 text-success border-success/30",
+  moderate: "bg-warn/15 text-warn border-warn/30",
+  weak: "bg-danger/15 text-danger border-danger/30",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -218,40 +225,59 @@ function SuccessView({
   if (json.status !== "success") return null;
   const success = json as ApplicationOutputSuccess;
 
+  const fit = success.fit_assessment;
+  const salary = success.salary_band;
+  const fitTone = FIT_TONE[fit.score];
+
   return (
     <div className="space-y-8">
-      <section className="rounded-lg border border-border bg-dark3 p-6">
-        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
-          Fit
+      <section className="surface-card">
+        <p className="eyebrow">Fit</p>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span
+            className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] ${fitTone}`}
+          >
+            {fit.score}
+          </span>
+          {salary && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/15 px-3 py-1 text-[11px] font-medium text-success">
+              {salary.range}
+              <span className="text-[10px] uppercase tracking-[0.08em] text-success/70">
+                · {salary.confidence}
+              </span>
+            </span>
+          )}
+        </div>
+        <p className="mt-3 text-sm leading-relaxed text-text">
+          {fit.reasoning}
         </p>
-        <p className="mt-2 text-sm text-text">
-          <strong className="font-semibold capitalize">
-            {success.fit_assessment.score}
-          </strong>{" "}
-          — {success.fit_assessment.reasoning}
-        </p>
-        {success.fit_assessment.warnings.length > 0 && (
-          <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-warn">
-            {success.fit_assessment.warnings.map((w, i) => (
-              <li key={i}>{w}</li>
-            ))}
-          </ul>
-        )}
-        {success.salary_band && (
-          <p className="mt-3 text-xs text-muted-foreground">
-            Salary band ({success.salary_band.confidence} confidence):{" "}
-            {success.salary_band.range}
-          </p>
+        {fit.warnings.length > 0 && (
+          <>
+            <p className="mt-5 eyebrow-muted">Considerations</p>
+            <ul className="mt-2 space-y-1.5 text-sm text-text/80">
+              {fit.warnings.map((w, i) => (
+                <li key={i} className="flex gap-2">
+                  <span aria-hidden className="mt-1 size-1.5 shrink-0 rounded-full bg-warn" />
+                  <span>{w}</span>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </section>
 
-      <section className="rounded-l-md border-l-[3px] border-orange bg-orange-dim p-5 pl-6">
-        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
-          What we did
-        </p>
-        <ul className="mt-3 space-y-1.5 font-serif text-base italic text-text">
+      <section className="surface-card border-orange/30 bg-[var(--color-orange-subtle)]">
+        <p className="eyebrow">What we did</p>
+        <ul className="mt-4 space-y-2.5">
           {success.what_we_did_checklist.map((item, i) => (
-            <li key={i}>· {item}</li>
+            <li key={i} className="flex items-start gap-3 text-sm text-text">
+              <CheckCircleIcon
+                size={16}
+                aria-hidden
+                className="mt-0.5 shrink-0 text-success"
+              />
+              <span>{item}</span>
+            </li>
           ))}
         </ul>
       </section>
@@ -259,18 +285,18 @@ function SuccessView({
       <section className="flex flex-wrap items-center gap-3">
         <a
           href={`/api/applications/${applicationId}/download/cv`}
-          className="rounded-sm bg-orange px-4 py-2 text-sm font-medium text-white hover:bg-orange-light"
+          className="btn-primary"
         >
           Download CV
         </a>
         <a
           href={`/api/applications/${applicationId}/download/cover_letter`}
-          className="rounded-sm bg-orange px-4 py-2 text-sm font-medium text-white hover:bg-orange-light"
+          className="btn-secondary"
         >
-          Download Cover Letter
+          Download cover letter
         </a>
         {filesExpireAt && (
-          <span className="text-xs text-muted-foreground">
+          <span className="text-meta">
             Files available until{" "}
             {new Date(filesExpireAt).toLocaleDateString("en-NZ", {
               timeZone: "Pacific/Auckland",
@@ -279,8 +305,8 @@ function SuccessView({
         )}
       </section>
 
-      <details className="rounded-lg border border-border bg-dark3 p-2" open>
-        <summary className="cursor-pointer px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+      <details className="rounded-2xl border border-border bg-dark2/60 p-2 backdrop-blur-sm" open>
+        <summary className="cursor-pointer px-4 py-2 eyebrow">
           CV preview
         </summary>
         <div className="p-4">
@@ -288,8 +314,8 @@ function SuccessView({
         </div>
       </details>
 
-      <details className="rounded-lg border border-border bg-dark3 p-2">
-        <summary className="cursor-pointer px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+      <details className="rounded-2xl border border-border bg-dark2/60 p-2 backdrop-blur-sm">
+        <summary className="cursor-pointer px-4 py-2 eyebrow">
           Cover letter preview
         </summary>
         <div className="p-4">
