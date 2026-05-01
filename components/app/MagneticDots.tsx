@@ -34,14 +34,38 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 const CELL_PX = 80;
 const DOT_R = 1.7;
-const REST_OPACITY = 0.22;
-const ACTIVE_OPACITY = 0.7;
-const RANGE_PX = 220;
-const MAX_PUSH_PX = 18;
-const MAX_GROW = 1.6; // active dots scale up to 1.6x rest size
-const LERP_FACTOR = 0.18; // cushion factor — smaller = softer return
-const HALO_SIZE_PX = 360; // soft glow that follows the cursor
+const RANGE_PX = 200; // softly wide; smoothstep keeps the outer ring gentle
+const MAX_PUSH_PX = 8; // very subtle displacement — felt, not seen
+const MAX_GROW = 1.18; // tiny lift on the dots near the cursor
+const LERP_FACTOR = 0.11; // slow, graceful return; never springy
+const HALO_SIZE_PX = 280; // wider so the centre isn't bright; reads as a haze
 const DOT_CAP = 400;
+
+// Theme-conditioned opacities. Dark canvas needs lower numbers since
+// orange-on-dark already pops; the cream light canvas needs higher
+// numbers since orange-on-cream washes out at low alpha. Halo also
+// needs different blend modes per theme — `screen` warms a dark
+// surface, `multiply` tints a light one without bleaching it.
+type ThemeProfile = {
+  rest: number;
+  active: number;
+  haloPeak: number;
+  haloBlend: "screen" | "multiply";
+};
+
+const DARK_PROFILE: ThemeProfile = {
+  rest: 0.22,
+  active: 0.42,
+  haloPeak: 0.3,
+  haloBlend: "screen",
+};
+
+const LIGHT_PROFILE: ThemeProfile = {
+  rest: 0.32,
+  active: 0.55,
+  haloPeak: 0.22,
+  haloBlend: "multiply",
+};
 
 type Dot = { cx: number; cy: number };
 type DotState = { ox: number; oy: number; opacity: number; scale: number };
@@ -74,6 +98,7 @@ function smoothstep(t: number): number {
 export function MagneticDots() {
   const [enabled, setEnabled] = useState(false);
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+  const [profile, setProfile] = useState<ThemeProfile>(DARK_PROFILE);
   const dotRefs = useRef<(SVGCircleElement | null)[]>([]);
   const dotStateRef = useRef<DotState[]>([]);
   const mouseRef = useRef<{ x: number; y: number; active: boolean }>({
@@ -84,6 +109,10 @@ export function MagneticDots() {
   const haloPosRef = useRef<{ x: number; y: number }>({ x: -10000, y: -10000 });
   const haloRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
+  // Live profile ref so the RAF tick reads the current theme without
+  // restarting the loop on every theme toggle.
+  const profileRef = useRef<ThemeProfile>(DARK_PROFILE);
+  profileRef.current = profile;
 
   // Gate motion on viewport width + reduced-motion. Touch devices fall
   // back to the static rest state — no cursor proximity, but the dots
@@ -116,6 +145,24 @@ export function MagneticDots() {
     return () => window.removeEventListener("resize", measure);
   }, []);
 
+  // Track the theme. The `dark` class is toggled on documentElement by
+  // the ThemeToggle component and the inline pre-paint script in
+  // app/layout.tsx; observing it lets the dots respond live without
+  // a hard reload.
+  useEffect(() => {
+    function readTheme() {
+      const isDark = document.documentElement.classList.contains("dark");
+      setProfile(isDark ? DARK_PROFILE : LIGHT_PROFILE);
+    }
+    readTheme();
+    const observer = new MutationObserver(readTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    return () => observer.disconnect();
+  }, []);
+
   const dots = useMemo(() => buildDots(size.w, size.h), [size.w, size.h]);
 
   // Trim stale refs / states when the grid shrinks.
@@ -138,9 +185,8 @@ export function MagneticDots() {
       const { x: mx, y: my, active } = mouseRef.current;
       const refs = dotRefs.current;
       const states = dotStateRef.current;
+      const p = profileRef.current;
 
-      // Lerp the halo toward the mouse — same cushioning as the dots,
-      // so the visible halo eases into place rather than snapping.
       haloPosRef.current.x +=
         (mx - haloPosRef.current.x) * LERP_FACTOR;
       haloPosRef.current.y +=
@@ -151,7 +197,7 @@ export function MagneticDots() {
         haloRef.current.style.transform = `translate3d(${hx.toFixed(
           1,
         )}px, ${hy.toFixed(1)}px, 0)`;
-        haloRef.current.style.opacity = active ? "1" : "0";
+        haloRef.current.style.opacity = active ? String(p.haloPeak) : "0";
       }
 
       for (let i = 0; i < refs.length; i++) {
@@ -161,7 +207,7 @@ export function MagneticDots() {
 
         let targetOx = 0;
         let targetOy = 0;
-        let targetOp = REST_OPACITY;
+        let targetOp = p.rest;
         let targetScale = 1;
 
         if (active) {
@@ -174,15 +220,14 @@ export function MagneticDots() {
             const len = dist || 1;
             targetOx = -(dx / len) * MAX_PUSH_PX * factor;
             targetOy = -(dy / len) * MAX_PUSH_PX * factor;
-            targetOp =
-              REST_OPACITY + (ACTIVE_OPACITY - REST_OPACITY) * factor;
+            targetOp = p.rest + (p.active - p.rest) * factor;
             targetScale = 1 + (MAX_GROW - 1) * factor;
           }
         }
 
         let s = states[i];
         if (!s) {
-          s = { ox: 0, oy: 0, opacity: REST_OPACITY, scale: 1 };
+          s = { ox: 0, oy: 0, opacity: p.rest, scale: 1 };
           states[i] = s;
         }
         s.ox += (targetOx - s.ox) * LERP_FACTOR;
@@ -210,10 +255,11 @@ export function MagneticDots() {
         rafRef.current = null;
       }
       // Reset all dots so re-enabling later starts clean.
+      const restOp = profileRef.current.rest;
       for (const el of dotRefs.current) {
         if (el) {
           el.style.transform = "";
-          el.style.opacity = String(REST_OPACITY);
+          el.style.opacity = String(restOp);
         }
       }
       dotStateRef.current = [];
@@ -225,9 +271,12 @@ export function MagneticDots() {
 
   return (
     <>
-      {/* Soft cursor halo — the visible centre of the field. Renders as
-          a radial-gradient that fades to transparent. transform-only
-          updates each frame keep it on the GPU compositor. */}
+      {/* Soft cursor halo — a barely-there warm haze, not a glowing orb.
+          Wide radius (280px) plus an early falloff stop at 45% means the
+          centre is the brightest point but never bright; the shoulders
+          fall off into nothing well before the edge. Theme-conditioned
+          blend mode warms a dark canvas (`screen`) and tints a light
+          canvas (`multiply`) without bleaching either. */}
       <div
         ref={haloRef}
         aria-hidden
@@ -239,10 +288,10 @@ export function MagneticDots() {
           height: HALO_SIZE_PX,
           pointerEvents: "none",
           background:
-            "radial-gradient(circle, var(--color-orange-glow) 0%, var(--color-orange-subtle) 35%, transparent 70%)",
+            "radial-gradient(circle, var(--color-orange-glow) 0%, transparent 55%)",
           opacity: 0,
-          transition: "opacity 0.3s ease-out",
-          mixBlendMode: "screen",
+          transition: "opacity 0.5s ease-out",
+          mixBlendMode: profile.haloBlend,
           willChange: "transform, opacity",
           zIndex: 1,
         }}
@@ -272,7 +321,7 @@ export function MagneticDots() {
             cy={dot.cy}
             r={DOT_R}
             fill="var(--color-orange)"
-            opacity={REST_OPACITY}
+            opacity={profile.rest}
             style={{ transformOrigin: `${dot.cx}px ${dot.cy}px` }}
           />
         ))}
