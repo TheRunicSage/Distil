@@ -39,7 +39,10 @@ const RecentNewsItemSchema = z.object({
 
 const ResearchSummarySchema = z.object({
   company_snapshot: z.string().min(1).max(800),
-  recent_news: z.array(RecentNewsItemSchema).max(3),
+  // Prompt §3 Phase 2 says "up to 3 items"; cap raised to 5 for the same
+  // drift cushion as ats_keywords below — the prompt rule is the
+  // primary lever, the schema is a runaway-prose guard.
+  recent_news: z.array(RecentNewsItemSchema).max(5),
   industry_context: z.string().min(1).max(600),
   is_public_sector: z.boolean(),
   company_reference_used: z.string().min(1).max(800),
@@ -58,7 +61,11 @@ const JdAnalysisSchema = z.object({
   ]),
   must_haves: z.array(z.string().min(1).max(400)).max(20),
   nice_to_haves: z.array(z.string().min(1).max(400)).max(20),
-  ats_keywords: z.array(z.string().min(1).max(120)).min(8).max(12),
+  // Prompt §1 Phase 1 says "Top 8 to 12 ATS keywords"; schema cap raised
+  // 12 → 16 (2026-05-01) after a real generation overshot to 13. The
+  // 8-to-12 rule remains the prompt's primary lever — the cushion is a
+  // runaway-prose guard, not a green light to emit 16.
+  ats_keywords: z.array(z.string().min(1).max(120)).min(8).max(16),
 });
 
 const SalaryBandSchema = z.object({

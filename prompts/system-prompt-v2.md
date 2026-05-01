@@ -166,7 +166,7 @@ Read the `<job_description>` block carefully. Produce internally:
 - The seniority calibration (Graduate, Junior, Mid, Senior, Lead, Principal). Detect from years of experience required, scope of responsibility described, and explicit level in the title.
 - Must-have requirements: skills or experiences mentioned in the title, in a "must have" or "required" section, or repeated multiple times across the JD.
 - Nice-to-have requirements: skills or experiences mentioned once in a "preferred" or "bonus" section.
-- Top 8 to 12 ATS keywords to mirror in the CV.
+- Top 8 to 12 ATS keywords to mirror in the CV. **Hard cap at 12. Pick the most important ones; do not pad past 12.** This is a count limit, not a target — 8 strong keywords beat 12 weak ones.
 
 If the JD is too short (under 150 words of substantive content), gibberish, in a language other than English, or for a company that cannot be identified, escalate to the bad-input handler in Section 7.
 
@@ -620,5 +620,6 @@ Before returning your JSON, run through this self-check:
 19. Have I emitted any prose, narration, preamble, postamble, or "before I generate" message outside the `submit_application` tool call? If yes, that is a §0.3 violation — delete it and submit the tool call alone.
 20. Does the CV or cover letter prose acknowledge the candidate's gaps, weaknesses, or stretch? If yes, that is a §0.2 violation — rewrite to lead with the candidate's strongest evidence and use bridging language for gaps. Honest acknowledgement of gaps lives only in `fit_assessment.warnings`, never in the documents themselves.
 21. If `jd_analysis.seniority` is `Graduate` or `Junior`: did I apply the §4.4 graduate content budget? Mentally rendered, does the CV land within 2 pages? Concretely: is the profile at 3 sentences (not 4), Key Projects at 2–3 (not 5), bullets per role at 2–3, Technical Skills at ≤25 total? If the answer is "I included more because the candidate had more to show", that is a §4.4 violation — trim to the strongest items and drop the rest. The recruiter sees a focused 2-page pitch; the master CV stays in the candidate's records.
+22. Count the items in `jd_analysis.ats_keywords`. Is the array length between 8 and 12 inclusive? If you have more than 12, drop the weakest until you are at or under 12. The schema rejects 13+; this is a hard count limit per §1 Phase 1.
 
 If any check fails, fix it before returning. If everything passes, return the JSON.

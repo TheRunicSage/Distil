@@ -902,6 +902,17 @@ What was not changed: helpers' canonical defaults (still SPACING / SIZES, so cov
 
   Follow-up plan: run a real generation against a known-failing JD, query `select metadata, error_message from request_logs where source='inngest_step' and name='validate-output' and error_code='llm_invalid_output' order by created_at desc limit 20`, group by `metadata.zod_issues[*].path`, and ship the targeted fix (raise a specific cap, relax a specific validator, raise `max_tokens`, or whatever the data shows) as a separate commit.
 
+[7] Output-schema follow-up grounded in real Zod paths (2026-05-01, follow-up to the observability commit above). First production query after the metadata-capture change returned a single failing path: `jd_analysis.ats_keywords`, `too_big`, "expected array to have <=12 items". The model emitted 13+ keywords; schema cap was `.min(8).max(12)`, prompt §1 Phase 1 said "Top 8 to 12" with no explicit ceiling language. Same pattern as Decision Log [7] (2026-04-30) — schema and prompt agreed exactly on the upper bound, leaving zero cushion against model drift.
+
+  Three-part fix:
+  - `lib/llm/output-schema.ts`: raised `ats_keywords` cap 12 → 16. The 8–12 rule remains the prompt's primary lever; the schema cushion is a runaway-prose guard, not a green light to emit 16.
+  - `prompts/system-prompt-v2.md` §1 Phase 1: appended "**Hard cap at 12. Pick the most important ones; do not pad past 12.** This is a count limit, not a target — 8 strong keywords beat 12 weak ones." Makes the upper bound explicit so the model treats it as a count limit, not a quality target it can exceed for completeness.
+  - `prompts/system-prompt-v2.md` §10 self-check item 22: forces the model to count the array and trim to ≤12 before returning.
+
+  Proactive companion fix on the same shape: `recent_news` had the same exact-match pattern (schema `.max(3)`, prompt "up to 3 items"). Cap raised 3 → 5 in the same commit. No production overflow yet; raised pre-emptively because the failure mode is identical and the cost of one drop-zero is another paid generation lost.
+
+  Audit of remaining count-based caps: kept strict for `paragraphs.length(4)` (intentional, schema and prompt both say exactly four), `professional_experience.bullets.max(8)` (comfortably above prompt's 3-5), `key_projects.max(5)` (comfortably above prompt's 2-3), `what_we_did_checklist.min(5).max(8)` vs prompt "5 to 7" (already has cushion). No other tight matches identified.
+
 ---
 
 ## Known Gaps to Watch
