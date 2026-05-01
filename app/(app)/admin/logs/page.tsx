@@ -52,11 +52,11 @@ export default async function AdminLogsPage() {
       </div>
 
       {errors.length === 0 ? (
-        <div className="rounded-lg border border-border bg-dark3 p-12 text-center text-muted-foreground">
+        <div className="panel p-12 text-center text-muted-foreground">
           Nothing failed recently.
         </div>
       ) : (
-        <ul className="overflow-hidden rounded-lg border border-border bg-dark3">
+        <ul className="panel overflow-hidden">
           {errors.map((row) => {
             const tone =
               SOURCE_TONE[row.source] ??

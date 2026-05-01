@@ -178,14 +178,34 @@
    accent colours (success / warn / danger / info) stay identical
    in both modes — they're the unifying anchor. */
 
+/* Light palette retuned 2026-05-01. The previous version used cream
+   tints (#f0ebde, #e3decb) for dark3/dark4 — but the admin pages put
+   bg-dark3 outside bg-dark2, expecting "container brighter than its
+   header" (the dark-mode pattern). In the old light palette dark3
+   was DIMMER than dark2, inverting the elevation. Three muddy
+   off-white shades clustered together produced the user's "muddy"
+   complaint.
+
+   New palette mirrors dark mode's "going up = more elevated/brighter"
+   direction:
+       dark  (page):       #f5f3ed   warm off-white canvas
+       dark2 (subordinate): #faf8f2   subtle tint, table-header bands
+       dark3 (primary):    #ffffff   pure white card surface
+       dark4 (popover):    #ffffff   pure white, raised further by shadow
+
+   Elevation in light mode is now done by shadow + border (the
+   :root:not(.dark) overrides on .surface-card / .panel below), not
+   by cream tints. Dark mode behaviour is unchanged. */
 :root:not(.dark) {
-  --color-dark: #faf9f4;
-  --color-dark2: #ffffff;
-  --color-dark3: #f0ebde;
-  --color-dark4: #e3decb;
-  --color-text: #1a1a17;
-  --color-text-muted: #75726a;
-  --color-dim: rgba(26, 26, 23, 0.18);
+  --color-dark: #f5f3ed;
+  --color-dark2: #faf8f2;
+  --color-dark3: #ffffff;
+  --color-dark4: #ffffff;
+  --color-text: #15140e;
+  --color-text-muted: #6c6a60;
+  /* Flat warm-grey (not rgba) so bg-dim/15 produces a visible 15%
+     warm-grey wash instead of vanishing into the surface. */
+  --color-dim: #b8b6ad;
 }
 
 .dark {
@@ -303,6 +323,13 @@
   .surface-row {
     @apply flex items-center justify-between rounded-xl border border-border bg-dark2/60 px-4 py-3 backdrop-blur-sm transition-colors hover:border-orange/40 hover:bg-dark3/80;
   }
+  /* .panel — container without baked-in padding. Used for admin
+     tables and stat cards where the consumer wants to control its
+     own spacing or sit a table flush inside. Same elevation
+     treatment as .surface-card. */
+  .panel {
+    @apply rounded-2xl border border-border bg-dark2/60 backdrop-blur-sm;
+  }
 
   /* Button primitives */
   .btn-primary {
@@ -328,6 +355,65 @@
   .status-pill {
     @apply inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.05em];
   }
+}
+
+/* ============================================================
+   Light-mode surface elevation. Dark mode elevates by lightening
+   the surface (each step up the dark/dark2/dark3/dark4 scale is a
+   brighter grey). Light mode can't lighten further than white, so
+   it elevates with shadow + a slightly darker border instead. The
+   backdrop-blur baked into surface primitives is removed in light
+   mode because there's nothing to blur underneath a white card on
+   an off-white page — it just adds CPU cost.
+
+   Pure-white cards on a warm off-white page is the modern
+   design-system idiom (Linear, Vercel, Tailwind UI). The shadow
+   stack is two-layered: a tight 1px ambient shadow for the lift,
+   plus a softer 4px shadow for the depth.
+   ============================================================ */
+:root:not(.dark) .surface-card,
+:root:not(.dark) .surface-card-interactive,
+:root:not(.dark) .panel {
+  background-color: var(--color-dark3);
+  border-color: rgba(21, 20, 14, 0.08);
+  box-shadow:
+    0 1px 2px rgba(21, 20, 14, 0.04),
+    0 1px 4px rgba(21, 20, 14, 0.03);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+:root:not(.dark) .surface-card-interactive:hover {
+  border-color: rgba(226, 97, 59, 0.32);
+  box-shadow:
+    0 2px 6px rgba(21, 20, 14, 0.05),
+    0 6px 14px rgba(21, 20, 14, 0.03);
+}
+
+:root:not(.dark) .surface-row {
+  background-color: var(--color-dark3);
+  border-color: rgba(21, 20, 14, 0.08);
+  box-shadow: 0 1px 2px rgba(21, 20, 14, 0.04);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+:root:not(.dark) .surface-row:hover {
+  background-color: var(--color-dark2);
+  border-color: rgba(226, 97, 59, 0.32);
+}
+
+:root:not(.dark) .btn-secondary {
+  background-color: var(--color-dark3);
+  border-color: rgba(21, 20, 14, 0.10);
+  box-shadow: 0 1px 1px rgba(21, 20, 14, 0.04);
+}
+:root:not(.dark) .btn-secondary:hover {
+  background-color: var(--color-dark2);
+  border-color: rgba(226, 97, 59, 0.32);
+}
+:root:not(.dark) .btn-ghost:hover,
+:root:not(.dark) .btn-icon:hover {
+  background-color: var(--color-dark2);
+  color: var(--color-text);
 }
 
 /* ============================================================

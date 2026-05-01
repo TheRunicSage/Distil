@@ -71,7 +71,7 @@ export default async function AdminTelemetryPage() {
         <Stat label="Errors" value={String(outcomes.error)} accent="danger" />
       </section>
 
-      <section className="rounded-lg border border-border bg-dark3 p-6">
+      <section className="panel p-6">
         <h2 className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
           Submission funnel
         </h2>
@@ -99,7 +99,7 @@ export default async function AdminTelemetryPage() {
         </ul>
       </section>
 
-      <section className="rounded-lg border border-border bg-dark3 p-6">
+      <section className="panel p-6">
         <h2 className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
           Other events
         </h2>
@@ -156,7 +156,7 @@ function Stat({
         ? "text-warn"
         : "text-danger";
   return (
-    <div className="rounded-lg border border-border bg-dark3 p-4">
+    <div className="panel p-4">
       <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
         {label}
       </p>

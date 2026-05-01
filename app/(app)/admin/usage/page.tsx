@@ -166,7 +166,7 @@ export default async function AdminUsagePage({
         })}
       </nav>
 
-      <section className="overflow-x-auto rounded-lg border border-border bg-dark3">
+      <section className="panel overflow-x-auto">
         <table className="w-full table-auto text-sm">
           <thead className="bg-dark2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
             <tr>
@@ -247,7 +247,7 @@ export default async function AdminUsagePage({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-border bg-dark3 p-4">
+    <div className="panel p-4">
       <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
         {label}
       </p>

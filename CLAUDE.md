@@ -967,6 +967,20 @@ What was not changed: helpers' canonical defaults (still SPACING / SIZES, so cov
 
   Side effect: any other Zod failure that previously dropped a generation now either passes (because the schema is more forgiving) or surfaces a more specific issue path through the same observability pipeline. Re-querying `request_logs` after a few weeks of new data should narrow remaining failure modes; the schema is now sized for the model's real output, not for the gatekeeping posture it was originally tuned against.
 
+[14] Light-mode design system pass for the admin panel (2026-05-01). User-reported: "all the white elements are looking weird almost muddy" in the admin panel. Root cause: the previous light palette mapped `dark2 → #ffffff` and `dark3 → #f0ebde` (cream), so the admin pages — which expect "container bg-dark3 BRIGHTER than header bg-dark2" per the dark-mode elevation idiom — got the opposite layering in light mode (cream container with a white header band on an off-white page = three near-white tints clustering with no clear hierarchy).
+
+  Three coordinated fixes in `app/globals.css`:
+
+  - **Light palette retuned** to mirror dark mode's "going up = more elevated/brighter" direction: `dark` (#f5f3ed) page → `dark2` (#faf8f2) subordinate tint → `dark3` (#ffffff) primary card → `dark4` (#ffffff) popover. Now every component using `bg-dark3` for a container with `bg-dark2` inside renders correctly in both modes (container is brighter than its inner band). `--color-dim` switched to a flat warm-grey `#b8b6ad` so `bg-dim/15` produces a visible 15% wash instead of the previous near-vanishing rgba(black, 0.18) at 15% (~3% effective alpha).
+  - **`.panel` primitive added** alongside `.surface-card`: same elevation treatment, no baked-in padding. Used for admin tables (which need overflow + flush table inside) and stat cards (which want custom padding). Replaces all the bare `rounded-lg border border-border bg-dark3 p-X` recipes scattered across `admin/usage`, `admin/logs`, `admin/telemetry`, `admin/users`.
+  - **Light-mode surface elevation via shadow** (`:root:not(.dark)` overrides on `.surface-card`, `.surface-card-interactive`, `.panel`, `.surface-row`, `.btn-secondary`, `.btn-ghost:hover`, `.btn-icon:hover`): pure-white `bg-dark3` surfaces sit on the `dark` page bg, lifted by a two-layer shadow stack (1px ambient + 4px depth) and a subtle warm-near-black border at rgba(21, 20, 14, 0.08). `backdrop-filter` is explicitly disabled in light mode since there's nothing to blur underneath a white card on an off-white page — saves CPU. Hover states bump the border to brand orange and deepen the shadow.
+
+  This is the Linear / Vercel / Tailwind UI idiom: pure-white cards on a warm off-white canvas with shadow elevation, not tinted "elevation by darker shade" which is the dark-mode pattern.
+
+  Admin pages refactored to use `.panel`: `admin/usage`, `admin/logs`, `admin/telemetry`, `admin/users`. Stat cards and table containers now share the same elevation treatment in both modes. Subordinate states inside panels (table `<thead>`, filter pill inactive state, logs footer band) still use `bg-dark2` / `bg-dark2/40` / `bg-dark2/60` — those resolve to the new subtle warm tint in light mode and read as proper subordinate bands inside the white panel.
+
+  What was *not* changed: dark mode (still uses cream-free dark2/3/4 progression as before), brand orange / semantic accents (the unifying anchor across modes), the `:root` light tokens for preview-card islands (those are independent of the brand-token redefinitions), the AmbientBackground layer.
+
 ---
 
 ## Known Gaps to Watch
