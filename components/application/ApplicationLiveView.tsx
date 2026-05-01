@@ -11,12 +11,12 @@
 //   - Hero block: gradient halo, dual-ring spinner, rotating phrase
 //   - Progress bar + elapsed timer
 //   - "What's happening now" mini-list (4 phase-specific bullets)
-//   - "Did you know" rotating tip carousel
 //
 // Phrase pools are sized so a 2-minute wait does not loop visibly:
-// research has 28 phrases at 3.2s each (~90s before repeat), and the
-// hero phrase + tip carousel rotate on independent timers so the screen
-// keeps changing.
+// research has 28 phrases at 3.2s each (~90s before repeat). The
+// did-you-know carousel was removed 2026-05-01 because it was leaking
+// behind-the-scenes implementation details (cost cap, cache TTL,
+// observability) that customers should not see.
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -199,29 +199,7 @@ const PHASE_NOW: Record<Phase, { glyph: string; bullets: string[] }> = {
   },
 };
 
-// Did-you-know carousel — these rotate on a 6.5s independent timer so
-// the page is showing two streams of fresh copy at once. Educational,
-// product-confident, and grounded in real behaviour the model performs.
-const DID_YOU_KNOW: string[] = [
-  "We never invent dates, employers, or numbers — every claim ties back to your master CV.",
-  "Each cover letter references a real, verifiable thing about the company found via live web search.",
-  "The system bans em dashes and a list of AI-tell phrases; a server-side scanner flags any survivors.",
-  "We mirror 8–12 ATS keywords from the job description naturally — no keyword stuffing.",
-  "Your master CV stays in private storage. Only the service-role key can read it.",
-  "Files expire after 60 days; we keep generation metadata for a year for your records.",
-  "If we can't proceed, the queue advances on its own — you never wait behind a stuck row.",
-  "Cover letters target 320–380 words across exactly four paragraphs, calibrated to your seniority.",
-  "Graduate CVs use a denser layout to land on two pages without crowding.",
-  "The fit score is honest internal metadata — a weak score never blocks delivery.",
-  "Public-sector applications get a tailored Te Tiriti acknowledgement, only when your CV supports it.",
-  "Salary band research pulls from Hays, Robert Walters, Seek, and Trade Me Jobs.",
-  "We cap each generation at $1.00 — a pre-call estimate gates anything that would exceed it.",
-  "The system prompt is cached, so back-to-back retries cost a fraction of the first run.",
-  "If the LLM trips a schema cap, we log the exact field path so we can fix it the same day.",
-];
-
 const PHRASE_INTERVAL_MS = 3200;
-const TIP_INTERVAL_MS = 6500;
 const POLL_INTERVAL_MS = 5000;
 const POLL_AFTER_SILENCE_MS = 10_000;
 
@@ -257,9 +235,6 @@ export function ApplicationLiveView({
   const [phase, setPhase] = useState<Phase>(phaseForStatus(initialStatus));
   const [status, setStatus] = useState<string>(initialStatus);
   const [phraseIdx, setPhraseIdx] = useState(0);
-  const [tipIdx, setTipIdx] = useState(() =>
-    Math.floor(Math.random() * DID_YOU_KNOW.length),
-  );
   const [elapsed, setElapsed] = useState(0);
   const lastEventAt = useRef<number>(Date.now());
 
@@ -287,15 +262,6 @@ export function ApplicationLiveView({
     }, PHRASE_INTERVAL_MS);
     return () => clearInterval(tick);
   }, [phase]);
-
-  // Tip rotation — independent timer so the page has two streams of
-  // fresh copy. Doesn't reset on phase change.
-  useEffect(() => {
-    const tick = setInterval(() => {
-      setTipIdx((i) => (i + 1) % DID_YOU_KNOW.length);
-    }, TIP_INTERVAL_MS);
-    return () => clearInterval(tick);
-  }, []);
 
   // SSE + polling fallback.
   useEffect(() => {
@@ -360,7 +326,6 @@ export function ApplicationLiveView({
   const progressPct = progressFromPhase(phase);
   const phrase = phrasesForPhase(phase)[phraseIdx] ?? "";
   const now = PHASE_NOW[phase];
-  const tip = DID_YOU_KNOW[tipIdx];
 
   return (
     <section className="relative overflow-hidden rounded-2xl border border-border bg-dark2/60 backdrop-blur-sm">
@@ -407,8 +372,6 @@ export function ApplicationLiveView({
         </div>
 
         <NowHappeningPanel bullets={now.bullets} stageLabel={STAGES[Math.max(0, stageIdx)]?.label ?? "Queued"} />
-
-        <DidYouKnow tip={tip} index={tipIdx} />
 
         <p className="text-center text-xs text-muted-foreground">
           You can leave this page — generation continues in the background.
@@ -611,43 +574,6 @@ function NowHappeningPanel({
       </ul>
       <style jsx>{`
         @keyframes live-fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(4px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-function DidYouKnow({ tip, index }: { tip: string; index: number }) {
-  return (
-    <div className="rounded-2xl border border-orange/20 bg-orange-subtle px-5 py-4 sm:px-6 sm:py-5">
-      <div className="flex items-start gap-3">
-        <span
-          aria-hidden
-          className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange/15 font-serif text-[13px] italic text-orange"
-        >
-          i
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="eyebrow-muted mb-1">Did you know</p>
-          <p
-            key={index}
-            className="text-sm leading-relaxed text-text/90"
-            style={{ animation: "live-tip 0.45s ease-out" }}
-          >
-            {tip}
-          </p>
-        </div>
-      </div>
-      <style jsx>{`
-        @keyframes live-tip {
           from {
             opacity: 0;
             transform: translateY(4px);

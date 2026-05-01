@@ -155,7 +155,12 @@ export async function renderCV(
     }
   }
 
-  // 7. Education
+  // 7. Education. Details render as a single inline line joined with " · "
+  // (NOT bullets) — Education entries usually have 1-3 short details
+  // (GPA, specialisation, thesis title) and rendering each as a bullet
+  // wastes a full line of vertical space per item. Joining keeps the
+  // section compact, which is the dominant lever for landing graduate /
+  // mid CVs on 2 pages.
   children.push(sectionHeading("Education", spacing, sizes));
   for (const edu of content.education) {
     children.push(
@@ -171,8 +176,14 @@ export async function renderCV(
     );
     const meta = pipeJoin([edu.location, edu.dates]);
     if (meta) children.push(metaLine(meta, spacing, sizes));
-    for (const detail of edu.details) {
-      children.push(bullet(detail, spacing, sizes));
+    if (edu.details.length > 0) {
+      const joined = edu.details
+        .map((d) => d.trim().replace(/[.\s]+$/, ""))
+        .filter(Boolean)
+        .join(" · ");
+      if (joined) {
+        children.push(bodyParagraph(joined, { spacing, sizes }));
+      }
     }
   }
 
@@ -196,9 +207,16 @@ export async function renderCV(
     }
   }
 
-  // 9. Referees
-  children.push(sectionHeading("Referees", spacing, sizes));
-  children.push(bodyParagraph(content.referees, { spacing, sizes }));
+  // 9. Referees — rendered as a single small grey inline line at the
+  // bottom (no separate section heading). NZ recruiters expect to see
+  // the word "Referees" on the page, but the typical content is just
+  // "Available on request" — a full section heading + body paragraph
+  // burned ~3 lines of vertical space for one short line of text and
+  // was the most common cause of CVs spilling onto a third page with
+  // nothing else there. Using metaLine keeps the line ATS-greppable
+  // ("Referees:" prefix is parsed as a section header equivalent) at a
+  // fraction of the vertical cost.
+  children.push(metaLine(`Referees: ${content.referees}`, spacing, sizes));
 
   const section: ISectionOptions = {
     properties: {

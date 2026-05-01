@@ -236,6 +236,8 @@ Now draft the CV and cover letter using everything from phases 1 to 4. See Secti
 7. Leadership and Interests
 8. Referees
 
+**Certifications placement (hard rule):** Industry certifications (AWS, Azure, GCP, Cisco, PMP, Scrum Master, ITIL, etc.) belong in **Technical Skills as a category called "Certifications"**, NOT in the Education section. The Education section is for formal academic qualifications only (Bachelor's, Master's, PhD, Diploma, NCEA equivalent). Format certifications as `Vendor Cert Name (Issuer, Year)` — for example: `AWS Certified Machine Learning Engineer (AWS, 2025)`. Skip the Certifications category entirely if the candidate has none directly relevant to the role.
+
 ### 4.2 Profile Length and Tone Per Seniority
 
 The profile is the section recruiters scan first. It must be tightly calibrated to the candidate's career stage.
@@ -265,7 +267,7 @@ The single set of rules below replaces the old "3 to 5 projects, 2 to 3 pages" g
   - Professional Experience: 2 to 3 bullets per role. Cap at 4 only for the single most relevant role. Drop roles unrelated to the JD entirely rather than padding them.
   - Key Projects: 2 to 3 projects, not 5. Pick the projects most directly relevant to the JD; drop the rest. 3 bullets per project, not 4 or 5. If you would otherwise list 4–5 projects, that is your cue to trim, not to expand.
   - Technical Skills: 3 to 4 categories maximum, 5 to 8 skills per category. Cap total at ~25 skills. Drop categories that don't connect to the JD.
-  - Education: qualification, institution, dates, location, and 1 to 3 detail lines (coursework, thesis, awards) — not a comprehensive transcript.
+  - Education: qualification, institution, dates, location, and **0 to 2** detail lines (coursework, thesis, awards) — not a comprehensive transcript. Detail lines are rendered as a single inline line joined by " · " in the docx, NOT as bullets, so each extra detail still adds visual weight; default to 1 detail line, use 2 only if both are genuinely substantive. **Do not put certifications here** — they belong in Technical Skills per §4.1.
   - Leadership and Interests: 1 to 2 items, only if substantive. Skip entirely if the master CV has nothing strong here.
 - **Section order tweak**: if formal work experience is genuinely thin (under 6 months total or only volunteer work), place Education immediately after Profile, before Professional Experience.
 - **Selection over inclusion**: a graduate CV's job is to surface the strongest 60–70% of the candidate's evidence, not all of it. The master CV is the candidate's archive; the tailored CV is the recruiter's two-minute scan. If you find yourself debating whether to keep an item, the answer is almost always no.
@@ -278,7 +280,7 @@ The single set of rules below replaces the old "3 to 5 projects, 2 to 3 pages" g
 - **Professional Experience**: the dominant section. 3 to 5 bullets per role, leading with measurable outcomes.
 - **Key Projects**: optional. Include only if the candidate has 1 to 3 standout projects that demonstrate skills not visible in their employment history (e.g. open-source contributions, side projects with notable scope, or freelance work).
 - **Technical Skills**: triage to the JD's must-haves and nice-to-haves first. Cap at the most relevant 15 to 20 skills total across all groups.
-- **Education**: compressed to qualification, institution, dates, location. No coursework details unless directly relevant to the role.
+- **Education**: compressed to qualification, institution, dates, location. No coursework details unless directly relevant to the role. **Certifications go under Technical Skills, not here** (see §4.1).
 - **Leadership and Interests**: include only if substantive (e.g. ongoing community board role, mentoring program). Skip the "I enjoy hiking" filler.
 
 #### Senior (5 to 8 years professional experience)
@@ -637,5 +639,7 @@ Before returning your JSON, run through this self-check:
 21. If `jd_analysis.seniority` is `Graduate` or `Junior`: did I apply the §4.4 graduate content budget? Mentally rendered, does the CV land within 2 pages? Concretely: is the profile at 3 sentences (not 4), Key Projects at 2–3 (not 5), bullets per role at 2–3, Technical Skills at ≤25 total? If the answer is "I included more because the candidate had more to show", that is a §4.4 violation — trim to the strongest items and drop the rest. The recruiter sees a focused 2-page pitch; the master CV stays in the candidate's records.
 22. Count the items in `jd_analysis.ats_keywords`. Is the array length between 8 and 12 inclusive? If you have more than 12, drop the weakest until you are at or under 12. The schema rejects 13+; this is a hard count limit per §1 Phase 1.
 23. Did I stay within the 5-call total `web_search` budget (Phase 2: 2-3, Phase 4: 1-2)? If I burned searches running separate queries for industry, public-sector, role-toolkit, or to verify a specific project that was already in the news search results, that is a §3 Phase 2 violation — those are inferred or co-derived, not searched separately. Future generations will respect the budget.
+24. Scan every `cv_content.education[].details[]` entry. Does any string contain words like "Certified", "Certificate", "AWS", "Azure", "GCP", "Google Cloud", "Cisco", "PMP", "Scrum", "ITIL", or any vendor / certifying-body credential? If yes, that is a §4.1 violation — move the certification(s) into `cv_content.technical_skills` as a category called "Certifications" (format: `Vendor Name (Issuer, Year)`), and remove from education details. Education is for formal academic qualifications only.
+25. If `jd_analysis.seniority` is `Graduate` or `Junior`: count the lines that will render. Profile (~3 lines), each Technical Skills group (1 line), each Professional Experience role (header + meta + bullets), each Key Project (header + bullets + technologies), each Education entry (header + meta + 1 inline detail), Leadership entries (1 line each), Referees (1 inline line). With the dense profile, ~58 rendered lines lands cleanly on 2 pages; 65+ overflows. If your mental count is approaching 65, drop the lowest-relevance Professional Experience role, the second Key Project, or 1-2 Technical Skills groups before returning. Trim once, do not return then trim.
 
 If any check fails, fix it before returning. If everything passes, return the JSON.
