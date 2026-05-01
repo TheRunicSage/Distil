@@ -127,21 +127,6 @@
   --input: var(--color-l-border);
   --ring: var(--color-orange);
 
-  /* Brand-token redefinitions for light mode. Tailwind utility classes
-     across the app reference --color-dark / dark2 / dark3 / dark4 /
-     text / text-muted directly; remap them here so the same classes
-     produce a light surface when the html element does not carry
-     `.dark`. Order of elevation is preserved (page bg -> card ->
-     hover -> popover) but moves brighter / whiter rather than
-     lighter-grey-on-dark. */
-  --color-dark: #fbfaf6;
-  --color-dark2: #ffffff;
-  --color-dark3: #f1f0ea;
-  --color-dark4: #e7e6df;
-  --color-text: #1a1a1a;
-  --color-text-muted: #6e6e66;
-  --color-dim: rgba(26, 26, 26, 0.18);
-
   --chart-1: var(--color-orange);
   --chart-2: var(--color-info);
   --chart-3: var(--color-success);
@@ -164,6 +149,44 @@
    .dark — the default app surface. Cards on dark3, popovers on
    dark4, primary orange, muted text at 50% opacity per §12.2.
    ============================================================ */
+
+/* ============================================================
+   Light-mode brand-token redefinitions.
+   Scoped to :root:not(.dark) so the @theme dark defaults still win
+   when the html element carries .dark — the previous version of
+   this block was a plain :root and overrode the dark palette
+   unconditionally, breaking dark mode. Specificity 0,1,1 vs the
+   @theme-emitted :root rule's 0,0,1, so this block wins when it
+   matches and stays out of the way otherwise.
+
+   Light palette is a single warm hue family (off-white → cream →
+   warm-grey) so cards, hover states, and popovers feel like one
+   piece of paper at different elevations rather than three random
+   greys. Text leads with a near-black that carries the same warmth
+   so type doesn't read as "stamped" onto the surface.
+
+       page (dark):       #faf9f4   warm off-white canvas
+       card (dark2):      #ffffff   pure white, raised
+       hover (dark3):     #f0ebde   warm cream tint, secondary surface
+       popover (dark4):   #e3decb   denser cream, modal/dropdown bg
+       text:              #1a1a17   warm near-black
+       text-muted:        #75726a   warm grey, ~50% lightness
+       dim:               18% black, slightly warm
+
+   Borders + shadcn semantic tokens are defined by the :root block
+   above (via --color-l-* family). The brand-orange + semantic
+   accent colours (success / warn / danger / info) stay identical
+   in both modes — they're the unifying anchor. */
+
+:root:not(.dark) {
+  --color-dark: #faf9f4;
+  --color-dark2: #ffffff;
+  --color-dark3: #f0ebde;
+  --color-dark4: #e3decb;
+  --color-text: #1a1a17;
+  --color-text-muted: #75726a;
+  --color-dim: rgba(26, 26, 23, 0.18);
+}
 
 .dark {
   --background: var(--color-dark);
@@ -373,6 +396,15 @@
   ::view-transition-old(root) {
     animation: none;
   }
+}
+
+/* Ambient blobs are tuned for the dark canvas. On the light canvas
+   the same alpha values produce a stronger colour cast, so dim the
+   whole mount to roughly 35% of the dark intensity — keeps a hint of
+   brand warmth in the corners without overwhelming the off-white
+   surfaces. */
+:root:not(.dark) .ambient-blob {
+  opacity: 0.35;
 }
 
 .ambient-blob-violet {

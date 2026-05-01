@@ -698,6 +698,23 @@ What was not changed: AppShell (toast provider + keyboard shortcuts intact, incl
 
 [18] `insufficient_input_reason` Zod cap raised from 800 → 2000 chars in `lib/llm/output-schema.ts`. An over-cautious model emitted a long enumeration of contact-detail concerns that overflowed 800 chars and failed `validate-output` as `llm_invalid_output` — masking the real "model bailed when it shouldn't" signal. The reason field is rendered as a paragraph to the user; verbose-but-readable is fine, opaque is not.
 
+[14] Light-mode cascade fix + warm palette (2026-05-01, follow-up to the same-day theme-toggle work). The previous turn shipped a `:root` block that redefined the brand tokens (`--color-dark`, `--color-dark2`, etc.) to light values. Bug: that block's selector specificity was 0,0,1 and source-order-tied with the @theme-emitted `:root` rule, so the light values won unconditionally — including in dark mode, which meant `--color-dark` resolved to `#fbfaf6` (white) and the whole dark theme rendered with white surfaces.
+
+Fix: the light-mode brand-token redefinitions moved to `:root:not(.dark)` (specificity 0,1,1, only matches when html lacks `.dark`). @theme dark defaults now win in dark mode; the new selector wins in light mode. The previous shadcn semantic tokens in `:root` are unchanged — they don't conflict because they target different variable names.
+
+Light palette also re-tuned to a single warm hue family so cards / hover / popover read as one piece of paper at different elevations rather than three random greys:
+* page (`--color-dark`): `#faf9f4` — warm off-white canvas
+* card (`--color-dark2`): `#ffffff` — pure white, raised
+* hover (`--color-dark3`): `#f0ebde` — warm cream tint, secondary surface
+* popover (`--color-dark4`): `#e3decb` — denser cream, modal/dropdown bg
+* text (`--color-text`): `#1a1a17` — warm near-black
+* muted (`--color-text-muted`): `#75726a` — warm grey, ~50% lightness
+* dim (`--color-dim`): 18% warm-black
+
+Brand orange and semantic accents (success / warn / danger / info) stay identical in both modes — they're the unifying anchor across the two surfaces.
+
+Ambient blobs dimmed to 35% opacity in light mode (`:root:not(.dark) .ambient-blob { opacity: 0.35 }`). The dark-canvas alphas were producing too strong a colour cast on the light canvas; the dim keeps a hint of brand warmth in the corners without overwhelming the surfaces.
+
 [14] Theme toggle + lighter greys + generations survive deletion (2026-05-01).
 
 User asked for three things in one turn:
