@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Outfit } from "next/font/google";
 import "./globals.css";
+import { CustomCursor } from "@/components/app/CustomCursor";
 import { cn } from "@/lib/utils";
 
 // Outfit — body sans. Geometric, friendly, holds at small sizes.
@@ -52,7 +53,10 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
       </head>
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        {children}
+        <CustomCursor />
+      </body>
     </html>
   );
 }

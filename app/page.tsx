@@ -18,9 +18,9 @@
 // degrades to a static fallback at the component level.
 
 import { AmbientBackground } from "@/components/app/AmbientBackground";
+import { CustomCursor } from "@/components/app/CustomCursor";
 import { MagneticDots } from "@/components/app/MagneticDots";
 import { CuriosumSection } from "@/components/landing/CuriosumSection";
-import { CustomCursor } from "@/components/landing/CustomCursor";
 import { Footer } from "@/components/landing/Footer";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
@@ -45,7 +45,6 @@ export default function LandingPage() {
         </main>
         <Footer />
       </div>
-      <CustomCursor />
     </MotionRoot>
   );
 }

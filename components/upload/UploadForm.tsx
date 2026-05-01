@@ -21,7 +21,19 @@ function fileLabel(name: string): string {
   return name.length > 40 ? `${name.slice(0, 37)}…` : name;
 }
 
-export function UploadForm() {
+type UploadFormProps = {
+  // Where to push the user after a successful upload. First-time
+  // uploads route straight to /application/new so the user lands on
+  // the next actionable step rather than bouncing through an empty
+  // dashboard. Replacements (called from /settings) stay in settings.
+  redirectTo?: string;
+  successToast?: string;
+};
+
+export function UploadForm({
+  redirectTo = "/dashboard",
+  successToast = "Master CV uploaded.",
+}: UploadFormProps = {}) {
   const router = useRouter();
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -77,8 +89,8 @@ export function UploadForm() {
         setPending(false);
         return;
       }
-      toast.push("Master CV uploaded.", "success");
-      router.push("/dashboard");
+      toast.push(successToast, "success");
+      router.push(redirectTo);
       router.refresh();
     } catch {
       const msg = "Network error. Try again.";

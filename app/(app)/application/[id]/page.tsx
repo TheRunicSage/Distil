@@ -1,15 +1,15 @@
 // Single-application page. Branches on application.status:
-//   queued | paused        → Screen "Queued, position N of M"
-//   running | rendering    → Screen 8 loading (SSE-driven via client)
-//   success                → CV preview + cover letter preview + downloads
-//   insufficient_input (1/2)→ Screen 9 — retry form
-//   insufficient_input (3) → Screen 10 — continue queue
-//   error                  → Screen 12 — error + retry hint
-//   abandoned | cancelled  → terminal "Closed" view
+//   queued | paused | running | rendering → ApplicationLiveView (waiting screen)
+//   success                              → CV preview + cover letter + downloads
+//   insufficient_input (1/2)             → Screen 9 — retry form
+//   insufficient_input (3)               → Screen 10 — abandon-only
+//   error | cancelled                    → Failed view + per-row Retry button
+//   abandoned                            → Closed view
 //
-// Server Component fetches the row + queue context and the appropriate
-// presentation. Live state transitions are handled by ApplicationLiveView
-// (client) which router.refresh()es on terminal phase events.
+// Server Component fetches the row + queue context. Live state transitions
+// are handled by ApplicationLiveView (client) which router.refresh()es on
+// terminal phase events. No more "Show submitted job description" expand
+// step — submit goes straight to the waiting screen.
 
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -19,6 +19,7 @@ import { ApplicationLiveView } from "@/components/application/ApplicationLiveVie
 import { CoverLetterPreview } from "@/components/application/CoverLetterPreview";
 import { CvPreview } from "@/components/application/CvPreview";
 import { RetryAbandonControls } from "@/components/application/RetryAbandonControls";
+import { RetryFailedButton } from "@/components/application/RetryFailedButton";
 import { createClient } from "@/lib/supabase/server";
 import type {
   ApplicationOutput,
@@ -45,6 +46,22 @@ const STATUS_TONE: Record<string, string> = {
   error: "bg-danger/15 text-danger border-danger/25",
 };
 
+// User-facing label for the status pill. Internal enum values like
+// "insufficient_input" / "rendering" are noisy in a header row.
+const STATUS_LABEL: Record<string, string> = {
+  queued: "Queued",
+  paused: "Queued",
+  running: "Tailoring",
+  rendering: "Tailoring",
+  success: "Ready",
+  insufficient_input: "Needs more info",
+  abandoned: "Abandoned",
+  cancelled: "Cancelled",
+  error: "Failed",
+};
+
+const NON_TERMINAL = new Set(["queued", "paused", "running", "rendering"]);
+
 type RouteCtx = { params: Promise<{ id: string }> };
 
 export default async function ApplicationPage({ params }: RouteCtx) {
@@ -65,19 +82,7 @@ export default async function ApplicationPage({ params }: RouteCtx) {
   const tone =
     STATUS_TONE[app.status] ??
     "bg-dim/15 text-muted-foreground border-border";
-
-  let queueInfo: { position: number; total: number } | null = null;
-  if (app.status === "queued" || app.status === "paused") {
-    const { data: queue } = await supabase
-      .from("applications")
-      .select("id, queue_position")
-      .eq("user_id", userData.user.id)
-      .in("status", ["queued", "paused", "running", "rendering"])
-      .order("queue_position", { ascending: true });
-    const list = queue ?? [];
-    const idx = list.findIndex((r) => r.id === id);
-    queueInfo = { position: idx + 1, total: list.length };
-  }
+  const label = STATUS_LABEL[app.status] ?? app.status;
 
   return (
     <div className="space-y-8">
@@ -94,7 +99,7 @@ export default async function ApplicationPage({ params }: RouteCtx) {
           <span
             className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.05em] ${tone}`}
           >
-            {app.status}
+            {label}
           </span>
           {app.parent_application_id && (
             <span className="text-xs text-muted-foreground">
@@ -104,19 +109,7 @@ export default async function ApplicationPage({ params }: RouteCtx) {
         </div>
       </header>
 
-      {(app.status === "queued" || app.status === "paused") && queueInfo && (
-        <section className="rounded-lg border border-border bg-dark3 p-6">
-          <p className="text-sm text-text">
-            Queued, position {queueInfo.position} of {queueInfo.total}.
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            We&apos;ll start as soon as the previous run finishes.
-          </p>
-          <ReadOnlyInputs jd={app.job_description} notes={app.user_notes} />
-        </section>
-      )}
-
-      {(app.status === "running" || app.status === "rendering") && (
+      {NON_TERMINAL.has(app.status) && (
         <ApplicationLiveView
           applicationId={id}
           initialStatus={app.status}
@@ -153,60 +146,38 @@ export default async function ApplicationPage({ params }: RouteCtx) {
         </section>
       )}
 
-      {app.status === "error" && (
+      {(app.status === "error" || app.status === "cancelled") && (
         <section className="rounded-lg border border-danger/25 bg-danger/10 p-6">
           <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-danger">
-            Something went wrong
+            {app.status === "cancelled"
+              ? "This run was cancelled"
+              : "Something went wrong"}
           </p>
           <p className="mt-2 text-sm text-text">
-            {app.error_message ??
-              "We couldn't finish this run. Try submitting again."}
+            {app.status === "cancelled"
+              ? "The system never picked this run up — usually because it was offline at submit time. Retry now and it'll go straight through."
+              : (app.error_message ??
+                "We couldn't finish this run. Retry now or start fresh from the new-application screen.")}
           </p>
-          <Link
-            href="/application/new"
-            className="mt-4 inline-block rounded-sm bg-orange px-4 py-2 text-sm font-medium text-white hover:bg-orange-light"
-          >
-            New application
-          </Link>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <RetryFailedButton
+              applicationId={id}
+              canRetry={app.attempt_number < 3}
+            />
+            <Link href="/application/new" className="btn-secondary">
+              New application
+            </Link>
+          </div>
         </section>
       )}
 
-      {(app.status === "abandoned" || app.status === "cancelled") && (
+      {app.status === "abandoned" && (
         <section className="rounded-lg border border-border bg-dark3 p-6 text-sm text-muted-foreground">
-          This application was {app.status}. The metadata stays for a year
-          for your records.
+          This application was abandoned. The metadata stays for a year for
+          your records.
         </section>
       )}
     </div>
-  );
-}
-
-function ReadOnlyInputs({
-  jd,
-  notes,
-}: {
-  jd: string;
-  notes: string | null;
-}) {
-  return (
-    <details className="mt-4 text-xs">
-      <summary className="cursor-pointer text-muted-foreground hover:text-text">
-        Show submitted job description
-      </summary>
-      <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded-sm border border-border bg-dark2 p-3 font-sans text-xs text-text/90">
-        {jd}
-      </pre>
-      {notes && (
-        <>
-          <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
-            Notes
-          </p>
-          <pre className="mt-1 whitespace-pre-wrap rounded-sm border border-border bg-dark2 p-3 font-sans text-xs text-text/90">
-            {notes}
-          </pre>
-        </>
-      )}
-    </details>
   );
 }
 

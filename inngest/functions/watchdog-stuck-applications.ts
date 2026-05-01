@@ -10,8 +10,11 @@
 //   1. The update MUST guard with the originating status so a row that
 //      legitimately advanced between find and update is not stomped.
 //   2. Every terminal transition MUST set metadata_expires_at = now() + 1y.
-//   3. Resume any items the recovered application paused (paused → queued).
-//   4. Fire 'application/generation.completed' so trigger-next-in-queue runs.
+//   3. Fire 'application/generation.completed' so trigger-next-in-queue runs.
+//
+// Note: under Option B the watchdog no longer resumes paused siblings.
+// Paused rows are a legacy artefact of the previous spec and get swept
+// to cancelled by inngest/functions/sweep-paused after 1 hour.
 
 import "server-only";
 import { withCronLog } from "@/lib/logging/with-inngest-step";
@@ -65,12 +68,6 @@ export const watchdogStuckApplications = inngest.createFunction(
           .eq("id", row.id)
           .eq("status", "running"); // guard: don't stomp a real success
         if (updateErr) continue;
-
-        await supabase
-          .from("applications")
-          .update({ status: "queued" })
-          .eq("user_id", row.user_id)
-          .eq("status", "paused");
 
         await step.sendEvent(`completed-${row.id}`, {
           name: "application/generation.completed",

@@ -1,7 +1,13 @@
-// POST /api/applications/[id]/retry — retry an insufficient_input
-// application by creating a new row with parent_application_id linking
-// back. attempt_number is hard-capped at 3. Optionally swaps in the
-// current master CV via use_new_master_cv. Resumes paused queue items.
+// POST /api/applications/[id]/retry — retry an insufficient_input,
+// error, or cancelled application by creating a new row with
+// parent_application_id linking back. attempt_number is hard-capped at
+// 3. Optionally swaps in the current master CV via use_new_master_cv.
+//
+// Under Option B the queue is never paused on insufficient_input, so
+// there are no paused siblings to resume. The retry route is also
+// reachable from history rows for any non-success terminal state, not
+// just insufficient_input — the user can re-run a failed generation
+// without needing to abandon-then-resubmit.
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -52,7 +58,14 @@ export async function POST(req: Request, ctxArg: RouteCtx) {
       .maybeSingle();
     if (!parent) throw new ApiError("application_not_found");
     if (parent.user_id !== userId) throw new ApiError("not_owner");
-    if (parent.status !== "insufficient_input") {
+    // Retry is allowed from any non-success terminal state.
+    const RETRYABLE_STATES = new Set([
+      "insufficient_input",
+      "error",
+      "cancelled",
+      "abandoned",
+    ]);
+    if (!RETRYABLE_STATES.has(parent.status)) {
       throw new ApiError("invalid_application_state");
     }
     if (parent.attempt_number >= 3) {
@@ -94,13 +107,6 @@ export async function POST(req: Request, ctxArg: RouteCtx) {
       queue_position: queuePosition,
     });
     if (insertErr) throw new ApiError("database_error", insertErr.message);
-
-    // Resume any items the user has paused (siblings to the parent).
-    await service
-      .from("applications")
-      .update({ status: "queued" })
-      .eq("user_id", userId)
-      .eq("status", "paused");
 
     await inngest.send({
       name: "application/generate.requested",

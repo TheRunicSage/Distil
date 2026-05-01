@@ -165,8 +165,8 @@ export default async function AdminUsagePage({
         })}
       </nav>
 
-      <section className="overflow-hidden rounded-lg border border-border bg-dark3">
-        <table className="w-full text-sm">
+      <section className="overflow-x-auto rounded-lg border border-border bg-dark3">
+        <table className="w-full min-w-[860px] text-sm">
           <thead className="bg-dark2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
             <tr>
               <th className="px-4 py-3">Created</th>
@@ -175,7 +175,7 @@ export default async function AdminUsagePage({
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Attempt</th>
               <th className="px-4 py-3">Duration</th>
-              <th className="px-4 py-3 text-right">Cost</th>
+              <th className="whitespace-nowrap px-4 py-3 text-right">Cost (USD)</th>
             </tr>
           </thead>
           <tbody>
@@ -208,7 +208,7 @@ export default async function AdminUsagePage({
                     {row.id.slice(0, 8)}
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                    {row.user_id.slice(0, 8)}
+                    {row.user_id ? row.user_id.slice(0, 8) : "—"}
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -221,7 +221,7 @@ export default async function AdminUsagePage({
                   <td className="whitespace-nowrap px-4 py-3 text-xs">
                     {formatDuration(durationMs(row.started_at, row.completed_at))}
                   </td>
-                  <td className="px-4 py-3 text-right font-mono text-xs">
+                  <td className="whitespace-nowrap px-4 py-3 text-right font-mono text-xs text-text">
                     ${cost.toFixed(4)}
                   </td>
                 </tr>

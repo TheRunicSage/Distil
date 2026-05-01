@@ -1,8 +1,13 @@
 // Finalize: terminal state transitions on the applications row. Three
 // distinct shapes — success, insufficient_input, and error — because
 // each sets a different combination of columns. Common rule: every
-// terminal state sets `metadata_expires_at = now() + 1 year`. The
-// insufficient_input path additionally pauses the user's queued items.
+// terminal state sets `metadata_expires_at = now() + 1 year`.
+//
+// Decision Log [option-B] (supersedes spec §): insufficient_input no
+// longer pauses sibling queued items. Each generation completes
+// independently; if a user wants to revisit a failed run, they hit the
+// per-row Retry button in history. Existing paused rows in the DB are
+// swept to `cancelled` after 1 hour by `inngest/functions/sweep-paused`.
 
 import "server-only";
 import { ApiError } from "@/lib/errors/api-error";
@@ -68,14 +73,11 @@ export async function finalizeInsufficient(
     .eq("id", input.application_id);
   if (error) throw new ApiError("database_error");
 
-  // Pause anything else this user has queued. Other users are
-  // unaffected. paused→queued resumes on retry/abandon.
-  const { error: pauseErr } = await supabase
-    .from("applications")
-    .update({ status: "paused" })
-    .eq("user_id", input.user_id)
-    .eq("status", "queued");
-  if (pauseErr) throw new ApiError("database_error");
+  // Note: under Option B we deliberately do NOT pause sibling queued
+  // items. Each generation is independent; failed rows surface a Retry
+  // button in history. The user_id arg is retained on the input type
+  // for symmetry and future use, intentionally unused here.
+  void input.user_id;
 }
 
 export type FinalizeErrorInput = {

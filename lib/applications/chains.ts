@@ -63,7 +63,10 @@ const RAW_STATUS_META: Record<
 > = {
   success: { label: "Ready", tone: "success" },
   queued: { label: "Queued", tone: "info" },
-  paused: { label: "Paused", tone: "warn" },
+  // Paused is a legacy state under Option B — no new rows are written
+  // with it; existing ones are swept to cancelled by sweep-paused. Show
+  // them as "In progress" until the sweep flips them.
+  paused: { label: "In progress", tone: "warn" },
   running: { label: "In progress", tone: "warn" },
   rendering: { label: "In progress", tone: "warn" },
   insufficient_input: { label: "Needs more info", tone: "warn" },

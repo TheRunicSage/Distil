@@ -1,7 +1,8 @@
 // POST /api/applications/[id]/abandon — mark an insufficient_input
-// application as abandoned, set metadata_expires_at if not already
-// set, and resume paused queue items for the user. Used for both
-// Screen 9 (attempts 1/2) and Screen 10 (attempt 3 "continue queue").
+// application as abandoned and set metadata_expires_at if not already
+// set. Used for both Screen 9 (attempts 1/2) and Screen 10 (attempt 3
+// "continue queue"). Under Option B the queue is no longer paused on
+// insufficient_input, so there are no paused siblings to resume here.
 
 import { NextResponse } from "next/server";
 import { ApiError } from "@/lib/errors/api-error";
@@ -51,12 +52,6 @@ export async function POST(req: Request, ctxArg: RouteCtx) {
       .eq("id", id)
       .eq("status", "insufficient_input");
     if (error) throw new ApiError("database_error", error.message);
-
-    await service
-      .from("applications")
-      .update({ status: "queued" })
-      .eq("user_id", userId)
-      .eq("status", "paused");
 
     void emitTelemetry(
       "application.abandon",

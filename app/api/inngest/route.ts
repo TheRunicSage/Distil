@@ -11,6 +11,7 @@ import { expireFiles } from "@/inngest/functions/expire-files";
 import { expireMetadata } from "@/inngest/functions/expire-metadata";
 import { sweepRequestLogs } from "@/inngest/functions/sweep-request-logs";
 import { sweepIdempotencyKeys } from "@/inngest/functions/sweep-idempotency-keys";
+import { sweepPausedApplications } from "@/inngest/functions/sweep-paused";
 import { watchdogStuckApplications } from "@/inngest/functions/watchdog-stuck-applications";
 import { dailySummary } from "@/inngest/functions/daily-summary";
 
@@ -23,6 +24,7 @@ export const { GET, POST, PUT } = serve({
     expireMetadata,
     sweepRequestLogs,
     sweepIdempotencyKeys,
+    sweepPausedApplications,
     watchdogStuckApplications,
     dailySummary,
   ],

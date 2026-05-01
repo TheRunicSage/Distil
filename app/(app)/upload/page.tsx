@@ -20,19 +20,30 @@ export default async function UploadPage() {
     .is("superseded_at", null)
     .maybeSingle();
 
+  // First upload → drop the user straight into /application/new with the
+  // CV already wired up; replacements (reached from /settings) bounce
+  // back to settings so the user keeps the context they came from.
+  const isFirstUpload = !existing;
+  const redirectTo = isFirstUpload ? "/application/new" : "/settings";
+  const successToast = isFirstUpload
+    ? "Master CV uploaded. Now paste a job description."
+    : "Master CV replaced.";
+
   return (
     <div className="space-y-10">
       <header className="text-center">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-orange">
-          Step 1 of 2
+          {isFirstUpload ? "Step 1 of 2" : "Replace master CV"}
         </p>
         <h1 className="mt-3 font-serif text-4xl font-light leading-[1.15] tracking-tight text-text">
-          Start with everything you have.
+          {isFirstUpload
+            ? "Start with everything you have."
+            : "Swap in a new master CV."}
         </h1>
         <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
-          Upload your master CV with all your experience, skills, and
-          accomplishments. Don&apos;t hold back. The more we know, the
-          sharper the result.
+          {isFirstUpload
+            ? "Upload your master CV with all your experience, skills, and accomplishments. Don't hold back — the more we know, the sharper the result."
+            : "Replacing the CV won't affect applications already in the queue. They keep using the snapshot from when they were submitted."}
         </p>
       </header>
 
@@ -61,11 +72,12 @@ export default async function UploadPage() {
           {existing ? "Replace master CV" : "Upload your master CV"}
         </h2>
         <div className="mt-5">
-          <UploadForm />
+          <UploadForm redirectTo={redirectTo} successToast={successToast} />
         </div>
         <ProTip className="mt-6">
-          Include every project, certification, and skill you can think
-          of. We&apos;ll pick the ones that matter for each role.
+          {isFirstUpload
+            ? "Include every project, certification, and skill you can think of. We'll pick the ones that matter for each role."
+            : "Replacements supersede the previous CV; queued applications keep their original snapshot."}
         </ProTip>
       </section>
     </div>
