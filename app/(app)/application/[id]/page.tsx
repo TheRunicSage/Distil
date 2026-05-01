@@ -309,7 +309,9 @@ function SuccessView({
           previously each was inside a <details> the user had to expand. */}
       <section className="relative left-1/2 right-1/2 -mx-[50vw] w-screen px-6">
         <div className="mx-auto max-w-[1280px]">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* `items-start` keeps each card at its content height so the
+              cover letter doesn't stretch to match the CV's longer body. */}
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
             <div className="surface-card">
               <p className="eyebrow mb-4">CV preview</p>
               <CvPreview content={success.cv_content} />
