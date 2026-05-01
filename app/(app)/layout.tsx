@@ -11,11 +11,10 @@
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { PlusIcon, SettingsIcon, UploadIcon } from "lucide-react";
 import { AmbientBackground } from "@/components/app/AmbientBackground";
 import { AppShell } from "@/components/app/AppShell";
 import { MagneticDots } from "@/components/app/MagneticDots";
-import { ThemeToggle } from "@/components/app/ThemeToggle";
+import { TopbarNav } from "@/components/app/TopbarNav";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({
@@ -53,29 +52,7 @@ export default async function AppLayout({
             </span>
           </Link>
           <nav className="flex items-center gap-2">
-            {hasCv ? (
-              <Link href="/application/new" className="btn-primary">
-                <PlusIcon size={14} aria-hidden />
-                New application
-              </Link>
-            ) : (
-              <Link href="/upload" className="btn-primary">
-                <UploadIcon size={14} aria-hidden />
-                Upload CV
-              </Link>
-            )}
-            <Link href="/history" className="btn-ghost">
-              History
-            </Link>
-            <ThemeToggle />
-            <Link
-              href="/settings"
-              aria-label="Settings"
-              title="Settings"
-              className="btn-icon"
-            >
-              <SettingsIcon size={16} aria-hidden />
-            </Link>
+            <TopbarNav hasCv={hasCv} />
           </nav>
         </header>
         <main className="flex-1 overflow-y-auto px-6 py-12">

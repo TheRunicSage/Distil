@@ -166,16 +166,16 @@ export default async function AdminUsagePage({
       </nav>
 
       <section className="overflow-x-auto rounded-lg border border-border bg-dark3">
-        <table className="w-full min-w-[860px] text-sm">
+        <table className="w-full table-auto text-sm">
           <thead className="bg-dark2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
             <tr>
-              <th className="px-4 py-3">Created</th>
-              <th className="px-4 py-3">Application</th>
-              <th className="px-4 py-3">User</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Attempt</th>
-              <th className="px-4 py-3">Duration</th>
-              <th className="whitespace-nowrap px-4 py-3 text-right">Cost (USD)</th>
+              <th className="whitespace-nowrap px-3 py-3">Created</th>
+              <th className="whitespace-nowrap px-3 py-3">Application</th>
+              <th className="hidden whitespace-nowrap px-3 py-3 lg:table-cell">User</th>
+              <th className="whitespace-nowrap px-3 py-3">Status</th>
+              <th className="hidden whitespace-nowrap px-3 py-3 sm:table-cell">Attempt</th>
+              <th className="whitespace-nowrap px-3 py-3">Duration</th>
+              <th className="whitespace-nowrap px-3 py-3 text-right">Cost</th>
             </tr>
           </thead>
           <tbody>
@@ -199,29 +199,35 @@ export default async function AdminUsagePage({
                   key={row.id}
                   className="border-t border-border text-text/90"
                 >
-                  <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
+                  <td className="whitespace-nowrap px-3 py-3 text-xs text-muted-foreground">
                     {new Date(row.created_at).toLocaleString("en-NZ", {
                       timeZone: "Pacific/Auckland",
+                      day: "2-digit",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
                     })}
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs">
+                  <td className="whitespace-nowrap px-3 py-3 font-mono text-xs">
                     {row.id.slice(0, 8)}
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                  <td className="hidden whitespace-nowrap px-3 py-3 font-mono text-xs text-muted-foreground lg:table-cell">
                     {row.user_id ? row.user_id.slice(0, 8) : "—"}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="whitespace-nowrap px-3 py-3">
                     <span
                       className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.05em] ${tone}`}
                     >
                       {row.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs">{row.attempt_number}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-xs">
+                  <td className="hidden whitespace-nowrap px-3 py-3 text-xs sm:table-cell">
+                    {row.attempt_number}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3 text-xs">
                     {formatDuration(durationMs(row.started_at, row.completed_at))}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right font-mono text-xs text-text">
+                  <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-xs text-text">
                     ${cost.toFixed(4)}
                   </td>
                 </tr>
