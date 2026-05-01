@@ -2,79 +2,46 @@
 // next. Master CV management lives in /settings, not here.
 //
 // Three states:
-//   1. No CV → full-width "upload to get started" card. (The post-login
-//      redirect routes here only if the topbar still got hit; this is a
-//      defensive empty-state.)
-//   2. Has CV, has live work → "In progress" panel + "Recent" list of
-//      terminal-state applications.
-//   3. Has CV, no live work, no history → "Tailor your first
-//      application" CTA.
+//   1. No CV → full-width "upload to get started" card.
+//   2. Has CV, has any history → "In progress" panel + "Recent" panel.
+//   3. Has CV, no history → "Tailor your first application" CTA.
 //
-// "Live" = queued | paused | running | rendering. "Recent" excludes
-// these so the same row isn't shown twice.
+// Both panels render *chains* (groupIntoChains): a retry doesn't
+// double-list the original. Live = queued/paused/running/rendering.
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ChainCard } from "@/components/app/ChainCard";
+import {
+  groupIntoChains,
+  type FlatRow,
+} from "@/lib/applications/chains";
 import { createClient } from "@/lib/supabase/server";
+import type { ApplicationOutput } from "@/lib/llm/output-schema";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_TONE: Record<string, string> = {
-  success: "bg-success/15 text-success border-success/25",
-  queued: "bg-info/15 text-info border-info/25",
-  paused: "bg-warn/15 text-warn border-warn/25",
-  running: "bg-warn/15 text-warn border-warn/25",
-  rendering: "bg-warn/15 text-warn border-warn/25",
-  insufficient_input: "bg-warn/15 text-warn border-warn/25",
-  abandoned: "bg-dim/15 text-muted-foreground border-border",
-  cancelled: "bg-dim/15 text-muted-foreground border-border",
-  error: "bg-danger/15 text-danger border-danger/25",
-};
+const LIVE_STATUSES = ["queued", "paused", "running", "rendering"] as const;
+const RECENT_LIMIT = 8;
 
-const LIVE_STATUSES = [
-  "queued",
-  "paused",
-  "running",
-  "rendering",
-] as const;
-
-type AppRow = {
+type DbRow = {
   id: string;
   status: string;
-  attempt_number: number;
+  parent_application_id: string | null;
   created_at: string;
   completed_at: string | null;
+  llm_response_json: ApplicationOutput | null;
 };
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString("en-NZ", {
-    timeZone: "Pacific/Auckland",
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
-
-function StatusPill({ status }: { status: string }) {
-  const tone =
-    STATUS_TONE[status] ?? "bg-dim/15 text-muted-foreground border-border";
-  return (
-    <span className={`status-pill ${tone}`}>{status.replace("_", " ")}</span>
-  );
-}
-
-function ApplicationRow({ app }: { app: AppRow }) {
-  return (
-    <Link href={`/application/${app.id}`} className="surface-row">
-      <span className="font-mono text-xs text-text">{app.id.slice(0, 8)}</span>
-      <span className="text-xs text-muted-foreground">
-        attempt {app.attempt_number}
-      </span>
-      <StatusPill status={app.status} />
-      <span className="text-xs text-muted-foreground">
-        {formatDate(app.created_at)}
-      </span>
-    </Link>
-  );
+function toFlat(rows: DbRow[]): FlatRow[] {
+  return rows.map((r) => ({
+    id: r.id,
+    status: r.status,
+    parent_application_id: r.parent_application_id,
+    created_at: r.created_at,
+    completed_at: r.completed_at,
+    llm_response_json: r.llm_response_json,
+  }));
 }
 
 export default async function DashboardPage() {
@@ -91,23 +58,30 @@ export default async function DashboardPage() {
       .maybeSingle(),
     supabase
       .from("applications")
-      .select("id, status, attempt_number, created_at, completed_at")
+      .select(
+        "id, status, parent_application_id, created_at, completed_at, llm_response_json",
+      )
       .in("status", LIVE_STATUSES as unknown as string[])
       .order("created_at", { ascending: false })
-      .limit(5),
+      .limit(20),
     supabase
       .from("applications")
-      .select("id, status, attempt_number, created_at, completed_at")
+      .select(
+        "id, status, parent_application_id, created_at, completed_at, llm_response_json",
+      )
       .not("started_at", "is", null)
       .not("status", "in", `(${LIVE_STATUSES.join(",")})`)
       .order("created_at", { ascending: false })
-      .limit(5),
+      .limit(40),
   ]);
 
   const hasCv = Boolean(cvRes.data);
-  const live: AppRow[] = liveRes.data ?? [];
-  const recent: AppRow[] = recentRes.data ?? [];
-  const hasAnyHistory = live.length > 0 || recent.length > 0;
+  const liveChains = groupIntoChains(toFlat(liveRes.data ?? []));
+  const recentChains = groupIntoChains(toFlat(recentRes.data ?? [])).slice(
+    0,
+    RECENT_LIMIT,
+  );
+  const hasAnyHistory = liveChains.length > 0 || recentChains.length > 0;
 
   return (
     <div className="space-y-12">
@@ -155,25 +129,26 @@ export default async function DashboardPage() {
         </section>
       )}
 
-      {hasCv && live.length > 0 && (
+      {hasCv && liveChains.length > 0 && (
         <section>
           <div className="mb-4 flex items-baseline justify-between">
             <h2 className="eyebrow-muted">In progress</h2>
             <span className="text-meta">
-              {live.length} {live.length === 1 ? "application" : "applications"}
+              {liveChains.length}{" "}
+              {liveChains.length === 1 ? "application" : "applications"}
             </span>
           </div>
           <ul className="space-y-2">
-            {live.map((app) => (
-              <li key={app.id}>
-                <ApplicationRow app={app} />
+            {liveChains.map((c) => (
+              <li key={c.rootId}>
+                <ChainCard chain={c} />
               </li>
             ))}
           </ul>
         </section>
       )}
 
-      {hasCv && recent.length > 0 && (
+      {hasCv && recentChains.length > 0 && (
         <section>
           <div className="mb-4 flex items-baseline justify-between">
             <h2 className="eyebrow-muted">Recent</h2>
@@ -182,9 +157,9 @@ export default async function DashboardPage() {
             </Link>
           </div>
           <ul className="space-y-2">
-            {recent.map((app) => (
-              <li key={app.id}>
-                <ApplicationRow app={app} />
+            {recentChains.map((c) => (
+              <li key={c.rootId}>
+                <ChainCard chain={c} />
               </li>
             ))}
           </ul>

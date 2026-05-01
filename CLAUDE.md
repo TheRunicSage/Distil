@@ -698,6 +698,20 @@ What was not changed: AppShell (toast provider + keyboard shortcuts intact, incl
 
 [18] `insufficient_input_reason` Zod cap raised from 800 → 2000 chars in `lib/llm/output-schema.ts`. An over-cautious model emitted a long enumeration of contact-detail concerns that overflowed 800 chars and failed `validate-output` as `llm_invalid_output` — masking the real "model bailed when it shouldn't" signal. The reason field is rendered as a paragraph to the user; verbose-but-readable is fine, opaque is not.
 
+[14] History as chains, not flat rows (2026-05-01). User-reported on the dashboard "Recent" panel: rows showed cryptic IDs ("7a7eb09d") and an "attempt 1" tag that was visual noise — every fresh generation is attempt 1, so the field carried no signal until a retry happened, and even then it duplicated information already implied by the `parent_application_id` chain.
+
+Three changes:
+
+1. **Group flat rows into chains.** New `lib/applications/chains.ts` walks `parent_application_id` to find each row's chain root within the fetched window, then builds a `ChainCard` per root with `attempts: ChainAttempt[]` for the descendants. `groupIntoChains(rows)` is pure; both dashboard and history pages call it. Effective status: a chain "Ready" if any descendant is `success`; else "In progress" if any live; else the latest descendant's status mapped to a user-facing label (`error` / `cancelled` → "Didn't finish", `insufficient_input` → "Needs more info", `abandoned` → "Abandoned"). Anchor (where the card click goes) is the success leaf if present, else the latest leaf.
+
+2. **Title from JD.** When any descendant has `llm_response_json.status === 'success'`, the chain title becomes `${role_archetype} @ ${company_name}` (e.g. "Data Analyst @ Te Atatū Council"). Falls back to a single field if only one is available, then to the short ID for chains that never reached a successful generation. The ID column was previously the only label, regardless of whether structured output existed.
+
+3. **Single ChainCard component for both pages.** New `components/app/ChainCard.tsx` is a server component using a native `<details>`/`<summary>` element for the per-attempt disclosure (no client JS). The card shows title + effective status pill + last-activity time; expanding the disclosure shows each attempt's id + raw status pill + creation time, each linking to its own `/application/[id]` page so the user can still inspect a failed original after the success retry. The "attempt N" column is gone; chains with only one attempt show no disclosure at all.
+
+Dashboard `page.tsx` and `history/page.tsx` updated to fetch `parent_application_id` and `llm_response_json`, group into chains, and render `<ChainCard>` instead of bespoke list rows. `HistoryList` rewritten to filter on chain effective status (`Ready` / `Needs info` / `Didn't finish` / `In progress`) and search by title or any id in the chain. Eyebrow + display-heading classes used for the page hero.
+
+A separate `docs/cleanup-smoke-tests.sql` snippet covers the user's request to remove the 18 original smoke-test rows: the snippet documents the SQL Editor `auth.uid() = NULL` gotcha (Decision Log [12]) and provides INSPECT-then-DELETE steps with notes on FK constraints and orphaned storage objects.
+
 [18] Success-view restyle + content-length tightening (2026-05-01). User-reported: the rendered "What we did" checklist and "Fit" reasoning were both wall-of-text — wordy, cramped, hard to scan. Two layers:
 
 Frontend (`app/(app)/application/[id]/page.tsx` SuccessView):
