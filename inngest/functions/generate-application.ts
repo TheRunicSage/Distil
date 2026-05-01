@@ -240,6 +240,12 @@ export const generateApplication = inngest.createFunction(
     // 8. Validate. Zod failure → llm_invalid_output → error path via
     // onFailure. This is one of the only spots where we *want* the
     // function to fail (user-visible "AI returned an unexpected result").
+    //
+    // Error wrapping shape: NonRetriableError("llm_invalid_output") wraps
+    // ApiError("llm_invalid_output") wraps ZodError. withInngestStep walks
+    // the cause chain so request_logs.error_code = 'llm_invalid_output'
+    // (not 'internal_error') and request_logs.metadata.zod_issues holds
+    // the failing paths.
     const validated: ApplicationOutput = await withInngestStep(
       step,
       "validate-output",
@@ -247,8 +253,10 @@ export const generateApplication = inngest.createFunction(
       () => {
         const parsed = ApplicationOutputSchema.safeParse(llmResult.toolInput);
         if (!parsed.success) {
+          const apiErr = new ApiError("llm_invalid_output");
+          (apiErr as Error & { cause?: unknown }).cause = parsed.error;
           throw new NonRetriableError("llm_invalid_output", {
-            cause: parsed.error,
+            cause: apiErr,
           });
         }
         return parsed.data;

@@ -16,6 +16,7 @@
 
 import "server-only";
 import * as Sentry from "@sentry/nextjs";
+import { ZodError } from "zod";
 
 import { ApiError } from "@/lib/errors/api-error";
 import { sanitiseErrorMessage } from "@/lib/errors/sanitise";
@@ -47,19 +48,25 @@ export async function withInngestStep<T>(
     let status: "ok" | "error" = "ok";
     let errorCode: string | null = null;
     let errorMessage: string | null = null;
+    let errorMetadata: Record<string, unknown> | null = null;
 
     try {
       const result = await fn();
       return result;
     } catch (err) {
       status = "error";
-      if (err instanceof ApiError) {
-        errorCode = err.code;
-        errorMessage = sanitiseErrorMessage(err.message);
+      const apiError = findApiError(err);
+      if (apiError) {
+        errorCode = apiError.code;
+        errorMessage = sanitiseErrorMessage(apiError.message);
       } else {
         errorCode = "internal_error";
         errorMessage = sanitiseErrorMessage(err);
         Sentry.captureException(err, { tags: { inngest_step: name } });
+      }
+      const zod = findZodError(err);
+      if (zod) {
+        errorMetadata = { zod_issues: summariseZodIssues(zod) };
       }
       throw err;
     } finally {
@@ -71,9 +78,44 @@ export async function withInngestStep<T>(
         errorCode,
         errorMessage,
         ctx,
+        errorMetadata,
       });
     }
   });
+}
+
+// Walk the cause chain to find a richer error type. Inngest's
+// NonRetriableError wraps the real cause (e.g. an ApiError or ZodError)
+// so we have to look past the outer wrapper to log the right code and
+// metadata.
+function findApiError(err: unknown): ApiError | null {
+  let cur: unknown = err;
+  for (let i = 0; i < 8 && cur; i++) {
+    if (cur instanceof ApiError) return cur;
+    cur = (cur as { cause?: unknown })?.cause;
+  }
+  return null;
+}
+
+function findZodError(err: unknown): ZodError | null {
+  let cur: unknown = err;
+  for (let i = 0; i < 8 && cur; i++) {
+    if (cur instanceof ZodError) return cur;
+    cur = (cur as { cause?: unknown })?.cause;
+  }
+  return null;
+}
+
+function summariseZodIssues(
+  err: ZodError,
+): Array<{ path: string; code: string; message: string }> {
+  // Cap to 20 issues so a fully-malformed payload doesn't blow up the
+  // metadata column. Path joined with "." so it grep-greps cleanly.
+  return err.issues.slice(0, 20).map((issue) => ({
+    path: issue.path.map((p) => String(p)).join(".") || "(root)",
+    code: issue.code,
+    message: sanitiseErrorMessage(issue.message),
+  }));
 }
 
 type StepLogPayload = {
@@ -83,12 +125,15 @@ type StepLogPayload = {
   errorCode: string | null;
   errorMessage: string | null;
   ctx: InngestStepContext;
+  errorMetadata?: Record<string, unknown> | null;
 };
 
 async function writeStepLog(payload: StepLogPayload): Promise<void> {
   try {
     const supabase = createServiceClient();
-    const metadata = payload.ctx.metadata ?? {};
+    const ctxMetadata = payload.ctx.metadata ?? {};
+    const errorMetadata = payload.errorMetadata ?? {};
+    const metadata = { ...ctxMetadata, ...errorMetadata };
     await supabase.from("request_logs").insert({
       user_id: payload.ctx.user_id ?? null,
       application_id: payload.ctx.application_id ?? null,
