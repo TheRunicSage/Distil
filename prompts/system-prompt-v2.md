@@ -308,7 +308,12 @@ The single set of rules below replaces the old "3 to 5 projects, 2 to 3 pages" g
 
 ### 5.1 Length and Format
 
-Target 320 to 380 words. Maximum one A4 page. Exactly four paragraphs at roughly 80 to 95 words each. Aim for the upper end of the range — recent generations have been landing around 230 words, which reads as thin. Each paragraph should be substantive enough to carry a complete thought (opening + hook, the story with concrete numbers, the company-connection moment, and a confident close).
+Target 320 to 380 words. Maximum one A4 page. **Exactly four paragraphs** at roughly 80 to 95 words each. Aim for the upper end of the range — recent generations have been landing around 230 words, which reads as thin. Each paragraph should be substantive enough to carry a complete thought (opening + hook, the story with concrete numbers, the company-connection moment, and a confident close).
+
+**Hard rules for the `paragraphs` array:**
+- Emit exactly four non-empty strings — one per paragraph in order (Opening, Story, Company Connection, Closing).
+- Do not emit a trailing empty string ("") as a 5th element. The schema accepts 3-5 paragraphs as a defensive cushion, but submitting 5 (with any number empty or non-empty) is a §5.2 violation.
+- Do not split a single paragraph across multiple array entries. Each entry is one whole paragraph.
 
 ### 5.2 Structure
 
@@ -641,5 +646,8 @@ Before returning your JSON, run through this self-check:
 23. Did I stay within the 5-call total `web_search` budget (Phase 2: 2-3, Phase 4: 1-2)? If I burned searches running separate queries for industry, public-sector, role-toolkit, or to verify a specific project that was already in the news search results, that is a §3 Phase 2 violation — those are inferred or co-derived, not searched separately. Future generations will respect the budget.
 24. Scan every `cv_content.education[].details[]` entry. Does any string contain words like "Certified", "Certificate", "AWS", "Azure", "GCP", "Google Cloud", "Cisco", "PMP", "Scrum", "ITIL", or any vendor / certifying-body credential? If yes, that is a §4.1 violation — move the certification(s) into `cv_content.technical_skills` as a category called "Certifications" (format: `Vendor Name (Issuer, Year)`), and remove from education details. Education is for formal academic qualifications only.
 25. If `jd_analysis.seniority` is `Graduate` or `Junior`: count the lines that will render. Profile (~3 lines), each Technical Skills group (1 line), each Professional Experience role (header + meta + bullets), each Key Project (header + bullets + technologies), each Education entry (header + meta + 1 inline detail), Leadership entries (1 line each), Referees (1 inline line). With the dense profile, ~58 rendered lines lands cleanly on 2 pages; 65+ overflows. If your mental count is approaching 65, drop the lowest-relevance Professional Experience role, the second Key Project, or 1-2 Technical Skills groups before returning. Trim once, do not return then trim.
+26. Count the entries in `cover_letter_content.paragraphs`. There must be **exactly four**, all non-empty. No trailing empty string, no extra paragraph appended, no missing paragraph. Order is Opening, Story, Company Connection, Closing per §5.2.
+27. Scan every `cv_content.professional_experience[].bullets` array. Each role must have at least one bullet — never an empty array. For Lead/Principal collapsed older roles, emit a single short bullet summarising the role (e.g. "Led data engineering at scale across three NZ portfolio companies."), not an empty array.
+28. Scan `cv_content.contact_details.email` and `cover_letter_content.header.email`. Copy the master CV's email verbatim per §7.1. Do not validate or attempt to "fix" formatting. The schema accepts any non-empty string here.
 
 If any check fails, fix it before returning. If everything passes, return the JSON.

@@ -21,6 +21,33 @@
 //     (~500 chars) and 4-paragraph cover letters at 80–100 words each.
 //   - Identifier-style fields (phone, dates, salutation, signoff): caps
 //     unchanged; these are tight by nature.
+//
+// 2026-05-01 strictness audit. Real failure: model emitted 5 paragraphs
+// in cover_letter_content.paragraphs (5th was an empty string), tripping
+// both the strict .length(4) array bound and the .min(1) per-string
+// guard. Pulled the audit forward to every other constraint with the
+// same shape (strict equality on counts, strict format validators) and
+// loosened where the model's natural output overlapped the cliff:
+//   - paragraphs: .length(4) → .min(3).max(5) with a preprocess that
+//     filters empty/whitespace-only strings before bounds are checked.
+//   - email: z.string().email() → string min(1).max(200). Prompt §7.1
+//     explicitly says "copy verbatim, do not validate" — a malformed CV
+//     email shouldn't drop the whole generation.
+//   - source_url (recent_news + salary_band): z.string().url() →
+//     string min(1).max(500). Renderer prints clickable links;
+//     malformed URLs degrade gracefully on the user side.
+//   - ats_keywords: min(8) → min(5). Short/vague JDs may yield 6-7
+//     strong keywords; the 8-12 prompt rule stays primary.
+//   - professional_experience.bullets: min(2) → min(1). Prompt §4.4
+//     Lead/Principal says older roles "collapse to one line each: no
+//     bullets" — schema was directly contradicting the prompt.
+//   - profile: min(150) → min(100). Graduate §4.4 budget can produce
+//     a tight 3-sentence profile under 150 chars.
+// What stayed strict: the discriminated-union shape (status enum is
+// the gatekeeper), every required field's existence (not null /
+// missing), enum fields (score, confidence, seniority), and array
+// caps where the prompt and schema agree the upper bound is content
+// quality (e.g. paragraphs.max(5), what_we_did_checklist.max(8)).
 
 import { z } from "zod";
 
@@ -32,9 +59,18 @@ const FitAssessmentSchema = z.object({
   warnings: z.array(z.string().min(1).max(600)).max(8),
 });
 
+// Relaxed URL: was z.string().url(), but model occasionally emits
+// near-misses ("linkedin.com/in/foo" without scheme, "https://" without
+// host, query strings with stray spaces) which are perfectly readable
+// text but fail strict URL parse. Renderer just prints them as a
+// clickable link; if it's malformed, the user sees the malformed link
+// rather than losing the entire generation. Keep min(1) so the field
+// is still required to be non-empty.
+const URL_FIELD = z.string().min(1).max(500);
+
 const RecentNewsItemSchema = z.object({
   headline: z.string().min(1).max(400),
-  source_url: z.string().url(),
+  source_url: URL_FIELD,
 });
 
 const ResearchSummarySchema = z.object({
@@ -64,24 +100,36 @@ const JdAnalysisSchema = z.object({
   // Prompt §1 Phase 1 says "Top 8 to 12 ATS keywords"; schema cap raised
   // 12 → 16 (2026-05-01) after a real generation overshot to 13. The
   // 8-to-12 rule remains the prompt's primary lever — the cushion is a
-  // runaway-prose guard, not a green light to emit 16.
-  ats_keywords: z.array(z.string().min(1).max(120)).min(8).max(16),
+  // runaway-prose guard, not a green light to emit 16. Min lowered
+  // 8 → 5 same day after the schema-vs-prompt-strictness audit: very
+  // short or vague JDs may yield only 6-7 strong keywords, and we'd
+  // rather accept 6 strong keywords than reject the whole generation.
+  ats_keywords: z.array(z.string().min(1).max(120)).min(5).max(16),
 });
 
 const SalaryBandSchema = z.object({
   range: z.string().min(1).max(200),
   source_name: z.string().min(1).max(200),
-  source_url: z.string().url(),
+  source_url: URL_FIELD,
   confidence: z.enum(["high", "medium", "low"]),
 });
 
 // ------ CV content ------
 
+// Relaxed email: was z.string().email(), but §7.1 of the system prompt
+// explicitly tells the model to "copy verbatim, do not validate" — so
+// a master CV with a malformed or unconventional email (missing TLD,
+// extra dots, "name (at) domain dot com") would fail strict parse.
+// The renderer just prints the string as the contact line; downstream
+// rendering does not care about RFC-5322 conformance. Keep a generous
+// length cap to catch genuinely runaway prose.
+const EMAIL_FIELD = z.string().min(1).max(200);
+
 const ContactDetailsSchema = z.object({
   full_name: z.string().min(1).max(120),
   location: z.string().min(1).max(120),
   phone: z.string().min(1).max(40),
-  email: z.string().email(),
+  email: EMAIL_FIELD,
   linkedin: z.string().min(1).max(200),
   work_rights: z.string().min(1).max(200),
   availability: z.string().min(1).max(120),
@@ -98,8 +146,14 @@ const ProfessionalExperienceItemSchema = z.object({
   location: z.string().min(1).max(120),
   start_date: z.string().min(1).max(40),
   end_date: z.string().min(1).max(40),
-  // v6: min bumped to 2.
-  bullets: z.array(z.string().min(1).max(600)).min(2).max(8),
+  // v6 had min(2). Lowered 2 → 1 (2026-05-01) — system prompt §4.4
+  // Lead/Principal explicitly says "older roles (10+ years ago)
+  // collapse to one line each: role, company, dates, no bullets".
+  // Schema strictness was directly contradicting the prompt for that
+  // tier; min(1) keeps a single bullet as the minimum (collapsed
+  // roles emit a one-line summary bullet) without rejecting the
+  // whole CV when the prompt and schema disagree.
+  bullets: z.array(z.string().min(1).max(600)).min(1).max(8),
 });
 
 const KeyProjectSchema = z.object({
@@ -124,7 +178,11 @@ const LeadershipInterestItemSchema = z.object({
 
 const CvContentSchema = z.object({
   contact_details: ContactDetailsSchema,
-  profile: z.string().min(150).max(1400),
+  // Profile min lowered 150 → 100 (2026-05-01). Graduate §4.4 budget
+  // calls for 3 short sentences and aggressive trimming; very tight
+  // graduate profiles can land below 150 chars. Renderer / quality
+  // scan still flag short profiles via the sentence-bound check.
+  profile: z.string().min(100).max(1400),
   technical_skills: z.array(TechnicalSkillsGroupSchema).min(1).max(8),
   professional_experience: z
     .array(ProfessionalExperienceItemSchema)
@@ -141,7 +199,7 @@ const CvContentSchema = z.object({
 const CoverLetterHeaderSchema = z.object({
   full_name: z.string().min(1).max(120),
   phone: z.string().min(1).max(40),
-  email: z.string().email(),
+  email: EMAIL_FIELD,
   linkedin: z.string().min(1).max(200),
   location: z.string().min(1).max(120),
   // Accepts the literal `{{TODAY}}` placeholder; the system overrides it
@@ -152,10 +210,29 @@ const CoverLetterHeaderSchema = z.object({
   company_address: z.string().max(300).nullable(),
 });
 
+// paragraphs: was .length(4) — strict equality. Real failure 2026-05-01:
+// model emitted 5 paragraphs where the 5th was an empty string,
+// failing both `too_big` (length 5 > 4) and `too_small` (paragraph 4
+// was ""). System prompt §5.2 still calls for exactly four paragraphs
+// (Opening / Story / Company Connection / Closing), but the schema
+// shouldn't drop a complete paid generation over a trailing empty
+// string. Preprocess filters out empty/whitespace-only entries before
+// the array bounds are checked, then accepts 3-5 paragraphs as a
+// content cushion. The cover-letter renderer iterates whatever count
+// it receives; the prompt rule is the primary quality lever.
+const CoverLetterParagraphsSchema = z.preprocess((val) => {
+  if (Array.isArray(val)) {
+    return val.filter(
+      (p) => typeof p === "string" && p.trim().length > 0,
+    );
+  }
+  return val;
+}, z.array(z.string().min(1).max(2000)).min(3).max(5));
+
 const CoverLetterContentSchema = z.object({
   header: CoverLetterHeaderSchema,
   salutation: z.string().min(1).max(120),
-  paragraphs: z.array(z.string().min(1).max(2000)).length(4),
+  paragraphs: CoverLetterParagraphsSchema,
   signoff: z.string().min(1).max(200),
 });
 

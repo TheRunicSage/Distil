@@ -950,6 +950,23 @@ What was not changed: helpers' canonical defaults (still SPACING / SIZES, so cov
 
 [14] Did-you-know carousel removed from waiting screen (2026-05-01). User-reported the rotating tip carousel revealed implementation details (cost cap, cache TTL, observability, file expiry windows) that customers should not see. Removed entirely from `components/application/ApplicationLiveView.tsx` along with the 15-tip pool, tip rotation timer, and `DidYouKnow` sub-component. The "In this step" panel (which describes the work being done in user-friendly terms — "Researching the company live on the web") stays since it covers the visible work, not the secret sauce.
 
+[7] Schema strictness audit — `paragraphs.length(4)` failure + sweep of every same-shape constraint (2026-05-01). Real failure: ZodError captured via the observability pipeline showed `cover_letter_content.paragraphs` had 5 entries, the 5th an empty string — tripped both `.length(4)` (too_big) and the per-string `.min(1)` (too_small). Same shape as the 2026-04-30 cap audit and the 2026-05-01 ats_keywords/recent_news audit: schema strictness vs realistic model output, no cushion against drift.
+
+  Pulled the audit forward to every constraint with the same risk profile (strict count equality, strict format validators, strict-but-realistic-tight bounds). Six relaxations + one preprocess shipped in `lib/llm/output-schema.ts`:
+
+  - `cover_letter_content.paragraphs`: `.length(4)` → `.min(3).max(5)` with a `z.preprocess` that strips empty/whitespace-only strings before bounds are checked. The 4-paragraph rule stays primary in the prompt (§5.2 now spells out "exactly four non-empty strings, no trailing empty 5th"), and §10 self-check item 26 enforces it. Schema is the cushion, not the gate.
+  - `email` (contact_details + cover_letter_header): `z.string().email()` → `string.min(1).max(200)`. Prompt §7.1 explicitly says "copy verbatim, do not validate" — strict RFC-5322 was directly contradicting the prompt for any CV with a non-canonical email.
+  - `source_url` (recent_news[] + salary_band): `z.string().url()` → `string.min(1).max(500)`. Renderer prints clickable links; malformed URLs degrade gracefully on the user side instead of dropping the whole generation.
+  - `jd_analysis.ats_keywords`: `.min(8)` → `.min(5)`. Short or vague JDs may yield 6-7 strong keywords; the 8-12 prompt rule stays primary.
+  - `professional_experience.bullets`: `.min(2)` → `.min(1)`. System prompt §4.4 Lead/Principal explicitly says older roles "collapse to one line each: role, company, dates, no bullets" — schema was directly contradicting the prompt. min(1) keeps a single summary bullet as the floor (§10 item 27 enforces); empty bullets arrays are not allowed.
+  - `cv_content.profile`: `.min(150)` → `.min(100)`. Graduate §4.4 budget can produce a tight 3-sentence profile under 150 chars; quality scan still flags short profiles via the sentence-bound check.
+
+  What stayed strict: the discriminated-union shape (`status` enum is the gatekeeper), every required field's existence (not null/missing), enum fields (score, confidence, seniority), array caps where the prompt and schema agree on the upper bound as a content-quality lever (`paragraphs.max(5)`, `what_we_did_checklist.max(8)`, `ats_keywords.max(16)`), and per-string maximums.
+
+  Prompt-side companion changes: §5.2 gains "Hard rules for the paragraphs array" block (exactly 4 non-empty, no trailing empty 5th, do not split a paragraph across entries). §10 self-check items 26 (paragraph count + non-empty), 27 (every role has ≥1 bullet, no empty arrays), 28 (email copied verbatim, do not "fix" format).
+
+  Side effect: any other Zod failure that previously dropped a generation now either passes (because the schema is more forgiving) or surfaces a more specific issue path through the same observability pipeline. Re-querying `request_logs` after a few weeks of new data should narrow remaining failure modes; the schema is now sized for the model's real output, not for the gatekeeping posture it was originally tuned against.
+
 ---
 
 ## Known Gaps to Watch
