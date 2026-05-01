@@ -19,20 +19,25 @@
   --color-orange-subtle: rgba(226, 97, 59, 0.08);
   --color-orange-glow: rgba(226, 97, 59, 0.18);
 
-  /* ---- Dark theme surface elevation tokens ---- */
-  --color-dark: #08080a;
-  --color-dark2: #111114;
-  --color-dark3: #1a1a1f;
-  --color-dark4: #222228;
+  /* ---- Dark theme surface elevation tokens ----
+     Lightened 2026-05-01 (-1 level on the elevation scale) so the
+     dark theme reads more legibly in normal lighting. Pure black
+     backgrounds were producing crushed body copy. The :root
+     redefinitions further down map the same token names to a
+     light-mode palette when html does not carry .dark.            */
+  --color-dark: #11111a;
+  --color-dark2: #1a1a24;
+  --color-dark3: #25252f;
+  --color-dark4: #2f2f3a;
   --color-text: #f0efe8;
-  --color-dim: rgba(240, 239, 232, 0.22);
-  --color-text-muted: #7a7a88;
+  --color-dim: rgba(240, 239, 232, 0.28);
+  --color-text-muted: #9a9aa8;
 
   /* ---- Light theme tokens (preview cards + email body only) ---- */
-  --color-l-bg: #ffffff;
-  --color-l-surface: #f5f5f0;
+  --color-l-bg: #fbfaf6;
+  --color-l-surface: #ffffff;
   --color-l-text: #1a1a1a;
-  --color-l-mid: #888880;
+  --color-l-mid: #6e6e66;
   --color-l-border: #e8e8e0;
 
   /* ---- Semantic accents (status, fit score) ---- */
@@ -122,6 +127,21 @@
   --input: var(--color-l-border);
   --ring: var(--color-orange);
 
+  /* Brand-token redefinitions for light mode. Tailwind utility classes
+     across the app reference --color-dark / dark2 / dark3 / dark4 /
+     text / text-muted directly; remap them here so the same classes
+     produce a light surface when the html element does not carry
+     `.dark`. Order of elevation is preserved (page bg -> card ->
+     hover -> popover) but moves brighter / whiter rather than
+     lighter-grey-on-dark. */
+  --color-dark: #fbfaf6;
+  --color-dark2: #ffffff;
+  --color-dark3: #f1f0ea;
+  --color-dark4: #e7e6df;
+  --color-text: #1a1a1a;
+  --color-text-muted: #6e6e66;
+  --color-dim: rgba(26, 26, 26, 0.18);
+
   --chart-1: var(--color-orange);
   --chart-2: var(--color-info);
   --chart-3: var(--color-success);
@@ -157,7 +177,7 @@
   --secondary: var(--color-dark4);
   --secondary-foreground: var(--color-text);
   --muted: var(--color-dark3);
-  --muted-foreground: rgba(238, 237, 230, 0.5);
+  --muted-foreground: rgba(238, 237, 230, 0.66);
   --accent: var(--color-dark4);
   --accent-foreground: var(--color-text);
   --destructive: var(--color-danger);
@@ -309,6 +329,50 @@
   height: 70vw;
   background: radial-gradient(circle, var(--color-orange-glow) 0%, transparent 70%);
   animation: ambient-float 22s ease-in-out infinite;
+}
+
+/* ============================================================
+   View Transitions — circular reveal for theme toggle.
+   ThemeToggle dispatches document.startViewTransition(), captures
+   the click position into --x / --y CSS vars on documentElement,
+   and the keyframes below clip-path the new theme in from a circle
+   centred at the click point. Browsers without View Transitions
+   support fall back to an instant theme swap (no animation), which
+   is the correct progressive-enhancement behaviour.
+   ============================================================ */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+}
+
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0% at var(--x, 50%) var(--y, 0%));
+  }
+  to {
+    clip-path: circle(150% at var(--x, 50%) var(--y, 0%));
+  }
+}
+
+::view-transition-new(root) {
+  animation: theme-reveal 520ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-new(root),
+  ::view-transition-old(root) {
+    animation: none;
+  }
 }
 
 .ambient-blob-violet {

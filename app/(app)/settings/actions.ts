@@ -11,9 +11,13 @@
 //   1. Verify the typed email matches the signed-in user's email.
 //   2. Hash the email and insert into account_deletions for audit.
 //   3. Call supabase.auth.admin.deleteUser(userId) via the service-role
-//      client. Schema FKs cascade to profiles, master_cvs, applications,
-//      generation_events, token_usage, idempotency_keys; SET NULL on
-//      request_logs and telemetry_events so operational logs survive.
+//      client. Per migration 0003, applications / master_cvs /
+//      token_usage / request_logs / telemetry_events all SET NULL on
+//      user_id so generations and operational logs survive deletion.
+//      profiles + idempotency_keys still cascade (1:1 metadata and
+//      10-min TTL respectively). Generations expire on the existing
+//      60-day files / 1-year metadata clocks regardless of who owns
+//      them, so the cron sweeps will finish the job in due course.
 //   4. Sign out the browser session and redirect to /login.
 
 import { createHash } from "node:crypto";

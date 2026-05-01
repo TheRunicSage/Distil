@@ -698,6 +698,32 @@ What was not changed: AppShell (toast provider + keyboard shortcuts intact, incl
 
 [18] `insufficient_input_reason` Zod cap raised from 800 → 2000 chars in `lib/llm/output-schema.ts`. An over-cautious model emitted a long enumeration of contact-detail concerns that overflowed 800 chars and failed `validate-output` as `llm_invalid_output` — masking the real "model bailed when it shouldn't" signal. The reason field is rendered as a paragraph to the user; verbose-but-readable is fine, opaque is not.
 
+[14] Theme toggle + lighter greys + generations survive deletion (2026-05-01).
+
+User asked for three things in one turn:
+1. Generations should follow the existing 60-day expiry clock regardless of account deletion.
+2. The dark theme greys feel too crushed; lift them without going near white.
+3. A light/dark toggle next to the wordmark with a circular reveal animation that "eats" the page from the button outwards.
+
+GENERATIONS SURVIVE ACCOUNT DELETION
+Migration `supabase/migrations/0003_preserve_generations_after_user_delete.sql` flips `applications.user_id`, `master_cvs.user_id`, and `token_usage.user_id` from `ON DELETE CASCADE` to `ON DELETE SET NULL`, dropping the NOT NULL on each column. `profiles` keeps cascade (1:1 metadata, no value retaining); `idempotency_keys` keeps cascade (10-min TTL); `request_logs` and `telemetry_events` were already SET NULL in 0001. Behaviour: deleting a user nulls out user_id on rows the user owned but leaves them queryable by service-role. The expire-files / expire-metadata crons run as service-role and key off `files_expire_at` / `metadata_expires_at`, not `user_id`, so generations sweep on the same 60-day / 1-year clocks they always have. RLS policies (`auth.uid() = user_id`) match nothing once user_id is null, which is the desired post-deletion privacy stance: only the service role can see them, and only long enough for the cron to delete them. Comment on `app/(app)/settings/actions.ts` updated to reflect the new contract.
+
+LIGHTER GREYS
+`app/globals.css` `@theme` brand tokens lifted by one elevation level: `--color-dark` `#08080a` → `#11111a`, `--color-dark2` `#111114` → `#1a1a24`, `--color-dark3` `#1a1a1f` → `#25252f`, `--color-dark4` `#222228` → `#2f2f3a`. `--color-text-muted` `#7a7a88` → `#9a9aa8` for label text. `--color-dim` opacity 0.22 → 0.28. The `.dark` semantic var `--muted-foreground` opacity 0.5 → 0.66 — the single biggest readability hit was muted-foreground at 50% on a near-black background; 66% reads cleanly without flattening hierarchy.
+
+LIGHT MODE
+The codebase uses Tailwind utility classes that bind to literal brand tokens (`bg-dark2/60`, `text-text`, `border-border`). For a working light mode without rewriting every class, the new `:root` block redefines the same brand-token names to a light palette: `--color-dark` `#fbfaf6` (page bg), `--color-dark2` `#ffffff` (cards), `--color-dark3` `#f1f0ea` (hover), `--color-dark4` `#e7e6df` (popover), `--color-text` `#1a1a1a`, `--color-text-muted` `#6e6e66`. Order of elevation is preserved (page → card → hover → popover) but moves whiter rather than darker-grey. Token names are now slightly dissonant in light mode (`dark2 = white`) — a future refactor to semantic tokens (`surface-1`, `surface-2`) is the cleanup, but out of scope for this turn.
+
+THEME TOGGLE WITH CIRCULAR REVEAL
+* Inline FOUC-prevention script in `app/layout.tsx` `<head>` reads `localStorage.theme` before paint and toggles `.dark` on `documentElement`. Without this, every load flashed dark-then-light.
+* New `components/app/ThemeToggle.tsx` (client) sits in the (app) topbar immediately right of the wordmark. Uses `lucide-react` `SunIcon` / `MoonIcon` (label switches to indicate the destination, not the current state).
+* Click handler: writes the click x/y to `--x` / `--y` CSS vars on documentElement, then runs the swap inside `document.startViewTransition(() => applyTheme(next))`. The swap itself is a class toggle.
+* CSS in `globals.css` defines `@keyframes theme-reveal` that animates `clip-path: circle(0% at var(--x) var(--y))` to `circle(150%)` on `::view-transition-new(root)`. Reads as the new theme expanding from the click point and "eating" the old one.
+* Browsers without View Transitions (older Safari/Firefox) fall through to an instant theme swap — same end state, no animation. Progressive enhancement.
+* `prefers-reduced-motion: reduce` disables the keyframe — same instant fallback.
+
+What was *not* changed: AmbientBackground (orange/violet blobs may look slightly off in light mode but are still subtle; revisit if they read as garish), `:root` light tokens that drive the existing preview-card and email-body surfaces (those are independent of the new brand-token redefinitions and stay correct), the (auth) login layout's wordmark (no toggle there yet — limit to authenticated shell so the first-paint experience for new visitors stays predictable).
+
 [14] Topbar reorder, account deletion, admin users page (2026-05-01).
 
 Topbar order changed to `Distil` wordmark | `+ New application` (primary CTA) | `History` | `Settings` (gear icon). The primary action is now leftmost after the wordmark — closer to the eye when scanning the bar — while the icon-only Settings still sits at the right edge. `app/(app)/layout.tsx` is the only file affected.

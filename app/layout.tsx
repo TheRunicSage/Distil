@@ -24,6 +24,20 @@ export const metadata: Metadata = {
   description: "Your CV, stripped to its sharpest form. ATS ready, recruiter approved.",
 };
 
+// Inline script that runs before paint to apply the saved theme
+// preference. Without this, the html element ships with .dark and the
+// first paint is the dark theme even if the user previously chose
+// light — flicker. Reads localStorage; falls back to the current
+// .dark class so users who never toggled keep their default.
+const themeBootstrap = `(() => {
+  try {
+    const saved = localStorage.getItem('theme');
+    const root = document.documentElement;
+    if (saved === 'light') root.classList.remove('dark');
+    else if (saved === 'dark') root.classList.add('dark');
+  } catch (_) {}
+})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -33,7 +47,11 @@ export default function RootLayout({
     <html
       lang="en"
       className={cn("dark h-full", outfit.variable, fraunces.variable)}
+      suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
+      </head>
       <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>
   );
