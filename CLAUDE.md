@@ -925,6 +925,20 @@ What was not changed: helpers' canonical defaults (still SPACING / SIZES, so cov
 
   What was *not* changed: SSE / polling-fallback logic, phase event mapping, terminal-state guard, router.refresh() behaviour. The animation timings live inside scoped `<style jsx>` blocks per sub-component and are uniquely-prefixed (`live-fade-up`, `live-pulse`, `live-spin`, `live-fade-in`, `live-tip`) so they don't collide with any existing globals.
 
+[8] Web search budget: tool-side cap + prompt rewrite (2026-05-01). User reported per-generation cost creeping toward $0.50 again. Investigation against `token_usage`:
+
+  - 7-day average: 22 generations, avg_cost $0.286, avg_searches 2.95, avg_input_tokens 30K, avg_output_tokens 3.3K, avg_cache_read 44K, avg_cache_write 28K. Average is $0.29 not $0.50.
+  - Latest generation (`22471e6a-...`): $0.4864 actual cost. 6 web searches, 80K cache_creation_tokens, 181K cache_read_tokens. Cost breakdown: cache write $0.30 (62%), output $0.06, web search $0.06, cache read $0.05, input $0.01. The 6 searches drove the cost — each invocation appends its result blocks (3-8K tokens each) to the messages array and Anthropic re-runs the model with the full prefix on every iteration, so cumulative cache reads/writes grow quadratically with search count.
+  - Spec audit: §3 Phase 2 emits 6 research outputs (snapshot, recent_news, industry_context, is_public_sector, role_toolkit, company_reference_used) and §3 Phase 4 emits salary_band. Realistic minimum: 1 broad about-page search (snapshot + industry + public-sector flag inferable from one page), 1 recent-news search (covers recent_news AND the cover-letter project reference), 1 salary search. Three mandatory + 1-2 for reformulation or dedicated toolkit lookup = 4-5 typical, 5 hard cap. The 6th search is almost always the model fact-checking itself or following the "engineering blog, StackShare, GitHub..." source list as a per-source checklist.
+
+  Two-part fix:
+  - Tool-side: `max_uses: 5` on the web_search tool in `lib/anthropic/tool-schema.ts:106`. Hard backstop. Catches outliers like the $0.49 generation; doesn't change behaviour for typical 2-3-search runs.
+  - Prompt-side: §3 Phase 2 rewritten with an explicit "2 to 3 web_search calls" budget at the top, plus a numbered search order (about-page → news → optional reformulation → optional toolkit). Industry, public-sector, and role-toolkit reframed as **inferred from the about-page result and the JD, not searched separately**. The "engineering blog, StackShare, GitHub org, case studies" list reframed as a *last-resort optional source*, not a per-source checklist. §3 Phase 4 gains a "1 to 2 web_search calls" budget — user explicitly carved out room for a salary triangulation search; one broad "[role] [seniority] salary NZ" query usually returns Hays/RW/Seek/Trade Me aggregator results in one go, second search optional. §10 self-check item 23 added to enforce the budget at output time.
+
+  Effective cost target: avg should drop from $0.29 toward $0.20-$0.25; worst-case tail capped at ~$0.35 (the 5-search-with-large-tool-results case). Reassess after 2-3 weeks of new data via the same `select count(*), avg(cost_usd), avg(web_search_count), ...` query.
+
+  What was not changed: tool_choice "any" (still required so the model can call web_search before submit_application), system prompt caching (still on, still amortising the ~11K-token system prompt), schema caps on research_summary fields. The §3 Phase 2 emit list is unchanged in shape — the change is purely in *how* the model is told to gather the data.
+
 ---
 
 ## Known Gaps to Watch

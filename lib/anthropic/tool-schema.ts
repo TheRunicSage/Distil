@@ -103,7 +103,25 @@ export const submitApplicationTool: Anthropic.Tool = {
   input_schema: submitApplicationJsonSchema,
 };
 
+// max_uses caps how many times the model can invoke web_search inside a
+// single messages.create call. Each invocation appends its result blocks
+// to the messages array, and Anthropic re-runs the model with the full
+// (system + messages) prefix on every iteration — so cumulative input,
+// cache reads and cache writes grow roughly quadratically with search
+// count. A real $0.49 generation (token_usage row 22471e6a-...) had 6
+// searches and produced 80K cache_creation_tokens + 181K cache_read
+// tokens — 75% of cost was downstream of search count, not search
+// price ($0.36 of cache + read vs $0.06 of search calls).
+//
+// 5 is the realistic ceiling per the spec: §3 Phase 2 needs 2-3 searches
+// (one broad about-the-company query, one recent-news query, optional
+// reformulation), §3 Phase 4 needs 1-2 searches (one salary lookup, one
+// triangulation if the first comes back sparse). Anything above 5 is
+// almost certainly the model fact-checking itself or following the
+// "engineering blog, StackShare, GitHub..." source list as a per-source
+// checklist instead of inferring from the broader queries.
 export const webSearchTool: Anthropic.Messages.WebSearchTool20250305 = {
   type: "web_search_20250305",
   name: "web_search",
+  max_uses: 5,
 };
