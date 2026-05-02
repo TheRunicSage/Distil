@@ -24,13 +24,12 @@ import { join } from "node:path";
 
 import { NonRetriableError } from "inngest";
 
-import { callLLM } from "@/lib/anthropic/client";
-import { checkCostCapPre, checkCostCapPost } from "@/lib/anthropic/cost-cap";
 import {
+  llm,
+  checkCostCapPre,
+  checkCostCapPost,
   submitApplicationTool,
-  webSearchTool,
-  SUBMIT_APPLICATION_TOOL_NAME,
-} from "@/lib/anthropic/tool-schema";
+} from "@/lib/llm";
 import { isGenerationEnabled } from "@/lib/env";
 import { ApiError } from "@/lib/errors/api-error";
 import { buildUserMessage } from "@/lib/llm/build-user-message";
@@ -156,9 +155,16 @@ export const generateApplication = inngest.createFunction(
       userNotes: ctx.user_notes,
     });
 
-    // 5. Pre-call cost cap.
+    // 5. Pre-call cost cap. Pre-cap value is per-provider (anthropic
+    // and deepseek price input very differently); we look up the
+    // active model's cap inside checkCostCapPre rather than passing
+    // it explicitly. The model id flows from llm.callLLM's result so
+    // we use a static lookup keyed on the env-selected provider.
+    const activeModel = process.env.LLM_PROVIDER === "deepseek"
+      ? "deepseek-v4-pro"
+      : "claude-sonnet-4-6";
     await withInngestStep(step, "cost-cap-check", stepCtx, () =>
-      checkCostCapPre(userMessage.length, SYSTEM_PROMPT.length),
+      checkCostCapPre(activeModel, userMessage.length, SYSTEM_PROMPT.length),
     );
 
     // 6. The LLM call. retries: 0 because every call costs money;
@@ -170,20 +176,21 @@ export const generateApplication = inngest.createFunction(
       // the function. For this step we wrap manually to ensure no
       // retry happens on Anthropic-side failures (caller decides).
       try {
-        return await callLLM({
+        return await llm.callLLM({
           system: SYSTEM_PROMPT,
           userMessage,
-          tools: [submitApplicationTool, webSearchTool],
-          // tool_choice: "any" requires the response to end on a tool call
-          // (no free text), but unlike { type: "tool", name: "..." } it
-          // lets the model invoke web_search (a server tool) for Phase 2
-          // company research before producing the final submit_application
-          // call. With { type: "tool", name: "submit_application" }, the
-          // model is forced to call submit_application as its very first
-          // move and web_search is unreachable, which made the model
-          // either bail or emit "let me run the research" prose into the
-          // insufficient_input_reason.
-          toolChoice: { type: "any" },
+          // Provider-internal: Anthropic appends its own
+          // web_search server tool; DeepSeek appends its own
+          // Tavily-backed web_search inside a tool-call loop.
+          // The neutral list here is just the custom tool we
+          // care about validating output for.
+          tools: [submitApplicationTool],
+          // "required" forces the response to end on a tool call
+          // (no free text) but lets the model pick which tool —
+          // critical so it can invoke web_search (provider-
+          // internal) before submit_application. Equivalent to
+          // Anthropic's { type: "any" } and OpenAI's "required".
+          toolChoice: "required",
           applicationId: application_id,
         });
       } catch (err) {
@@ -221,9 +228,12 @@ export const generateApplication = inngest.createFunction(
       });
     });
 
-    // 7. Post-call cost cap (warns only).
+    // 7. Post-call cost cap (warns only). Cap is per-provider; we
+    // pass the actual model the call ran against so the right
+    // threshold is applied even if LLM_PROVIDER was flipped mid-
+    // queue.
     await withInngestStep(step, "cost-cap-postcheck", stepCtx, () =>
-      checkCostCapPost(llmResult.cost_usd, application_id),
+      checkCostCapPost(llmResult.model, llmResult.cost_usd, application_id),
     );
 
     await withInngestStep(step, "llm-completed-event", stepCtx, async () => {

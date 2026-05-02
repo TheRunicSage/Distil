@@ -58,7 +58,8 @@ Decision Point. Do not invent behaviour, default values, or UX copy.
 | UI | shadcn/ui + Tailwind | Components copied into repo, not imported |
 | Hosting | Vercel | |
 | DB + Auth + Storage | Supabase | Postgres, email/password auth, private buckets |
-| LLM | claude-sonnet-4-6 | web_search tool + structured output via tool_use |
+| LLM (default) | deepseek-v4-pro | structured output via OpenAI-compatible function calling; web search via Tavily inside a client-side tool-call loop |
+| LLM (rollback) | claude-sonnet-4-6 | flip `LLM_PROVIDER=anthropic` env var; restores Anthropic SDK + native web_search server tool |
 | Background jobs | Inngest | Free tier covers internal demo |
 | DOCX rendering | docx npm package | Server-side, pure JSON-in Buffer-out |
 | PDF parsing | unpdf | Serverless-safe, zero native deps |
@@ -274,48 +275,71 @@ Behaviour:
 - 10-minute TTL via `idempotency_keys.expires_at`
 - Uses service-role client (bypasses RLS)
 
-### `lib/anthropic/client.ts`
+### `lib/llm/{types,index}.ts` and provider implementations
 
 ```typescript
-import Anthropic from '@anthropic-ai/sdk';
-import type { ModelName } from './pricing';
+// lib/llm/types.ts
+export type LlmTool = {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+};
 
-type CallLLMOptions = {
+export type LlmToolChoice =
+  | "auto"
+  | "required"                         // both providers: force a tool call, model picks
+  | { type: "tool"; name: string };
+
+export type CallLLMOptions = {
   system: string;
   userMessage: string;
-  tools: Anthropic.Messages.ToolUnion[];   // accepts native + server tools (web_search)
-  toolChoice:
-    | Anthropic.ToolChoiceAuto
-    | Anthropic.ToolChoiceTool
-    | Anthropic.ToolChoiceAny;
+  tools: LlmTool[];                    // neutral; provider appends its own web_search internally
+  toolChoice: LlmToolChoice;
   applicationId: string;
-  maxTokens?: number;             // defaults to 16000
+  maxTokens?: number;                  // defaults to 16000
 };
 
-type CallLLMResult = {
-  toolInput: unknown;             // raw tool input, caller validates with Zod
+export type CallLLMResult = {
+  toolInput: unknown;                  // raw tool input, caller validates with Zod
   usage: {
-    input_tokens: number;
+    input_tokens: number;              // cache-miss portion only (DeepSeek) / total (Anthropic)
     output_tokens: number;
-    cache_creation_tokens: number;
+    cache_creation_tokens: number;     // 0 on DeepSeek (writes not separately billed)
     cache_read_tokens: number;
-    web_search_count: number;
+    web_search_count: number;          // Anthropic: native counter; DeepSeek: Tavily call count
   };
-  cost_usd: number;               // computed via calculateCost
-  model: ModelName;               // surfaced so the caller can write token_usage.model
+  cost_usd: number;                    // computed via calculateCost
+  model: ModelName;                    // claude-sonnet-4-6 | deepseek-v4-pro | deepseek-v4-flash
 };
 
-export async function callLLM(opts: CallLLMOptions): Promise<CallLLMResult>;
+export interface LlmProvider {
+  callLLM(opts: CallLLMOptions): Promise<CallLLMResult>;
+}
+
+// lib/llm/index.ts picks an implementation at module load:
+//   AnthropicProvider | DeepseekProvider, switched by getLlmProvider()
+//   which reads LLM_PROVIDER (default "anthropic"). Cold-start scoped;
+//   flipping the env var takes effect on the next Inngest cold boot —
+//   no redeploy needed.
+export const llm: LlmProvider;
 ```
 
-Behaviour:
-- Pure SDK wrapper: returns usage + cost, **does not** write to `token_usage`. The Inngest `call-llm` step writes the row using `usage`, `cost_usd`, `model`, plus the `user_id` already in scope at the step level (Decision Log step 8 DP-B — supersedes the original "fire-and-forget at SDK boundary" rule).
-- Does NOT apply cost cap itself — caller (Inngest steps) does that
-- System prompt is sent as a single text content block with `cache_control: { type: "ephemeral" }`. Per Decision Log step 8 DP-C (REVISED 2026-04-30), caching is now enabled to amortise the ~7-8K-token system prompt across back-to-back generations and retries. Cache token counts continue to feed `calculateCost`.
-- `web_search_count` is read from `response.usage.server_tool_use.web_search_requests` (Anthropic's billing source of truth — Decision Log step 8 DP-D).
-- Throws `ApiError('llm_failed')` on non-2xx Anthropic response
-- Throws `ApiError('llm_invalid_output')` if no tool_use block in response
-- Model is always `claude-sonnet-4-6`
+Behaviour shared across providers:
+- Pure SDK wrapper: returns usage + cost, **does not** write to `token_usage`. The Inngest `call-llm` step writes the row using `usage`, `cost_usd`, `model`, plus the `user_id` already in scope at the step level (Decision Log step 8 DP-B).
+- Does NOT apply cost cap itself — caller (Inngest steps) does that.
+- Throws `ApiError('llm_failed')` on non-2xx provider response.
+- Throws `ApiError('llm_invalid_output')` if no `submit_application` tool call materialises.
+
+Anthropic-specific (`lib/anthropic/provider.ts`):
+- System prompt sent as a single text content block with `cache_control: { type: "ephemeral" }` (Decision Log step 8 DP-C, 2026-04-30 revision).
+- Web search is the native `web_search_20250305` server tool (`lib/anthropic/tool-schema.ts:webSearchTool`, `max_uses: 5`); Anthropic runs the search in-band and reports the count via `usage.server_tool_use.web_search_requests`.
+- Model: `claude-sonnet-4-6`.
+
+DeepSeek-specific (`lib/deepseek/provider.ts`):
+- OpenAI-compatible chat completions at `https://api.deepseek.com` via the `openai` SDK with a custom `baseURL`.
+- Caching is automatic: DeepSeek's on-disk KV cache reports `prompt_cache_hit_tokens` / `prompt_cache_miss_tokens` per call; we sum them across iterations.
+- Web search is **not native**. The provider runs a tool-call loop (see Decision Log step 8 DP-2 entry, 2026-05-02): on each iteration, model emits either a `submit_application` call (terminal — JSON.parse and return) or `web_search` calls that we resolve by hitting Tavily (`lib/deepseek/tavily.ts`, basic depth, 5 results). 5-call budget; the 6th gets a "budget exhausted" tool result (graceful degrade). Iteration cap 8.
+- Model: `deepseek-v4-pro` (DP-1, 2026-05-02 — Pro chosen over Flash for closer reasoning parity with Sonnet 4.6).
 
 ### `lib/client/api-fetch.ts`
 
@@ -341,18 +365,29 @@ Behaviour:
 - On non-2xx after retries, throws an object with shape `{ code: string, message: string }`
 - Returns parsed JSON body as `data`
 
-### `lib/anthropic/cost-cap.ts`
+### `lib/llm/cost-cap.ts`
 
 ```typescript
-// Estimates cost from raw message size (characters) before the API call.
-// Throws ApiError('generation_too_large') if estimated input cost > COST_CAP_PRECHECK_USD (0.50)
-export function checkCostCapPre(userMessageLength: number, systemPromptLength: number): void;
+import type { ModelName } from "./pricing";
 
-// Logs a warning to request_logs if actual cost > COST_CAP_USD (1.00).
-// Does NOT throw — money is already spent.
+// Estimates cost from raw message size (characters) before the API call,
+// using the model's input-per-MTok rate. Throws
+// ApiError('generation_too_large') if the estimate exceeds the model's
+// pre-cap. Caps are model-keyed in COST_CAPS_BY_MODEL — Anthropic
+// $0.50/$1.00, DeepSeek-Pro $0.30/$0.20, DeepSeek-Flash $0.05/$0.03.
+export function checkCostCapPre(
+  model: ModelName,
+  userMessageLength: number,
+  systemPromptLength: number,
+): void;
+
+// Logs a warning to request_logs if actual cost exceeds the model's
+// full cap. Does NOT throw — money is already spent. Tags the Sentry
+// warning with `llm_model` so dashboard filters work across providers.
 export async function checkCostCapPost(
+  model: ModelName,
   cost_usd: number,
-  applicationId: string
+  applicationId: string,
 ): Promise<void>;
 ```
 
@@ -981,6 +1016,28 @@ What was not changed: helpers' canonical defaults (still SPACING / SIZES, so cov
 
   What was *not* changed: dark mode (still uses cream-free dark2/3/4 progression as before), brand orange / semantic accents (the unifying anchor across modes), the `:root` light tokens for preview-card islands (those are independent of the brand-token redefinitions), the AmbientBackground layer.
 
+[8] DeepSeek V4 migration — provider-switchable LLM layer (2026-05-02). Anthropic Sonnet 4.6 was costing ~$0.29/gen with caching ON; user asked to evaluate DeepSeek V4 (released as preview 2026-04-24). Migration shipped behind a runtime env-var toggle (`LLM_PROVIDER=deepseek` to use DeepSeek, anything else falls back to Anthropic). Six DPs decided in one round before any code:
+
+  - **DP-1 model: deepseek-v4-pro.** Pro positions explicitly vs top closed-source models (rivals Sonnet 4.6); Flash positions for "simple agent tasks" — ours is not simple (multi-phase web research + 50-field structured output + storytelling cover letter + honest fit reasoning). Cost delta Pro→Flash is pennies/gen at our volume so the savings come from search choice (DP-2), not the model tier. Promote to Flash later if Pro proves overkill.
+
+  - **DP-2 web search: Tavily, client-side tool loop.** DeepSeek has no server-side search equivalent of Anthropic's `web_search_20250305`. Picked Tavily ($0.008/call basic) over Brave (cheaper, lower quality), Exa (semantic, less natural for company-name queries), and Perplexity Sonar (answer-shaped, would replace the research phase rather than augment it). Loop semantics live in `lib/deepseek/provider.ts`: each iteration sends `{messages, tools: [submit_application, web_search]}`; on `submit_application` we JSON.parse and return; on `web_search` we hit Tavily and append a `tool` role result message; cap 5 search calls / 8 iterations. The 6th search returns a "budget exhausted" tool result instead of erroring (graceful degrade so the model can finish with what it has). User ratified the 5-call hard cap on the basis that searches CAN return nothing useful (sparse results need reformulation) and salary triangulation is genuinely useful.
+
+  - **DP-3 tool-use mechanism: OpenAI function-calling, keep flat-root schema.** DeepSeek follows OpenAI spec exactly — `tools: [{type: "function", function: {name, description, parameters}}]`, `tool_choice: "required"` (= Anthropic's `{type: "any"}`), tool_calls returned with stringified arguments needing `JSON.parse`. Critically, the `submitApplicationTool` JSON Schema produced by `lib/anthropic/tool-schema.ts` (the flat-root form from DP-A revision) drops directly under `function.parameters` — no schema rewrite. Strict mode (DeepSeek beta) skipped: requires the beta base URL and would force a schema reshape; we already enforce correctness with the post-call Zod discriminated-union parse in `validate-output`.
+
+  - **DP-4 prompt caching: automatic, no markers.** DeepSeek's KV cache is on-disk and implicit — no `cache_control` markers. Cache hit/miss reported as `prompt_cache_hit_tokens` / `prompt_cache_miss_tokens` per call; we sum them across iterations. Cache writes are NOT separately metered or billed (unlike Anthropic's 1.25x-input write rate), so `cache_creation_tokens` is always 0 on the DeepSeek path. The system prompt naturally benefits as a stable prefix.
+
+  - **DP-5 cost caps: rescaled per-provider.** Anthropic kept at $0.50 pre / $1.00 post. DeepSeek-Pro at $0.30 pre (matches the ~166K-token tolerance at $1.74/MTok) / $0.20 post (3.5x of projected $0.05 average). Flash at $0.05 / $0.03. Caps live in `COST_CAPS_BY_MODEL` (`lib/llm/pricing.ts`) keyed on the model that ran the call, so a mid-queue env-var flip uses the right thresholds. Pre-call estimator now takes the model as its first arg and reads the matching `input_per_mtok`.
+
+  - **DP-6 module structure: thin adapter.** New `lib/llm/{types,provider,index,pricing,cost-cap,tools}.ts`. `lib/anthropic/client.ts` + `lib/anthropic/cost-cap.ts` + `lib/anthropic/pricing.ts` deleted; their contents moved (Anthropic SDK call body now lives in `lib/anthropic/provider.ts` as `class AnthropicProvider implements LlmProvider`; pricing + cost-cap are provider-neutral and live under `lib/llm`). `lib/anthropic/tool-schema.ts` stays — still the canonical `submitApplicationTool` (Anthropic-typed) and the `webSearchTool` (Anthropic server tool, only used by the Anthropic provider). `lib/llm/tools.ts` lifts the Anthropic tool's `input_schema` body out as a neutral `LlmTool.parameters`. The Inngest call site (`generate-application.ts`) now reads `import { llm, ... } from "@/lib/llm"` and calls `llm.callLLM({...})` — no other call sites changed.
+
+  Locked Interface Contracts in CLAUDE.md updated to reflect the neutral types and the per-provider behaviour. The original `callLLM` contract under `lib/anthropic/client.ts` is replaced by the `LlmProvider.callLLM` contract under `lib/llm/{types,index}.ts`.
+
+  Migration order shipped in this commit: env scaffold → neutral types/pricing/cost-cap → tools bridge → Anthropic provider → Tavily client → DeepSeek provider with tool loop → provider switch → Inngest call-site update → typecheck. Default stays `LLM_PROVIDER=anthropic` so production traffic is unaffected until the env var is flipped explicitly. Rollback is a Vercel UI toggle (no redeploy) — the `getLlmProvider()` reader is module-scoped so the next Inngest cold start picks up the change. If `getLlmProvider()` ever needs to be per-request instead of per-cold-start (mid-queue rollback), it can mirror the kill-switch convention without touching the providers.
+
+  What was NOT changed: `ApplicationOutputSchema` (per the [7] strictness audits — schema shape is the contract; if V4 emits something it rejects, the existing `request_logs.metadata.zod_issues` observability tells us which field, and that's data for a follow-up commit, not pre-emptive relaxation), the system prompt (the §3 Phase 2 / §3 Phase 4 web-search budget rules apply equally to the Tavily-backed loop — same 2-3 typical / 5 cap), the cover letter renderer, the DOCX styles, the Inngest pipeline shape (still 10 steps, `mark-running → cost-cap-check → call-llm → cost-cap-postcheck → validate-output → ...`).
+
+  Test plan deferred: one preview-deployment run per seniority tier (Graduate / Mid / Lead) with `LLM_PROVIDER=deepseek` set on the preview env only, before flipping production. Side-by-side comparison against an Anthropic baseline for the same JD will gate the prod flip; the high-risk fields are `fit_assessment.reasoning`, `research_summary` (Phase 2 quality with Tavily-fed results vs Anthropic's in-band search), and the storytelling paragraph 2.
+
 ---
 
 ## Known Gaps to Watch
@@ -1025,23 +1082,30 @@ Full catalogue in `app_handoff_v8.md §7.3`. Most common ones:
 | retry_limit_reached | 409 | attempt_number already 3 |
 | files_expired | 410 | 60-day file expiry passed |
 | internal_error | 500 | Catch-all system error |
-| llm_failed | 502 | Anthropic non-2xx |
+| llm_failed | 502 | Provider non-2xx (Anthropic or DeepSeek) |
 | llm_invalid_output | 502 | Bad tool output or Zod fail |
 | generation_disabled | 503 | GENERATION_ENABLED=false |
 | daily_cost_ceiling_reached | 503 | Daily spend > DAILY_COST_CEILING_USD |
 
 ---
 
-## Pricing Constants (verified 27 April 2026)
+## Pricing Constants
 
-Model: `claude-sonnet-4-6`
-Input: $3.00 / MTok
-Output: $15.00 / MTok
-Cache write 5-min: $3.75 / MTok
-Cache write 1-hr: $6.00 / MTok
-Cache read: $0.30 / MTok
-Web search: $0.01 / call
+**`claude-sonnet-4-6`** (verified 27 April 2026)
+Input: $3.00 / MTok · Output: $15.00 / MTok · Cache write 5-min: $3.75 / MTok · Cache write 1-hr: $6.00 / MTok · Cache read: $0.30 / MTok · Web search: $0.01 / call
 
-Per-generation cost cap: $1.00 (COST_CAP_USD)
-Pre-call estimate cap: $0.50 (COST_CAP_PRECHECK_USD)
-Daily ceiling default: $10.00 (DAILY_COST_CEILING_USD env var)
+**`deepseek-v4-pro`** (verified 2 May 2026 against api-docs.deepseek.com/quick_start/pricing)
+Input cache-miss: $1.74 / MTok · Output: $3.48 / MTok · Cache write: $0 (automatic, not separately billed) · Cache read (cache-hit): $0.145 / MTok
+
+**`deepseek-v4-flash`** (verified 2 May 2026)
+Input cache-miss: $0.14 / MTok · Output: $0.28 / MTok · Cache write: $0 · Cache read (cache-hit): $0.028 / MTok
+
+**Tavily Search** (used by the DeepSeek provider in place of Anthropic's server-side web_search)
+Basic depth: $0.008 / call
+
+**Per-generation cost caps** (model-keyed in `COST_CAPS_BY_MODEL`):
+- Anthropic: $0.50 pre / $1.00 post
+- DeepSeek-Pro: $0.30 pre / $0.20 post
+- DeepSeek-Flash: $0.05 pre / $0.03 post
+
+**Daily ceiling default**: $10.00 (DAILY_COST_CEILING_USD env var)
