@@ -4,9 +4,14 @@
 // chain has more than one attempt, a "<n> attempts" toggle expands
 // the per-attempt list — using a native <details>/<summary> element
 // so this stays a server component (no client JS needed).
+//
+// 2026-05-03: Ready chains get a small download dropdown next to
+// the status pill (lives in DownloadDropdown — a client island that
+// doesn't push the surrounding card into client-component territory).
 
 import Link from "next/link";
 import { type ChainCard as Chain, chainToneClass } from "@/lib/applications/chains";
+import { DownloadDropdown } from "./DownloadDropdown";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString("en-NZ", {
@@ -20,30 +25,46 @@ export function ChainCard({ chain }: { chain: Chain }) {
   const hasRetries = chain.attempts.length > 1;
   const tone = chainToneClass(chain.effectiveTone);
 
+  const showDownload = chain.effectiveStatus === "ready";
+
   return (
     <article className="rounded-xl border border-border bg-dark2/60 backdrop-blur-sm transition-colors hover:border-orange/40">
-      <Link
-        href={`/application/${chain.anchorId}`}
-        className="flex items-center gap-4 px-4 py-3"
-      >
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm text-text">
-            {chain.title ?? (
-              <span className="font-mono text-text/70">
-                {chain.fallbackId}
-              </span>
-            )}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {formatDate(chain.latestActivityAt)}
-          </p>
-        </div>
-        <span
-          className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.05em] ${tone}`}
+      <div className="relative">
+        <Link
+          href={`/application/${chain.anchorId}`}
+          className="flex items-center gap-4 px-4 py-3"
         >
-          {chain.effectiveLabel}
-        </span>
-      </Link>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm text-text">
+              {chain.title ?? (
+                <span className="font-mono text-text/70">
+                  {chain.fallbackId}
+                </span>
+              )}
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {formatDate(chain.latestActivityAt)}
+            </p>
+          </div>
+          <span
+            className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.05em] ${tone}`}
+          >
+            {chain.effectiveLabel}
+          </span>
+          {showDownload && (
+            // Spacer keeps the row layout stable when the dropdown
+            // is absent. The actual dropdown is positioned absolute
+            // outside the Link so its own click handlers can stop
+            // propagation cleanly.
+            <span className="h-8 w-8 shrink-0" aria-hidden="true" />
+          )}
+        </Link>
+        {showDownload && (
+          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+            <DownloadDropdown applicationId={chain.anchorId} />
+          </div>
+        )}
+      </div>
 
       {hasRetries && (
         <details className="border-t border-border/50">
