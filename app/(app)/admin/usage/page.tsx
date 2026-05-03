@@ -5,6 +5,8 @@
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/service";
 import { userPillLabel, userPillTone } from "@/lib/admin/user-pill";
+import { modelLabel } from "@/lib/admin/model-pill";
+import { getLlmProvider } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -104,8 +106,11 @@ export default async function AdminUsagePage({
 
   const [recentApps, recentUsage, perAppCost] = await Promise.all([
     appQuery,
-    service.from("token_usage").select("cost_usd").gte("created_at", sevenDaysAgo),
-    service.from("token_usage").select("application_id, cost_usd"),
+    service
+      .from("token_usage")
+      .select("cost_usd, model")
+      .gte("created_at", sevenDaysAgo),
+    service.from("token_usage").select("application_id, cost_usd, model"),
   ]);
 
   const sevenDayCost = (recentUsage.data ?? []).reduce(
@@ -113,16 +118,39 @@ export default async function AdminUsagePage({
     0,
   );
 
+  // Per-provider 7-day spend split — surfaced as a stat card so admin
+  // can see at a glance how the migration's affecting costs without
+  // leaving the page.
+  const sevenDayByProvider = { anthropic: 0, deepseek: 0, unknown: 0 };
+  for (const row of recentUsage.data ?? []) {
+    const tag = modelLabel(row.model).provider;
+    sevenDayByProvider[tag] += Number(row.cost_usd ?? 0);
+  }
+
   const costByApp = new Map<string, number>();
+  const modelByApp = new Map<string, string>();
   for (const row of perAppCost.data ?? []) {
     if (!row.application_id) continue;
     costByApp.set(
       row.application_id,
       (costByApp.get(row.application_id) ?? 0) + Number(row.cost_usd ?? 0),
     );
+    if (row.model) {
+      // If a single application has multiple token_usage rows from
+      // different models (shouldn't happen in v1, but possible if the
+      // env var was flipped mid-retry), the last one wins. Mark with
+      // a "+" suffix so the admin spots it.
+      const existing = modelByApp.get(row.application_id);
+      if (existing && existing !== row.model) {
+        modelByApp.set(row.application_id, `${row.model}+`);
+      } else {
+        modelByApp.set(row.application_id, row.model);
+      }
+    }
   }
 
   const apps = recentApps.data ?? [];
+  const activeProvider = getLlmProvider();
 
   return (
     <div className="space-y-8">
@@ -133,8 +161,13 @@ export default async function AdminUsagePage({
         </p>
       </div>
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="7-day spend" value={`$${sevenDayCost.toFixed(2)}`} />
+        <Stat
+          label="Active provider"
+          value={activeProvider === "deepseek" ? "DeepSeek" : "Anthropic"}
+          sub={`LLM_PROVIDER=${activeProvider}`}
+        />
         <Stat label="Recent count" value={String(apps.length)} />
         <Stat
           label="Active in queue"
@@ -144,6 +177,34 @@ export default async function AdminUsagePage({
             ).length,
           )}
         />
+      </section>
+
+      <section className="panel p-6">
+        <h2 className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+          7-day spend by provider
+        </h2>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <ProviderSpend
+            label="Anthropic"
+            cost={sevenDayByProvider.anthropic}
+            total={sevenDayCost}
+            tone="orange"
+          />
+          <ProviderSpend
+            label="DeepSeek"
+            cost={sevenDayByProvider.deepseek}
+            total={sevenDayCost}
+            tone="info"
+          />
+          {sevenDayByProvider.unknown > 0 && (
+            <ProviderSpend
+              label="Unknown"
+              cost={sevenDayByProvider.unknown}
+              total={sevenDayCost}
+              tone="muted"
+            />
+          )}
+        </div>
       </section>
 
       <nav className="flex flex-wrap gap-1.5">
@@ -175,6 +236,7 @@ export default async function AdminUsagePage({
               <th className="hidden whitespace-nowrap px-3 py-3 lg:table-cell">User</th>
               <th className="whitespace-nowrap px-3 py-3">Status</th>
               <th className="hidden whitespace-nowrap px-3 py-3 sm:table-cell">Attempt</th>
+              <th className="hidden whitespace-nowrap px-3 py-3 md:table-cell">Model</th>
               <th className="whitespace-nowrap px-3 py-3">Duration</th>
               <th className="whitespace-nowrap px-3 py-3 text-right">Cost</th>
             </tr>
@@ -183,7 +245,7 @@ export default async function AdminUsagePage({
             {apps.length === 0 && (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="px-4 py-8 text-center text-muted-foreground"
                 >
                   No applications match this filter.
@@ -229,6 +291,25 @@ export default async function AdminUsagePage({
                   <td className="hidden whitespace-nowrap px-3 py-3 text-xs sm:table-cell">
                     {row.attempt_number}
                   </td>
+                  <td className="hidden whitespace-nowrap px-3 py-3 md:table-cell">
+                    {(() => {
+                      const raw = modelByApp.get(row.id) ?? null;
+                      const drift = raw?.endsWith("+");
+                      const model = drift ? raw!.slice(0, -1) : raw;
+                      const m = modelLabel(model);
+                      return model ? (
+                        <span
+                          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${m.tone}`}
+                          title={drift ? `${m.label} (mixed across attempts)` : m.label}
+                        >
+                          {m.short}
+                          {drift ? "+" : ""}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">—</span>
+                      );
+                    })()}
+                  </td>
                   <td className="whitespace-nowrap px-3 py-3 text-xs">
                     {formatDuration(durationMs(row.started_at, row.completed_at))}
                   </td>
@@ -245,13 +326,73 @@ export default async function AdminUsagePage({
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+}) {
   return (
     <div className="panel p-4">
       <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
         {label}
       </p>
       <p className="mt-1 text-2xl font-semibold text-text">{value}</p>
+      {sub && (
+        <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+          {sub}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ProviderSpend({
+  label,
+  cost,
+  total,
+  tone,
+}: {
+  label: string;
+  cost: number;
+  total: number;
+  tone: "orange" | "info" | "muted";
+}) {
+  const pct = total > 0 ? (cost / total) * 100 : 0;
+  const barColour =
+    tone === "orange"
+      ? "bg-orange"
+      : tone === "info"
+        ? "bg-info"
+        : "bg-dim";
+  const valueColour =
+    tone === "orange"
+      ? "text-orange"
+      : tone === "info"
+        ? "text-info"
+        : "text-muted-foreground";
+  return (
+    <div>
+      <div className="flex items-baseline justify-between">
+        <span className="text-xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+          {label}
+        </span>
+        <span className={`font-mono text-sm font-semibold ${valueColour}`}>
+          ${cost.toFixed(2)}
+        </span>
+      </div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-dark4">
+        <div
+          className={`h-full rounded-full ${barColour}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+        {pct.toFixed(0)}% of 7-day spend
+      </p>
     </div>
   );
 }

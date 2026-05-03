@@ -4,6 +4,8 @@
 // app.
 
 import { createServiceClient } from "@/lib/supabase/service";
+import { getLlmProvider } from "@/lib/env";
+import { modelLabel } from "@/lib/admin/model-pill";
 
 export const dynamic = "force-dynamic";
 
@@ -21,14 +23,22 @@ export default async function AdminTelemetryPage() {
   const service = createServiceClient();
   const since = new Date(Date.now() - SEVEN_DAYS_MS).toISOString();
 
-  const { data } = await service
-    .from("telemetry_events")
-    .select("name, properties")
-    .gte("created_at", since);
+  const [{ data: telemetry }, { data: usage }] = await Promise.all([
+    service
+      .from("telemetry_events")
+      .select("name, properties")
+      .gte("created_at", since),
+    service
+      .from("token_usage")
+      .select(
+        "model, cost_usd, input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens, web_search_count",
+      )
+      .gte("created_at", since),
+  ]);
 
   const counts: Record<string, number> = {};
   let outcomes = { success: 0, insufficient_input: 0, error: 0 };
-  for (const row of data ?? []) {
+  for (const row of telemetry ?? []) {
     counts[row.name] = (counts[row.name] ?? 0) + 1;
     if (row.name === "generation.finalized" && row.properties) {
       const outcome = (row.properties as { outcome?: string }).outcome;
@@ -38,6 +48,50 @@ export default async function AdminTelemetryPage() {
       else if (outcome === "error") outcomes.error += 1;
     }
   }
+
+  // Per-model rollup over the same 7-day window. The migration's
+  // primary observability question is "is the DeepSeek path actually
+  // cheaper at parity?" — this section gives the answer at a glance.
+  type ProviderStats = {
+    model: string;
+    calls: number;
+    total_cost: number;
+    total_input: number;
+    total_output: number;
+    total_cache_read: number;
+    total_cache_write: number;
+    total_searches: number;
+  };
+  const byModel = new Map<string, ProviderStats>();
+  for (const row of usage ?? []) {
+    const key = row.model ?? "unknown";
+    let entry = byModel.get(key);
+    if (!entry) {
+      entry = {
+        model: key,
+        calls: 0,
+        total_cost: 0,
+        total_input: 0,
+        total_output: 0,
+        total_cache_read: 0,
+        total_cache_write: 0,
+        total_searches: 0,
+      };
+      byModel.set(key, entry);
+    }
+    entry.calls += 1;
+    entry.total_cost += Number(row.cost_usd ?? 0);
+    entry.total_input += Number(row.input_tokens ?? 0);
+    entry.total_output += Number(row.output_tokens ?? 0);
+    entry.total_cache_read += Number(row.cache_read_tokens ?? 0);
+    entry.total_cache_write += Number(row.cache_creation_tokens ?? 0);
+    entry.total_searches += Number(row.web_search_count ?? 0);
+  }
+  const providerStats = Array.from(byModel.values()).sort(
+    (a, b) => b.total_cost - a.total_cost,
+  );
+  const grandTotal = providerStats.reduce((s, p) => s + p.total_cost, 0);
+  const activeProvider = getLlmProvider();
 
   const funnelMax = Math.max(
     1,
@@ -69,6 +123,130 @@ export default async function AdminTelemetryPage() {
           accent="warn"
         />
         <Stat label="Errors" value={String(outcomes.error)} accent="danger" />
+      </section>
+
+      <section className="panel p-6">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+            LLM spend by provider (7 days)
+          </h2>
+          <span className="font-mono text-[10px] text-muted-foreground">
+            active: LLM_PROVIDER={activeProvider}
+          </span>
+        </div>
+        {providerStats.length === 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            No LLM calls in the window.
+          </p>
+        ) : (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full table-auto text-sm">
+              <thead className="text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
+                <tr className="border-b border-border">
+                  <th className="whitespace-nowrap py-2 pr-3">Model</th>
+                  <th className="whitespace-nowrap py-2 px-3 text-right">Calls</th>
+                  <th className="whitespace-nowrap py-2 px-3 text-right">Total cost</th>
+                  <th className="whitespace-nowrap py-2 px-3 text-right">Avg / call</th>
+                  <th className="hidden whitespace-nowrap py-2 px-3 text-right md:table-cell">
+                    Cache hit %
+                  </th>
+                  <th className="hidden whitespace-nowrap py-2 px-3 text-right sm:table-cell">
+                    Searches
+                  </th>
+                  <th className="hidden whitespace-nowrap py-2 px-3 text-right lg:table-cell">
+                    Output tokens
+                  </th>
+                  <th className="whitespace-nowrap py-2 pl-3 text-right">
+                    % of spend
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {providerStats.map((p) => {
+                  const m = modelLabel(p.model);
+                  const avg = p.calls > 0 ? p.total_cost / p.calls : 0;
+                  const totalInputForCache =
+                    p.total_input + p.total_cache_read;
+                  const cachePct =
+                    totalInputForCache > 0
+                      ? (p.total_cache_read / totalInputForCache) * 100
+                      : 0;
+                  const sharePct =
+                    grandTotal > 0 ? (p.total_cost / grandTotal) * 100 : 0;
+                  return (
+                    <tr
+                      key={p.model}
+                      className="border-b border-border/60 text-text/90"
+                    >
+                      <td className="whitespace-nowrap py-3 pr-3">
+                        <span
+                          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${m.tone}`}
+                        >
+                          {m.label}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap py-3 px-3 text-right font-mono text-xs">
+                        {p.calls}
+                      </td>
+                      <td className="whitespace-nowrap py-3 px-3 text-right font-mono text-xs font-semibold">
+                        ${p.total_cost.toFixed(2)}
+                      </td>
+                      <td className="whitespace-nowrap py-3 px-3 text-right font-mono text-xs">
+                        ${avg.toFixed(4)}
+                      </td>
+                      <td className="hidden whitespace-nowrap py-3 px-3 text-right font-mono text-xs md:table-cell">
+                        {cachePct.toFixed(0)}%
+                      </td>
+                      <td className="hidden whitespace-nowrap py-3 px-3 text-right font-mono text-xs sm:table-cell">
+                        {p.total_searches}
+                      </td>
+                      <td className="hidden whitespace-nowrap py-3 px-3 text-right font-mono text-xs lg:table-cell">
+                        {p.total_output.toLocaleString()}
+                      </td>
+                      <td className="whitespace-nowrap py-3 pl-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <div className="h-1.5 w-16 overflow-hidden rounded-full bg-dark4">
+                            <div
+                              className={`h-full rounded-full ${m.provider === "deepseek" ? "bg-info" : m.provider === "anthropic" ? "bg-orange" : "bg-dim"}`}
+                              style={{ width: `${sharePct}%` }}
+                            />
+                          </div>
+                          <span className="font-mono text-[11px] text-muted-foreground">
+                            {sharePct.toFixed(0)}%
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="text-text">
+                  <td className="py-3 pr-3 text-xs font-semibold uppercase tracking-[0.05em] text-muted-foreground">
+                    Total
+                  </td>
+                  <td className="py-3 px-3 text-right font-mono text-xs">
+                    {providerStats.reduce((s, p) => s + p.calls, 0)}
+                  </td>
+                  <td className="py-3 px-3 text-right font-mono text-xs font-semibold">
+                    ${grandTotal.toFixed(2)}
+                  </td>
+                  <td className="py-3 px-3" />
+                  <td className="hidden md:table-cell" />
+                  <td className="hidden whitespace-nowrap py-3 px-3 text-right font-mono text-xs sm:table-cell">
+                    {providerStats.reduce((s, p) => s + p.total_searches, 0)}
+                  </td>
+                  <td className="hidden whitespace-nowrap py-3 px-3 text-right font-mono text-xs lg:table-cell">
+                    {providerStats
+                      .reduce((s, p) => s + p.total_output, 0)
+                      .toLocaleString()}
+                  </td>
+                  <td className="py-3 pl-3" />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
       </section>
 
       <section className="panel p-6">
