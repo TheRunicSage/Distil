@@ -155,16 +155,16 @@ export default async function SettingsPage() {
             <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-orange/70" aria-hidden />
             <span>
               <strong className="text-text">ATS-safe by default.</strong>{" "}
-              Calibri, no headers / footers / tables, conventional
-              section labels parsers recognise.
+              Industry-standard structure and section labels that
+              mainstream parsers read reliably.
             </span>
           </li>
           <li className="flex items-baseline gap-3">
             <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-orange/70" aria-hidden />
             <span>
               <strong className="text-text">Encrypted at rest + in transit.</strong>{" "}
-              AES-256 on Supabase storage, TLS in transit. Private to
-              your account.
+              AES-256 storage, TLS in transit. Private to your
+              account.
             </span>
           </li>
           <li className="flex items-baseline gap-3">
@@ -179,12 +179,10 @@ export default async function SettingsPage() {
           <li className="flex items-baseline gap-3">
             <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-orange/70" aria-hidden />
             <span>
-              <strong className="text-text">Sent to DeepSeek (default) or Anthropic.</strong>{" "}
-              We don't have ZDR addenda with either. DeepSeek's
-              default terms allow inputs to be used for service
-              improvement; Anthropic's terms don't train on your
-              data but retain it for 30 days. Full detail in the
-              FAQ.
+              <strong className="text-text">Not used to train AI models.</strong>{" "}
+              We don't train any models on your data, and we don't
+              sell or share it beyond what's strictly required to
+              generate your documents.
             </span>
           </li>
         </ul>

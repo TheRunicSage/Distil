@@ -17,6 +17,15 @@
 // did-you-know carousel was removed 2026-05-01 because it was leaking
 // behind-the-scenes implementation details (cost cap, cache TTL,
 // observability) that customers should not see.
+//
+// 2026-05-03 disclosure scrub: phrase pools and PHASE_NOW bullets
+// were rewritten to describe what the user is getting (tailored
+// content, polished documents, fit assessment) rather than how the
+// pipeline produces it. Earlier copy named ATS keyword extraction,
+// the four-paragraph cover letter structure, the dense profile
+// rendering, salary triangulation sources, and other internal
+// mechanics that competitors could copy. The new copy is reassuring
+// at the same cadence without revealing the recipe.
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -76,59 +85,59 @@ function progressFromPhase(phase: Phase): number {
 }
 
 const RESEARCH_PHRASES = [
-  "Reading between the lines of your experience",
-  "Identifying the hiring company",
-  "Searching the web for company signals",
-  "Reading mission, values, and recent news",
-  "Decoding what recruiters actually want",
-  "Checking current ATS best practices",
-  "Pinpointing must-haves vs nice-to-haves",
-  "Calibrating to the right seniority",
-  "Surfacing the company's recent press",
-  "Triangulating salary signals from NZ sources",
-  "Mapping the role's day-to-day toolkit",
-  "Looking for projects you can connect with",
-  "Cross-referencing your CV against the JD",
-  "Hunting for the strongest matching evidence",
-  "Identifying gaps worth bridging honestly",
-  "Reading the company's engineering blog",
-  "Filtering out boilerplate from the JD",
-  "Listening for the role's real centre of gravity",
-  "Spotting the values the JD emphasises",
-  "Pulling out the must-mirror ATS keywords",
-  "Reading recent leadership and team changes",
-  "Connecting your experience to the team's mission",
-  "Weighing scope, ownership, and trajectory",
-  "Building the opening hook for your cover letter",
-  "Drafting the story paragraph in your head first",
-  "Choosing where confidence beats keyword stuffing",
-  "Triangulating company size and stage",
-  "Checking the public sector flag for Te Tiriti",
+  "Reading your experience",
+  "Studying the role",
+  "Getting to know the company",
+  "Understanding what this role really wants",
+  "Matching your background to the brief",
+  "Considering how to best position you",
+  "Looking at the company's recent context",
+  "Weighing your strongest evidence",
+  "Considering the role's seniority",
+  "Reading between the lines",
+  "Connecting your experience to the role",
+  "Looking for the real fit signals",
+  "Considering tone and posture",
+  "Identifying what matters most",
+  "Thinking through how to lead with your strengths",
+  "Considering what the recruiter will scan for",
+  "Reading the role's ambitions",
+  "Lining up the relevant parts of your story",
+  "Considering the company's direction",
+  "Working out the right framing",
+  "Drawing the through-line in your background",
+  "Considering what to emphasise",
+  "Planning how to open the letter",
+  "Considering how the cover letter should land",
+  "Picking the right story to tell",
+  "Considering pace and length",
+  "Working out the strongest opening lines",
+  "Setting up for a confident close",
 ];
 
 const GENERATION_PHRASES = [
-  "Mapping your strengths to the role",
-  "Cutting through the noise",
+  "Tailoring your CV",
+  "Writing your cover letter",
+  "Choosing the strongest evidence",
   "Crafting your narrative",
-  "Choosing bullets that earn their place",
-  "Tailoring every word to this role",
-  "Re-ordering technical skills by relevance",
-  "Bridging gaps with honest, growth-oriented language",
-  "Picking the one specific story for paragraph 2",
+  "Polishing the language",
+  "Tightening for clarity",
+  "Refining the story arc",
+  "Pitching this for the role",
 ];
 
 const RENDER_PHRASES = [
-  "Rendering ATS-safe documents",
-  "Setting margins, polishing typography",
-  "Applying the dense layout for two-page fit",
-  "Branding the contact rule in Curiosum orange",
+  "Preparing your documents",
+  "Polishing the layout",
+  "Finalising the formatting",
+  "Saving your files securely",
 ];
 
 const WRAP_PHRASES = [
-  "Final quality scan",
-  "Storing your tailored CV and cover letter",
-  "Computing the fit score",
-  "Building your what-we-did checklist",
+  "Final quality check",
+  "Computing your fit score",
+  "Almost done",
+  "Wrapping up",
 ];
 
 const QUEUED_PHRASES = ["Queued. We'll start in a moment."];
@@ -155,46 +164,46 @@ const PHASE_NOW: Record<Phase, { glyph: string; bullets: string[] }> = {
   queued: {
     glyph: "·",
     bullets: [
-      "Reserved your queue slot",
+      "Reserved your spot in the queue",
       "Waiting for the previous run to finish",
-      "Concurrency is capped at one per user",
       "We'll start as soon as the slot opens",
+      "Hang tight — usually only a moment",
     ],
   },
   llm_started: {
     glyph: "?",
     bullets: [
-      "Researching the company live on the web",
-      "Pulling recent news from the last 12 months",
-      "Decoding the JD's must-haves and ATS keywords",
-      "Mapping your CV against the role's centre of gravity",
+      "Studying the role and the company",
+      "Reading your experience in detail",
+      "Working out what matters most here",
+      "Matching your background to the brief",
     ],
   },
   llm_completed: {
     glyph: "✎",
     bullets: [
-      "Drafting the tailored profile and bullets",
-      "Picking the one specific story for paragraph 2",
-      "Reordering skills by relevance to the role",
-      "Calibrating length to your seniority",
+      "Tailoring your CV to this role",
+      "Writing your cover letter",
+      "Choosing the strongest evidence",
+      "Calibrating tone and length",
     ],
   },
   rendering_started: {
     glyph: "▤",
     bullets: [
-      "Generating the ATS-safe CV in DOCX",
-      "Building the cover letter with brand-orange contact rule",
-      "Applying Calibri at the dense profile sizes",
-      "Uploading both files to private storage",
+      "Preparing your CV",
+      "Preparing your cover letter",
+      "Polishing the layout",
+      "Saving your files securely",
     ],
   },
   finalized: {
     glyph: "✓",
     bullets: [
-      "Running the quality scan",
-      "Computing your fit score and warnings",
-      "Building the what-we-did checklist",
-      "Releasing the download buttons",
+      "Final quality check",
+      "Computing your fit score",
+      "Almost done",
+      "Releasing your downloads",
     ],
   },
 };

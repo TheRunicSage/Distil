@@ -1,23 +1,26 @@
 // Public FAQ page. Two purposes:
-//   1. Trust surface — be honest about what we store, what we send to
-//      LLM providers, what's encrypted, and what isn't. We do NOT
-//      have signed zero-data-retention addenda with either Anthropic
-//      or DeepSeek; the data section reflects each provider's
-//      published default API policy.
+//   1. Trust surface — be honest about what we store, what's
+//      encrypted, how long it sticks around, and how to delete it.
+//      Deliberately does NOT name our LLM provider or describe the
+//      generation pipeline — those are commercial details we don't
+//      put on a public page.
 //   2. Standards explainer — what ATS is, why it matters, what
-//      recruiters actually look for, and how Distil's outputs are
-//      built to clear those hurdles.
+//      recruiters look for, and the principles Distil's outputs
+//      follow. High-level posture, not a recipe.
 //
 // Lives outside the (app) shell so unauthenticated visitors hit it.
 // Uses the LandingTopbar / Footer / AmbientBackground from the
 // existing landing-page composition for visual continuity. No
 // Supabase, no auth check — pure server-rendered static content.
 //
-// Update discipline: every concrete claim ("60-day expiry", "Calibri
-// 10pt floor", "no headers / footers / tables") is grounded in a
-// spec line or a Decision Log entry. If a claim ever drifts from the
-// implementation, this page is wrong and needs updating before the
-// implementation changes.
+// Disclosure discipline: keep the "what" (you get a CV + cover
+// letter, ATS-safe, tailored to the JD, generated quickly), keep
+// the data commitments (encrypted, retention windows, no model
+// training, you can delete your account). Don't name vendors,
+// don't describe the prompt structure, don't reveal the pipeline.
+// If a claim here ever drifts from reality, fix this page before
+// the implementation changes — but specifics about how the
+// implementation does it stay internal.
 
 import { AmbientBackground } from "@/components/app/AmbientBackground";
 import { Footer } from "@/components/landing/Footer";
@@ -67,11 +70,11 @@ const SECTIONS: FaqSection[] = [
         q: "How does Distil avoid those traps?",
         a: (
           <>
-            Every CV we generate uses Calibri throughout, body text at
-            10–10.5pt (above the common 9pt parser floor), no headers,
-            footers, page numbers, text boxes, or tables. Section
-            labels (Profile, Professional Experience, Education) are
-            the conventional ones every parser recognises.
+            Distil's outputs use industry-standard fonts, sizes, and
+            section labels that mainstream ATS parsers read reliably,
+            with a single-column structure and no decorative elements
+            that confuse parsers. The result is built to be machine-
+            scannable first and human-readable second.
           </>
         ),
       },
@@ -98,24 +101,22 @@ const SECTIONS: FaqSection[] = [
         a: (
           <>
             A clear role title and seniority match, recent experience
-            at a recognisable employer, outcomes expressed in
-            numbers (% lift, $ saved, headcount led), and the
-            specific skills the JD calls out. Distil structures every
-            bullet as <em>action → outcome</em> for exactly this
-            reason.
+            at recognisable employers, outcomes expressed concretely
+            (numbers and results, not just responsibilities), and the
+            specific skills the job description calls out.
           </>
         ),
       },
       {
-        q: "Why does ATS keyword matching matter so much?",
+        q: "Why does keyword matching matter so much?",
         a: (
           <>
             Many recruiters filter the ATS results by keyword before
-            reading anything. If the JD says "stakeholder management"
+            reading anything. If the job says "stakeholder management"
             and your CV says "client relationships", the parser
-            doesn't bridge that gap. Distil reads the JD, identifies
-            the keywords that matter, and surfaces them in your
-            tailored CV without inventing experience you don't have.
+            doesn't bridge that gap. Distil's tailoring surfaces the
+            language the role uses — without inventing experience you
+            don't have.
           </>
         ),
       },
@@ -126,15 +127,15 @@ const SECTIONS: FaqSection[] = [
     heading: "What a strong cover letter does",
     items: [
       {
-        q: "What's the structure?",
+        q: "What does a strong cover letter look like?",
         a: (
           <>
-            Four paragraphs: an opening that names the role and what
-            you bring, a story paragraph showing one specific
-            outcome, a paragraph tying your fit to something concrete
-            about the company, and a closing. Signed off as a real
-            letter, addressed to a real recipient where the JD names
-            one.
+            Concise, role-specific, written like a real letter rather
+            than a generic introduction, addressed to the named
+            recipient where the job posting includes one, and signed
+            off properly. It should add context to the CV — why this
+            role, why you, what you'd bring — without restating the
+            CV bullet by bullet.
           </>
         ),
       },
@@ -142,11 +143,11 @@ const SECTIONS: FaqSection[] = [
         q: "How is it tailored?",
         a: (
           <>
-            We research the company live (recent news, what they do,
-            their stated direction) and weave one specific reference
-            into the letter. The story paragraph is built from your
-            master CV, not invented — Distil never fabricates
-            experience.
+            Distil reads the role, considers the company's context,
+            and produces a letter pitched at this specific
+            opportunity. Everything is grounded in your master CV —
+            we never fabricate experience or claim things you didn't
+            do.
           </>
         ),
       },
@@ -160,11 +161,10 @@ const SECTIONS: FaqSection[] = [
         q: "Where is my data stored?",
         a: (
           <>
-            On Supabase (Postgres + Storage), hosted on AWS. All data
-            is encrypted at rest by Supabase's default AES-256 disk
-            encryption, and in transit via TLS. Your CV and
-            applications are private to your account — only you and
-            the Distil service role can read them.
+            On encrypted cloud storage with AES-256 at rest and TLS
+            in transit. Your CV and applications are private to your
+            account — only you and Distil's service role can read
+            them.
           </>
         ),
       },
@@ -172,59 +172,20 @@ const SECTIONS: FaqSection[] = [
         q: "Is my data used to train AI models?",
         a: (
           <>
-            Distil itself doesn't train any AI models. Your CV and
-            the job description are sent to our LLM provider for the
-            single generation call. We use API endpoints (not the
-            consumer chat products), but we have not signed
-            zero-data-retention addenda with either provider — so
-            the standard published API policies apply, summarised
-            honestly below.
-          </>
-        ),
-      },
-      {
-        q: "Which LLM provider runs the generation?",
-        a: (
-          <>
-            <p>
-              By default, Distil currently uses{" "}
-              <strong>DeepSeek V4 Pro</strong> via DeepSeek's chat
-              completions API. We can fall back to{" "}
-              <strong>Anthropic Claude Sonnet 4.6</strong> behind a
-              runtime toggle. The provider running any given
-              generation is recorded against that generation in our
-              admin records.
-            </p>
-            <p className="mt-3">
-              <strong className="text-text">DeepSeek default policy:</strong>{" "}
-              per their published terms, inputs and outputs may be
-              retained and used to improve their services, which can
-              include model training. We have not opted out of this.
-              Treat anything you put into a generation as something
-              that could be processed by DeepSeek under their default
-              terms.
-            </p>
-            <p className="mt-3">
-              <strong className="text-text">Anthropic default policy:</strong>{" "}
-              per Anthropic's commercial terms, API inputs and
-              outputs are <em>not</em> used to train their models.
-              They retain prompts and completions for up to 30 days
-              for trust-and-safety review, then delete. We have not
-              signed a separate ZDR addendum, so the 30-day retention
-              window applies.
-            </p>
-            <p className="mt-3">
-              If you'd prefer the Anthropic path, email{" "}
-              <a
-                href="mailto:hello@curiosum.ai"
-                className="btn-link-orange"
-              >
-                hello@curiosum.ai
-              </a>{" "}
-              — we'll switch your generations to it. We'll tighten
-              this answer further if and when we secure ZDR
-              addenda with either provider.
-            </p>
+            Distil itself doesn't train any AI models, and we don't
+            sell or share your data with anyone outside what's
+            strictly required to generate your documents. Generation
+            is performed by a third-party AI service under their
+            standard terms, which may briefly retain inputs for
+            trust-and-safety purposes before deletion. If this matters
+            to you for a specific application, email{" "}
+            <a
+              href="mailto:hello@curiosum.ai"
+              className="btn-link-orange"
+            >
+              hello@curiosum.ai
+            </a>{" "}
+            and we'll talk through your options.
           </>
         ),
       },
@@ -260,11 +221,10 @@ const SECTIONS: FaqSection[] = [
         q: "Who can see my data inside Distil?",
         a: (
           <>
-            Only you (via your account) and one administrator (for
-            ops + cost monitoring). Admin access is gated by an
-            explicit flag on our staff accounts and is not granted by
-            default. We don't share data with third parties beyond
-            the LLM provider that runs the generation.
+            Only you (via your account) and a small number of staff
+            with explicit admin access for operations and support.
+            Admin access is gated by a flag on staff accounts and is
+            not granted by default.
           </>
         ),
       },
@@ -284,10 +244,9 @@ export default function FaqPage() {
               <p className="eyebrow">Frequently asked</p>
               <h1 className="heading-display mt-3">Standards, fairness, and your data.</h1>
               <p className="mx-auto mt-5 max-w-[560px] text-base leading-relaxed text-muted-foreground">
-                What ATS is and how Distil clears it, what recruiters
-                actually scan for in 30 seconds, and the truth about
-                what we store, what we don't, and how to delete it
-                all.
+                What ATS is, what recruiters look for in a 30-second
+                scan, and how we treat your data — what we keep, for
+                how long, and how to delete it.
               </p>
             </header>
 
