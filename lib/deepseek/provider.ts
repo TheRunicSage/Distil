@@ -34,6 +34,26 @@
 // tokens in the usage object; we sum them across iterations so
 // calculateCost gets the totals right.
 //
+// Thinking-mode reasoning_content passthrough: V4-Pro's preview
+// gateway routes to a reasoner backend even when we send no
+// thinking flags (no extra_body, no reasoning_effort) — the same
+// gateway behaviour that earlier forced us off tool_choice:"required"
+// onto "auto" + a final-iteration submit reference. The reasoner
+// backend always emits a reasoning_content field on each assistant
+// turn, and per the DeepSeek docs:
+//   "When using tool calls in thinking mode, it is crucial to pass
+//    the complete reasoning_content back to the API in all
+//    subsequent requests. Failure to do so will result in a 400
+//    error from the API."
+//   (https://api-docs.deepseek.com/guides/thinking_mode)
+// So every assistant message we append to `messages` for the next
+// loop iteration carries its reasoning_content. The OpenAI SDK's
+// ChatCompletionMessageParam type doesn't surface the field, so the
+// push site uses a narrow cast — DeepSeek accepts the extra
+// property as a passthrough. Do not remove this on a future
+// refactor; the loop will start 400-ing again the moment a
+// reasoning-bearing turn isn't echoed back verbatim.
+//
 // Error mapping:
 //   - Non-2xx from DeepSeek → ApiError("llm_failed").
 //   - No submit_application tool call after MAX_ITERATIONS →
@@ -232,11 +252,21 @@ export class DeepseekProvider implements LlmProvider {
       // No submit yet. Either web_search calls (run them) or no
       // tool calls at all (model bailed — append assistant content
       // and force the next iteration).
-      messages.push({
+      const reasoningContent = extractReasoning(message);
+      const assistantMessage: OpenAI.Chat.Completions.ChatCompletionMessageParam = {
         role: "assistant",
         content: message.content ?? "",
         tool_calls: toolCalls.length > 0 ? toolCalls : undefined,
-      });
+      };
+      if (reasoningContent) {
+        // DeepSeek-only field; the OpenAI SDK type omits it but
+        // DeepSeek accepts it as a passthrough and requires it on
+        // every prior assistant turn (see the block comment at the
+        // top of this file).
+        (assistantMessage as { reasoning_content?: string }).reasoning_content =
+          reasoningContent;
+      }
+      messages.push(assistantMessage);
 
       if (toolCalls.length === 0) {
         // No tool calls means free-text response; loop forces a
@@ -339,6 +369,17 @@ async function runWebSearch(
       }),
     };
   }
+}
+
+// DeepSeek attaches reasoning_content on the response message when
+// the call is routed to a reasoner backend (which V4-Pro's preview
+// gateway does whether we ask for it or not). The OpenAI SDK types
+// don't surface the field, so we read it via a narrow cast.
+function extractReasoning(
+  message: OpenAI.Chat.Completions.ChatCompletionMessage,
+): string | undefined {
+  const value = (message as { reasoning_content?: unknown }).reasoning_content;
+  return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
 function toOpenAiTool(

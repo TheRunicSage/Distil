@@ -68,6 +68,13 @@ export async function withInngestStep<T>(
       if (zod) {
         errorMetadata = { zod_issues: summariseZodIssues(zod) };
       }
+      const provider = findProviderError(err);
+      if (provider) {
+        errorMetadata = {
+          ...(errorMetadata ?? {}),
+          provider_error: provider,
+        };
+      }
       throw err;
     } finally {
       const duration_ms = Date.now() - startedAt;
@@ -101,6 +108,37 @@ function findZodError(err: unknown): ZodError | null {
   let cur: unknown = err;
   for (let i = 0; i < 8 && cur; i++) {
     if (cur instanceof ZodError) return cur;
+    cur = (cur as { cause?: unknown })?.cause;
+  }
+  return null;
+}
+
+// Walk the cause chain for an OpenAI-SDK-shaped APIError. We don't
+// import the openai package here (it shouldn't leak into a generic
+// logging helper); we just look for the duck-typed shape: an Error
+// with a numeric `status` and a string `message`, that isn't already
+// classified as ApiError or ZodError. This catches the wrapped 400s
+// from the DeepSeek provider so the actual provider wording lands
+// in request_logs.metadata.provider_error instead of being lost
+// behind the generic ApiError user_message.
+function findProviderError(
+  err: unknown,
+): { status: number; message: string } | null {
+  let cur: unknown = err;
+  for (let i = 0; i < 8 && cur; i++) {
+    if (
+      cur instanceof Error &&
+      !(cur instanceof ApiError) &&
+      !(cur instanceof ZodError)
+    ) {
+      const status = (cur as { status?: unknown }).status;
+      if (typeof status === "number") {
+        return {
+          status,
+          message: sanitiseErrorMessage(cur.message),
+        };
+      }
+    }
     cur = (cur as { cause?: unknown })?.cause;
   }
   return null;
