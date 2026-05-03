@@ -48,6 +48,27 @@
 // missing), enum fields (score, confidence, seniority), and array
 // caps where the prompt and schema agree the upper bound is content
 // quality (e.g. paragraphs.max(5), what_we_did_checklist.max(8)).
+//
+// 2026-05-03 strictness audit (research_summary metadata pass).
+// Real failure: model emitted explicit null on
+// research_summary.company_reference_note, tripping the schema's
+// "expected string" check. System prompt §3 Phase 2 explicitly
+// allows the "no specific verifiable reference was findable" path
+// (set company_reference_note and proceed), so emitting null when
+// no reference was anchored on is a legitimate model choice.
+// Pulled the audit forward across the paired field too, since the
+// model emitting null for one is liable to emit null for the
+// other. New `nullableMaxString(max)` preprocess coerces null /
+// undefined to "" before the string check; applied to:
+//   - research_summary.company_reference_used (was min(1).max(800))
+//   - research_summary.company_reference_note (was optional max(800))
+// Downstream consumers (none — both fields are research metadata
+// only, never read by any renderer) see a plain string with "" as
+// the unset sentinel; no null-coalesce logic needed.
+// Other research_summary / salary_band fields (industry_context,
+// company_snapshot, salary_band.range / source_name / source_url)
+// stayed strict — no null evidence yet, and the prompt expects
+// these to always be filled. Re-audit if real failures land.
 
 import { z } from "zod";
 
@@ -68,6 +89,20 @@ const FitAssessmentSchema = z.object({
 // is still required to be non-empty.
 const URL_FIELD = z.string().min(1).max(500);
 
+// Preprocess that coerces null / undefined to "" before the inner
+// string check runs. Use for informational metadata fields where
+// "the model couldn't find / decided not to anchor on this" is a
+// legitimate runtime state — emitting null shouldn't drop the whole
+// generation. Mirrors the cover-letter paragraphs preprocess shape.
+// Downstream consumers see a plain string ("" for unset) and don't
+// need null-coalesce logic.
+function nullableMaxString(max: number) {
+  return z.preprocess(
+    (val) => (val === null || val === undefined ? "" : val),
+    z.string().max(max),
+  );
+}
+
 const RecentNewsItemSchema = z.object({
   headline: z.string().min(1).max(400),
   source_url: URL_FIELD,
@@ -81,8 +116,19 @@ const ResearchSummarySchema = z.object({
   recent_news: z.array(RecentNewsItemSchema).max(5),
   industry_context: z.string().min(1).max(600),
   is_public_sector: z.boolean(),
-  company_reference_used: z.string().min(1).max(800),
-  company_reference_note: z.string().max(800).optional(),
+  // company_reference_used + company_reference_note: both relaxed
+  // 2026-05-03 after a real generation emitted explicit null on
+  // company_reference_note. System prompt §3 Phase 2 explicitly
+  // allows the "no specific verifiable reference was findable"
+  // path: when the search budget completes without surfacing a
+  // real project, the model is told to set company_reference_note
+  // and proceed — implicit that company_reference_used can be
+  // empty too. Both fields are research metadata only (no
+  // downstream renderer reads them), so coercing null/undefined
+  // to "" has zero blast radius. Downstream code sees a plain
+  // string with "" as the unset sentinel.
+  company_reference_used: nullableMaxString(800),
+  company_reference_note: nullableMaxString(800),
 });
 
 const JdAnalysisSchema = z.object({
