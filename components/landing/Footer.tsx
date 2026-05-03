@@ -16,6 +16,9 @@ export function Footer() {
         </div>
         <div className="flex items-center gap-6 text-meta">
           <span>&copy; 2026 Curiosum.ai</span>
+          <Link href="/faq" className="btn-link-orange">
+            FAQ
+          </Link>
           <Link href="/login" className="btn-link-orange">
             Sign in
           </Link>

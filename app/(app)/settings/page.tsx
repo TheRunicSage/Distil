@@ -144,6 +144,53 @@ export default async function SettingsPage() {
         </section>
       )}
 
+      {/* Condensed view of the standards + data treatment we publish
+          on /faq — same source claims, abbreviated for in-app context.
+          Designed so a logged-in user can verify what we hold without
+          tab-switching to the public FAQ. */}
+      <section className="surface-card">
+        <p className="eyebrow">Standards & your data</p>
+        <ul className="mt-5 space-y-3 text-sm text-muted-foreground">
+          <li className="flex items-baseline gap-3">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-orange/70" aria-hidden />
+            <span>
+              <strong className="text-text">ATS-safe by default.</strong>{" "}
+              Calibri, no headers / footers / tables, conventional
+              section labels parsers recognise.
+            </span>
+          </li>
+          <li className="flex items-baseline gap-3">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-orange/70" aria-hidden />
+            <span>
+              <strong className="text-text">Encrypted at rest + in transit.</strong>{" "}
+              AES-256 on Supabase storage, TLS in transit. Private to
+              your account.
+            </span>
+          </li>
+          <li className="flex items-baseline gap-3">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-orange/70" aria-hidden />
+            <span>
+              <strong className="text-text">Auto-deleted on schedule.</strong>{" "}
+              Generated files after 60 days; application metadata
+              after 1 year. Your master CV is replaced when you
+              upload a new one.
+            </span>
+          </li>
+          <li className="flex items-baseline gap-3">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-orange/70" aria-hidden />
+            <span>
+              <strong className="text-text">Sent to an LLM provider.</strong>{" "}
+              Each generation calls our LLM provider's API. We don't
+              currently advertise zero-data-retention agreements; see
+              the FAQ for the honest detail.
+            </span>
+          </li>
+        </ul>
+        <Link href="/faq" className="btn-link-orange mt-5 inline-block text-sm">
+          Read the full FAQ →
+        </Link>
+      </section>
+
       <section className="surface-card">
         <p className="eyebrow">Session</p>
         <p className="mt-4 text-sm text-muted-foreground">
