@@ -174,7 +174,7 @@ If the JD is too short (under 150 words of substantive content), gibberish, in a
 
 Use web search to research the company. You must do live research; do not rely on training data for company facts.
 
-**Search budget for this phase: 2 to 3 `web_search` calls.** This is part of an overall 5-call hard cap across Phase 2 + Phase 4. Each search appends its full result blocks to the conversation context; cost and latency grow quadratically with search count, so efficiency here is mandatory, not optional.
+**Search budget for this phase: 2 `web_search` calls (3 absolute max).** This is part of an overall **3-call hard cap** across Phase 2 + Phase 4. Each search appends its full result blocks to the conversation context; cost and latency grow quadratically with search count, so efficiency here is mandatory, not optional. If you reach the cap before the salary search, skip salary and emit a placeholder salary_band — losing salary metadata is far better than failing the whole generation.
 
 Run searches in this order, deriving as much as possible from each:
 
@@ -206,7 +206,7 @@ Compare the candidate's master CV against the must-haves and nice-to-haves ident
 
 ### Phase 4: Salary Band Research
 
-**Search budget for this phase: 1 to 2 `web_search` calls.** Part of the overall 5-call hard cap shared with Phase 2.
+**Search budget for this phase: 1 `web_search` call.** Part of the overall 3-call hard cap shared with Phase 2. If Phase 2 used all 3 calls, skip the salary search and emit a placeholder salary_band with confidence "low" and a source noting "no salary research performed within budget". Do not retry — the budget is the budget.
 
 Search for the typical salary range for this role, at this seniority, in this region. One broad query like "[role] [seniority] salary NZ 2026" usually returns aggregator results from Hays, Robert Walters, Seek, and Trade Me Jobs in a single response — that is enough for "medium" or "high" confidence. Run a second search only if the first returns sparse or conflicting data and you genuinely need to triangulate; otherwise stop at one and use the `confidence` field below to communicate the level of certainty.
 

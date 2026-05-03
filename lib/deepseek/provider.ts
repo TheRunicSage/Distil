@@ -91,15 +91,32 @@ const MODEL: ModelName = "deepseek-v4-pro";
 const DEFAULT_MAX_TOKENS = 16000;
 const BASE_URL = "https://api.deepseek.com";
 
-// Web-search budget. Mirrors lib/anthropic/tool-schema.ts:webSearchTool.max_uses.
-// Realistic usage per system-prompt §3 Phase 2 + Phase 4 is 2-3 calls;
-// 5 is the hard cap that catches reformulation runs and salary
-// triangulation without letting the loop balloon.
-const MAX_WEB_SEARCH = 5;
+// Web-search budget. Realistic usage per system-prompt §3 Phase 2 +
+// Phase 4 is 2-3 calls. Lowered 5 → 3 (2026-05-03) after the
+// FUNCTION_INVOCATION_TIMEOUT incident: with reasoning_content
+// engaged on V4-Pro's gateway, every iteration carries thousands of
+// reasoning tokens, so each extra search round-trip costs both time
+// and budget. The system-prompt budget rule remains the primary
+// lever; the schema cushion was masking pressure on the time budget.
+// On the Anthropic path (web_search_20250305 server-side) this cap
+// is lib/anthropic/tool-schema.ts:webSearchTool.max_uses, separate.
+const MAX_WEB_SEARCH = 3;
 // Iteration cap = MAX_WEB_SEARCH searches + 1 final submit_application
-// emission + 2 buffer iterations for the model to re-think after
-// sparse results before giving up.
-const MAX_ITERATIONS = 8;
+// emission + 1 buffer iteration. Lowered 8 → 5 (2026-05-03) for the
+// same FUNCTION_INVOCATION_TIMEOUT reason. Hitting the cap raises
+// llm_invalid_output rather than letting the loop balloon.
+const MAX_ITERATIONS = 5;
+// Per-iteration timeout on the DeepSeek chat completion. 90s is
+// well above the typical iteration time (~30-60s with reasoning
+// engaged) but short enough that a single hung iteration can't
+// blow the per-invocation Vercel ceiling. The OpenAI SDK's default
+// is 600s (10 min), which is unsafe for our purposes — a single
+// stalled call would consume the entire 800s function budget.
+// On timeout we throw ApiError("llm_failed") which is retried by
+// the Inngest function's outer retries: 0 policy (call-llm step
+// is single-shot per generation) — meaning the whole generation
+// errors fast, surfacing a clean failure rather than a soft hang.
+const CHAT_COMPLETION_TIMEOUT_MS = 90_000;
 
 const WEB_SEARCH_TOOL_NAME = "web_search";
 
@@ -168,13 +185,18 @@ export class DeepseekProvider implements LlmProvider {
 
       let response: OpenAI.Chat.Completions.ChatCompletion;
       try {
-        response = await client.chat.completions.create({
-          model: MODEL,
-          max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
-          messages,
-          tools,
-          tool_choice: toolChoice,
-        });
+        response = await client.chat.completions.create(
+          {
+            model: MODEL,
+            max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
+            messages,
+            tools,
+            tool_choice: toolChoice,
+          },
+          // Per-call timeout shorter than the SDK default. See the
+          // CHAT_COMPLETION_TIMEOUT_MS const above for reasoning.
+          { timeout: CHAT_COMPLETION_TIMEOUT_MS },
+        );
       } catch (err) {
         console.error(
           "[deepseek.callLLM] OpenAI SDK error for application",
@@ -322,7 +344,7 @@ async function runWebSearch(
       didSearch: false,
       content: JSON.stringify({
         error:
-          "web_search budget exhausted (5 calls maximum). " +
+          "web_search budget exhausted (3 calls maximum). " +
           "Proceed with the information already gathered.",
       }),
     };
@@ -405,8 +427,9 @@ function webSearchToolDef(): OpenAI.Chat.Completions.ChatCompletionTool {
         "research (Phase 2: about-page, recent news, industry context) " +
         "and salary research (Phase 4). Returns a list of {title, url, " +
         "content} results; the content is a short snippet, not the full " +
-        "page. Hard cap of 5 calls per generation — budget for 2-3 " +
-        "typical, save the rest for reformulation or salary triangulation.",
+        "page. Hard cap of 3 calls per generation — typical use is " +
+        "2 Phase-2 calls + 1 Phase-4 call. The 4th call returns a " +
+        "budget-exhausted error; plan accordingly.",
       parameters: {
         type: "object",
         properties: {

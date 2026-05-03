@@ -19,6 +19,15 @@ import { ApiError } from "@/lib/errors/api-error";
 
 const TAVILY_ENDPOINT = "https://api.tavily.com/search";
 
+// 15s per Tavily call. The basic-depth endpoint typically returns in
+// 1-3s; 15s is generous-but-bounded so a single hung query can't
+// indefinitely wedge the DeepSeek tool-call loop and blow the
+// per-invocation Vercel ceiling. On timeout we throw the same
+// ApiError shape as a network failure — caller already handles it
+// as a tool-result error and the model can try a different query
+// or proceed with what it has.
+const TAVILY_TIMEOUT_MS = 15_000;
+
 export type TavilyResult = {
   title: string;
   url: string;
@@ -41,6 +50,11 @@ export async function tavilySearch(
     );
   }
 
+  const controller = new AbortController();
+  const timeoutHandle = setTimeout(
+    () => controller.abort(),
+    TAVILY_TIMEOUT_MS,
+  );
   let res: Response;
   try {
     res = await fetch(TAVILY_ENDPOINT, {
@@ -54,17 +68,28 @@ export async function tavilySearch(
         include_answer: false,
         include_raw_content: false,
       }),
+      signal: controller.signal,
     });
   } catch (err) {
-    // Network failure. The caller (DeepSeek tool loop) treats this
-    // as a tool-result error but does NOT throw — the model can
-    // try a different query or proceed with less data. We log the
-    // underlying cause so request_logs surfaces it.
+    // Network failure or timeout. The caller (DeepSeek tool loop)
+    // treats this as a tool-result error but does NOT throw — the
+    // model can try a different query or proceed with less data.
+    // We log the underlying cause so request_logs surfaces it.
+    const isAbort =
+      err instanceof Error &&
+      (err.name === "AbortError" || controller.signal.aborted);
     console.error(
-      "[tavily.search] network error -",
+      "[tavily.search]",
+      isAbort ? "timeout" : "network error",
+      "-",
       err instanceof Error ? `${err.name}: ${err.message}` : String(err),
     );
-    throw new ApiError("internal_error", "Tavily search request failed");
+    throw new ApiError(
+      "internal_error",
+      isAbort ? "Tavily search timed out" : "Tavily search request failed",
+    );
+  } finally {
+    clearTimeout(timeoutHandle);
   }
 
   if (!res.ok) {
