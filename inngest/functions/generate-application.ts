@@ -81,6 +81,26 @@ export const generateApplication = inngest.createFunction(
           error_code: "internal_error",
           error,
         });
+        // Emit generation.finalized so the admin telemetry counter
+        // for "errors" actually increments. Previously the success
+        // and insufficient_input branches both fired this event but
+        // the error path did not, so /admin/telemetry's error tab
+        // was permanently 0 even when generations were failing.
+        await emitTelemetry(
+          "generation.finalized",
+          {
+            application_id: data.application_id,
+            outcome: "error",
+            // duration_ms is required by the event schema but we
+            // can't compute it inside onFailure (we don't have
+            // llmStartedAt in scope). 0 is the sentinel for
+            // "duration not captured" — admin queries that
+            // average duration filter on outcome=success or
+            // outcome=insufficient_input where the value is real.
+            duration_ms: 0,
+          },
+          { application_id: data.application_id, user_id: data.user_id },
+        );
       } finally {
         await inngest.send({
           name: "application/generation.completed",
@@ -175,46 +195,61 @@ export const generateApplication = inngest.createFunction(
 
     // 6. The LLM call. retries: 0 because every call costs money;
     // the user owns the retry decision via the Retry button.
+    //
+    // Wrapped in withInngestStep so failures land in request_logs
+    // with the right error_code (walked off the cause chain — see
+    // lib/logging/with-inngest-step.ts). Before this wrapper was
+    // applied, call-llm went through bare step.run, which meant
+    // a DeepSeek 4xx (e.g. the 2026-05-03 reasoner tool_choice
+    // rejection) propagated to onFailure and updated the row's
+    // status to error, but never wrote a request_logs row — so
+    // /admin/logs showed nothing for the failure even though the
+    // Inngest run itself was visible.
     const llmStartedAt = Date.now();
-    const llmResult = await step.run("call-llm", async () => {
-      // Inngest's per-step retry limit lives on the step's run() call
-      // signature in v3+; SDK presently exposes it via configure on
-      // the function. For this step we wrap manually to ensure no
-      // retry happens on Anthropic-side failures (caller decides).
-      try {
-        return await llm.callLLM({
-          system: SYSTEM_PROMPT,
-          userMessage,
-          // Provider-internal: Anthropic appends its own
-          // web_search server tool; DeepSeek appends its own
-          // Tavily-backed web_search inside a tool-call loop.
-          // The neutral list here is just the custom tool we
-          // care about validating output for.
-          tools: [submitApplicationTool],
-          // "required" forces the response to end on a tool call
-          // (no free text) but lets the model pick which tool —
-          // critical so it can invoke web_search (provider-
-          // internal) before submit_application. Equivalent to
-          // Anthropic's { type: "any" } and OpenAI's "required".
-          toolChoice: "required",
-          applicationId: application_id,
-        });
-      } catch (err) {
-        // NonRetriableError prevents Inngest's default per-step retry
-        // from re-spending against Anthropic. Prefer the cause's
-        // message so the Inngest run / request_logs surface what
-        // Anthropic actually returned (the outer ApiError message is
-        // the friendly user-facing text and hides the real cause).
-        const cause = (err as { cause?: unknown })?.cause;
-        const message =
-          cause instanceof Error
-            ? `${cause.name}: ${cause.message}`
-            : err instanceof Error
-              ? err.message
-              : "llm_failed";
-        throw new NonRetriableError(message, { cause: err });
-      }
-    });
+    const llmResult = await withInngestStep(
+      step,
+      "call-llm",
+      stepCtx,
+      async () => {
+        try {
+          return await llm.callLLM({
+            system: SYSTEM_PROMPT,
+            userMessage,
+            // Provider-internal: Anthropic appends its own
+            // web_search server tool; DeepSeek appends its own
+            // Tavily-backed web_search inside a tool-call loop.
+            // The neutral list here is just the custom tool we
+            // care about validating output for.
+            tools: [submitApplicationTool],
+            // "required" forces the response to end on a tool
+            // call (no free text) but lets the model pick which
+            // tool — critical so it can invoke web_search
+            // (provider-internal) before submit_application.
+            // Equivalent to Anthropic's { type: "any" }; the
+            // DeepSeek provider translates this internally into
+            // "auto" + a forced submit reference on the final
+            // iteration to dodge the reasoner backend's rejection
+            // of "required" (see lib/deepseek/provider.ts).
+            toolChoice: "required",
+            applicationId: application_id,
+          });
+        } catch (err) {
+          // NonRetriableError prevents Inngest's default per-step
+          // retry from re-spending against the provider. We
+          // preserve the underlying cause so withInngestStep's
+          // chain walker can find the ApiError and stamp
+          // error_code='llm_failed' on request_logs.
+          const cause = (err as { cause?: unknown })?.cause;
+          const message =
+            cause instanceof Error
+              ? `${cause.name}: ${cause.message}`
+              : err instanceof Error
+                ? err.message
+                : "llm_failed";
+          throw new NonRetriableError(message, { cause: err });
+        }
+      },
+    );
     const llmDurationMs = Date.now() - llmStartedAt;
 
     // Token usage row (DP-B): the wrapper deliberately does not write

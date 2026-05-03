@@ -56,7 +56,6 @@ import type {
   CallLLMUsage,
   LlmProvider,
   LlmTool,
-  LlmToolChoice,
 } from "@/lib/llm/types";
 
 import { tavilySearch } from "./tavily";
@@ -124,13 +123,28 @@ export class DeepseekProvider implements LlmProvider {
     let webSearchCount = 0;
 
     for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
-      // On the final allowed iteration, force a tool call so the
-      // model can't escape with free text. Earlier iterations let
-      // it pick (auto) so it can choose web_search when needed.
+      // tool_choice strategy is constrained by DeepSeek's preview
+      // gateway: as of 2026-05-03, sending tool_choice: "required"
+      // against deepseek-v4-pro returns
+      //   400 deepseek-reasoner does not support this tool_choice
+      // because v4-pro is currently routed to the reasoner backend
+      // under the hood, and the reasoner variant only accepts "auto"
+      // or a specific {type: "function", function: {name}} reference.
+      //
+      // We therefore use:
+      //   - "auto" on every normal iteration so the model can freely
+      //     call web_search when it needs to (system prompt §3
+      //     Phases 2 + 4) before committing to submit_application;
+      //   - on the final iteration, a specific submit_application
+      //     reference to force the model to commit (semantically
+      //     equivalent to "required" since submit_application is
+      //     the only tool that terminates the loop).
+      // This matches the previous behaviour without tripping the
+      // gateway rejection.
       const toolChoice: OpenAI.Chat.Completions.ChatCompletionToolChoiceOption =
         iteration === MAX_ITERATIONS - 1
-          ? "required"
-          : toOpenAiToolChoice(opts.toolChoice);
+          ? { type: "function", function: { name: submitToolName } }
+          : "auto";
 
       let response: OpenAI.Chat.Completions.ChatCompletion;
       try {
@@ -370,10 +384,8 @@ function webSearchToolDef(): OpenAI.Chat.Completions.ChatCompletionTool {
   };
 }
 
-function toOpenAiToolChoice(
-  choice: LlmToolChoice,
-): OpenAI.Chat.Completions.ChatCompletionToolChoiceOption {
-  if (choice === "auto") return "auto";
-  if (choice === "required") return "required";
-  return { type: "function", function: { name: choice.name } };
-}
+// toOpenAiToolChoice helper removed 2026-05-03: the loop now picks
+// "auto" or a specific submit_application reference directly. Keeping
+// it would mean carrying dead code that maps "required" through —
+// "required" is the value DeepSeek's reasoner backend rejects, so
+// nobody should be reaching for it.
