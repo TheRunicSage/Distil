@@ -49,17 +49,61 @@ const STATUS_GROUPS: {
   },
 ];
 
+// Per-status palette. Previously every "in-flight" state (paused,
+// running, rendering, insufficient_input) shared the same warn-amber
+// pill, making the table impossible to scan. Each state now gets a
+// distinct theme-aligned colour so the admin can read status by hue
+// before reading the label:
+//   success            → green     (terminal happy path)
+//   queued             → cyan      (waiting, not yet started)
+//   paused             → amber     (legacy state; sweeping to cancel)
+//   running            → orange    (the LLM call is in progress)
+//   rendering          → violet    (post-call doc render)
+//   insufficient_input → brand     (needs your attention — same hue
+//                                   we use for primary CTAs because
+//                                   it's the only state the user can
+//                                   act on)
+//   abandoned          → muted     (terminal-quiet)
+//   cancelled          → rose      (terminal-quiet but distinct from
+//                                   abandoned so triage can tell them
+//                                   apart at a glance)
+//   error              → danger    (terminal-bad)
 const STATUS_TONE: Record<string, string> = {
-  success: "bg-success/15 text-success border-success/25",
-  queued: "bg-info/15 text-info border-info/25",
-  paused: "bg-warn/15 text-warn border-warn/25",
-  running: "bg-warn/15 text-warn border-warn/25",
-  rendering: "bg-warn/15 text-warn border-warn/25",
-  insufficient_input: "bg-warn/15 text-warn border-warn/25",
+  success: "bg-success/15 text-success border-success/30",
+  queued: "bg-info/15 text-info border-info/30",
+  paused: "bg-warn/15 text-warn border-warn/30",
+  running: "bg-orange/15 text-orange border-orange/40",
+  rendering: "bg-innovation/15 text-innovation border-innovation/30",
+  insufficient_input:
+    "bg-[var(--color-orange-subtle)] text-orange border-orange/40",
   abandoned: "bg-dim/15 text-muted-foreground border-border",
-  cancelled: "bg-dim/15 text-muted-foreground border-border",
-  error: "bg-danger/15 text-danger border-danger/25",
+  cancelled: "bg-rose/15 text-rose border-rose/30",
+  error: "bg-danger/15 text-danger border-danger/30",
 };
+
+// Cost intensity. Lets the admin spot expensive runs without reading
+// every row. Bands chosen against typical generation cost ($0.05
+// average post-DeepSeek migration); anything above $0.50 is the
+// historical Anthropic-with-cache ceiling and warrants attention.
+function costTone(cost: number): string {
+  if (cost === 0) return "text-muted-foreground";
+  if (cost < 0.05) return "text-success";
+  if (cost < 0.2) return "text-text";
+  if (cost < 0.5) return "text-warn";
+  return "text-danger font-bold";
+}
+
+// Duration intensity. Sub-second is queue-cycling noise (greyed),
+// >5min usually means stuck-running (red). Most healthy generations
+// land in the 60–180s band.
+function durationTone(ms: number | null): string {
+  if (ms === null) return "text-muted-foreground";
+  if (ms < 1000) return "text-muted-foreground";
+  if (ms < 30_000) return "text-success";
+  if (ms < 120_000) return "text-text";
+  if (ms < 300_000) return "text-warn";
+  return "text-danger font-bold";
+}
 
 function durationMs(
   started: string | null,
@@ -161,23 +205,40 @@ export default async function AdminUsagePage({
         </p>
       </div>
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="7-day spend" value={`$${sevenDayCost.toFixed(2)}`} />
-        <Stat
-          label="Active provider"
-          value={activeProvider === "deepseek" ? "DeepSeek" : "Anthropic"}
-          sub={`LLM_PROVIDER=${activeProvider}`}
-        />
-        <Stat label="Recent count" value={String(apps.length)} />
-        <Stat
-          label="Active in queue"
-          value={String(
-            apps.filter((a) =>
-              ["queued", "paused", "running", "rendering"].includes(a.status),
-            ).length,
-          )}
-        />
-      </section>
+      {(() => {
+        const activeQueueCount = apps.filter((a) =>
+          ["queued", "paused", "running", "rendering"].includes(a.status),
+        ).length;
+        return (
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Stat
+              label="7-day spend"
+              value={`$${sevenDayCost.toFixed(2)}`}
+              tone="orange"
+              labelTone="orange"
+            />
+            <Stat
+              label="Active provider"
+              value={activeProvider === "deepseek" ? "DeepSeek" : "Anthropic"}
+              sub={`LLM_PROVIDER=${activeProvider}`}
+              tone={activeProvider === "deepseek" ? "info" : "orange"}
+              labelTone="cyan"
+            />
+            <Stat
+              label="Recent count"
+              value={String(apps.length)}
+              tone="text"
+              labelTone="cyan"
+            />
+            <Stat
+              label="Active in queue"
+              value={String(activeQueueCount)}
+              tone={activeQueueCount > 0 ? "warn" : "muted"}
+              labelTone="warn"
+            />
+          </section>
+        );
+      })()}
 
       <section className="panel p-6">
         <h2 className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
@@ -310,10 +371,19 @@ export default async function AdminUsagePage({
                       );
                     })()}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-3 text-xs">
-                    {formatDuration(durationMs(row.started_at, row.completed_at))}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-xs text-text">
+                  {(() => {
+                    const ms = durationMs(row.started_at, row.completed_at);
+                    return (
+                      <td
+                        className={`whitespace-nowrap px-3 py-3 text-xs font-mono ${durationTone(ms)}`}
+                      >
+                        {formatDuration(ms)}
+                      </td>
+                    );
+                  })()}
+                  <td
+                    className={`whitespace-nowrap px-3 py-3 text-right font-mono text-xs ${costTone(cost)}`}
+                  >
                     ${cost.toFixed(4)}
                   </td>
                 </tr>
@@ -326,21 +396,59 @@ export default async function AdminUsagePage({
   );
 }
 
+// Stat cards now carry an optional value tone + label tone so each
+// card reads as its own thing in the row. Default keeps the previous
+// behaviour for any caller that doesn't opt in.
+type StatTone = "orange" | "cyan" | "info" | "warn" | "success" | "danger" | "innovation" | "text" | "muted";
+
+const STAT_VALUE_CLASS: Record<StatTone, string> = {
+  orange: "text-orange",
+  cyan: "text-cyan",
+  info: "text-info",
+  warn: "text-warn",
+  success: "text-success",
+  danger: "text-danger",
+  innovation: "text-innovation",
+  text: "text-text",
+  muted: "text-muted-foreground",
+};
+const STAT_LABEL_CLASS: Record<StatTone, string> = {
+  orange: "text-orange",
+  cyan: "text-cyan",
+  info: "text-info",
+  warn: "text-warn",
+  success: "text-success",
+  danger: "text-danger",
+  innovation: "text-innovation",
+  text: "text-text",
+  muted: "text-muted-foreground",
+};
+
 function Stat({
   label,
   value,
   sub,
+  tone = "text",
+  labelTone = "orange",
 }: {
   label: string;
   value: string;
   sub?: string;
+  tone?: StatTone;
+  labelTone?: StatTone;
 }) {
   return (
     <div className="panel p-4">
-      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+      <p
+        className={`text-[10px] font-bold uppercase tracking-[0.12em] ${STAT_LABEL_CLASS[labelTone]}`}
+      >
         {label}
       </p>
-      <p className="mt-1 text-2xl font-semibold text-text">{value}</p>
+      <p
+        className={`mt-1 text-2xl font-semibold ${STAT_VALUE_CLASS[tone]}`}
+      >
+        {value}
+      </p>
       {sub && (
         <p className="mt-1 font-mono text-[10px] text-muted-foreground">
           {sub}

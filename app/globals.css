@@ -55,6 +55,18 @@
   --color-warn: #f0a030;
   --color-innovation: #8b7ee8;
   --color-danger: #e25b5b;
+  /* Added 2026-05-03 for the admin usage status palette so the
+     terminal-quiet "cancelled" pill is visually distinct from the
+     greyed "abandoned" pill. Warm enough to sit alongside the brand
+     orange without competing; lower saturation than danger so it
+     doesn't read as an active error. Also handy for any future
+     "warning-but-soft" chip surface. */
+  --color-rose: #d97a8c;
+  /* Added 2026-05-03 for queue / "fresh, waiting" surfaces in admin
+     where the existing info-blue felt indistinguishable from
+     hyperlinks; this is a cooler cyan than info, sits cleanly between
+     blue and green on the wheel. */
+  --color-cyan: #4dc4c0;
 
   /* ---- Typography ---- */
   --font-sans: var(--font-outfit), Helvetica, Arial, sans-serif;
