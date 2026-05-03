@@ -61,6 +61,13 @@ import type {
 
 import { tavilySearch } from "./tavily";
 
+// Hard-locked to Pro. There is no env-var override that swaps this
+// for Flash — Pro is the only DeepSeek variant Distil ever calls.
+// Flash entries in lib/llm/pricing.ts and lib/admin/model-pill.ts
+// exist solely so historical token_usage rows (or a deliberate
+// future Flash experiment carved out as its own commit + Decision
+// Point) still cost-out and render correctly. Changing this constant
+// is the one and only way to route to Flash; it is not a config flip.
 const MODEL: ModelName = "deepseek-v4-pro";
 const DEFAULT_MAX_TOKENS = 16000;
 const BASE_URL = "https://api.deepseek.com";

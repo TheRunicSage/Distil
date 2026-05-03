@@ -160,6 +160,12 @@ export const generateApplication = inngest.createFunction(
     // active model's cap inside checkCostCapPre rather than passing
     // it explicitly. The model id flows from llm.callLLM's result so
     // we use a static lookup keyed on the env-selected provider.
+    //
+    // DeepSeek path is locked to Pro — see lib/deepseek/provider.ts.
+    // No env-var path can route to Flash; the variant is a code
+    // decision, not a config flip. If you ever swap the line below
+    // to "deepseek-v4-flash", you must also flip the MODEL constant
+    // in the provider for the two to stay in sync.
     const activeModel = process.env.LLM_PROVIDER === "deepseek"
       ? "deepseek-v4-pro"
       : "claude-sonnet-4-6";
