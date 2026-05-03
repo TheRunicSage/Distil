@@ -118,14 +118,25 @@ const MAX_ITERATIONS = 7;
 // Per-iteration timeout on the DeepSeek chat completion. 90s is
 // well above the typical iteration time (~30-60s with reasoning
 // engaged) but short enough that a single hung iteration can't
-// blow the per-invocation Vercel ceiling. The OpenAI SDK's default
-// is 600s (10 min), which is unsafe for our purposes — a single
-// stalled call would consume the entire 800s function budget.
-// On timeout we throw ApiError("llm_failed") which is retried by
-// the Inngest function's outer retries: 0 policy (call-llm step
-// is single-shot per generation) — meaning the whole generation
-// errors fast, surfacing a clean failure rather than a soft hang.
+// blow the per-invocation Vercel ceiling.
+//
+// We DO NOT rely on the OpenAI SDK's `{ timeout: ... }` option
+// alone — observed in production 2026-05-03: a call-llm step
+// hung 14+ minutes inside the loop with no thrown error and no
+// log progression, indicating the SDK timeout did not fire (or
+// the underlying fetch transport ignored the AbortSignal). To
+// guarantee a deterministic ceiling we Promise.race the SDK call
+// against a manual setTimeout that throws an ApiError("llm_failed").
+// Both are kept (`{ timeout }` as the SDK's best-effort attempt,
+// the race as the airtight backstop) so the inner controller can
+// also try to abort the in-flight fetch.
 const CHAT_COMPLETION_TIMEOUT_MS = 90_000;
+// Global wall clock on the entire callLLM() execution. If the
+// loop drifts (multiple iterations, retries, network sluggishness),
+// this hard-stops the whole step before the Vercel function ceiling
+// or the Inngest retry kicks in. Sized below maxDuration (800s) but
+// with headroom for the rest of the pipeline downstream.
+const TOTAL_LOOP_BUDGET_MS = 600_000;
 
 const WEB_SEARCH_TOOL_NAME = "web_search";
 
@@ -168,7 +179,38 @@ export class DeepseekProvider implements LlmProvider {
     let totalOutput = 0;
     let webSearchCount = 0;
 
+    const loopStartedAt = Date.now();
+
     for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
+      // Global wall clock — hard-stop the whole step if the loop
+      // has drifted past the budget regardless of per-iteration
+      // timeouts. Keeps the outer Inngest step bounded so the
+      // application can fail-fast and the user sees an error
+      // instead of a silent wedge.
+      const elapsed = Date.now() - loopStartedAt;
+      if (elapsed > TOTAL_LOOP_BUDGET_MS) {
+        console.error(
+          "[deepseek.callLLM] total loop budget exceeded for application",
+          opts.applicationId,
+          `- iteration=${iteration} elapsed_ms=${elapsed}`,
+        );
+        throw new ApiError(
+          "llm_failed",
+          `LLM loop exceeded ${TOTAL_LOOP_BUDGET_MS}ms wall-clock budget`,
+        );
+      }
+      console.log(
+        "[deepseek.callLLM] iter",
+        iteration,
+        "app",
+        opts.applicationId,
+        "messages",
+        messages.length,
+        "elapsed_ms",
+        elapsed,
+        "search_count",
+        webSearchCount,
+      );
       // tool_choice strategy is constrained by DeepSeek's preview
       // gateway: as of 2026-05-03, sending tool_choice: "required"
       // against deepseek-v4-pro returns
@@ -193,6 +235,7 @@ export class DeepseekProvider implements LlmProvider {
           : "auto";
 
       let response: OpenAI.Chat.Completions.ChatCompletion;
+      const iterStartedAt = Date.now();
       try {
         // thinking: { type: "disabled" } is the documented disable
         // flag per
@@ -217,16 +260,42 @@ export class DeepseekProvider implements LlmProvider {
           tool_choice: toolChoice,
           thinking: { type: "disabled" },
         } as unknown as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming;
-        response = await client.chat.completions.create(
-          requestBody,
-          // Per-call timeout shorter than the SDK default. See the
-          // CHAT_COMPLETION_TIMEOUT_MS const above for reasoning.
-          { timeout: CHAT_COMPLETION_TIMEOUT_MS },
-        );
+        // Race the SDK call against a manual timer + AbortController.
+        // The SDK's `{ timeout }` option is best-effort but observed
+        // unreliable on Vercel (2026-05-03 incident: 14+ min hang
+        // with no thrown error). The race below guarantees a thrown
+        // ApiError after CHAT_COMPLETION_TIMEOUT_MS regardless.
+        const abortController = new AbortController();
+        const sdkPromise = client.chat.completions.create(requestBody, {
+          timeout: CHAT_COMPLETION_TIMEOUT_MS,
+          signal: abortController.signal,
+        });
+        let timeoutHandle: NodeJS.Timeout | undefined;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutHandle = setTimeout(() => {
+            abortController.abort();
+            reject(
+              new ApiError(
+                "llm_failed",
+                `DeepSeek chat completion exceeded ${CHAT_COMPLETION_TIMEOUT_MS}ms (iteration ${iteration})`,
+              ),
+            );
+          }, CHAT_COMPLETION_TIMEOUT_MS);
+        });
+        try {
+          response = await Promise.race([sdkPromise, timeoutPromise]);
+        } finally {
+          if (timeoutHandle) clearTimeout(timeoutHandle);
+        }
       } catch (err) {
+        const iterDuration = Date.now() - iterStartedAt;
         console.error(
-          "[deepseek.callLLM] OpenAI SDK error for application",
+          "[deepseek.callLLM] error in iter",
+          iteration,
+          "for application",
           opts.applicationId,
+          "after_ms",
+          iterDuration,
           "-",
           err instanceof Error ? `${err.name}: ${err.message}` : String(err),
         );
@@ -236,10 +305,29 @@ export class DeepseekProvider implements LlmProvider {
             (err as { status?: number }).status,
           );
         }
+        // If the error is already an ApiError (e.g. our timeout
+        // race threw it), forward as-is so the cause-chain walker
+        // surfaces the right error_code in request_logs.
+        if (err instanceof ApiError) throw err;
         const apiErr = new ApiError("llm_failed");
         (apiErr as Error & { cause?: unknown }).cause = err;
         throw apiErr;
       }
+      const iterDuration = Date.now() - iterStartedAt;
+      const responseHadReasoning = !!extractReasoning(
+        response.choices[0]?.message ??
+          ({} as OpenAI.Chat.Completions.ChatCompletionMessage),
+      );
+      console.log(
+        "[deepseek.callLLM] iter",
+        iteration,
+        "completed in",
+        iterDuration,
+        "ms, output_tokens",
+        response.usage?.completion_tokens ?? 0,
+        "reasoning",
+        responseHadReasoning ? "ON" : "off",
+      );
 
       const usage = response.usage as
         | (OpenAI.Completions.CompletionUsage & {
