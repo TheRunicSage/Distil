@@ -20,6 +20,46 @@ const DOCX_MIME =
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const BUCKET = "master-cvs";
 
+// Magic-byte fallback for browsers / OSs that send an empty or non-
+// canonical file.type. Common cases: Windows Chrome on a freshly
+// downloaded PDF can send "" or "application/octet-stream";
+// Safari occasionally sends "application/x-pdf". We sniff the first
+// few bytes to recover the real type rather than rejecting the file.
+function sniffMimeFromBytes(bytes: Uint8Array): string | null {
+  // PDF files start with "%PDF-" (0x25 0x50 0x44 0x46 0x2D).
+  if (
+    bytes.length >= 5 &&
+    bytes[0] === 0x25 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x44 &&
+    bytes[3] === 0x46 &&
+    bytes[4] === 0x2d
+  ) {
+    return PDF_MIME;
+  }
+  // DOCX is a ZIP container — local file header is "PK\x03\x04"
+  // (0x50 0x4B 0x03 0x04). We don't bother distinguishing from
+  // .xlsx/.pptx here because mammoth will reject those at parse
+  // time as part of the existing master_cv_parse_failed path.
+  if (
+    bytes.length >= 4 &&
+    bytes[0] === 0x50 &&
+    bytes[1] === 0x4b &&
+    bytes[2] === 0x03 &&
+    bytes[3] === 0x04
+  ) {
+    return DOCX_MIME;
+  }
+  return null;
+}
+
+function extFromFilename(name: string): "pdf" | "docx" | null {
+  const lower = name.toLowerCase();
+  if (lower.endsWith(".pdf")) return "pdf";
+  if (lower.endsWith(".docx")) return "docx";
+  return null;
+}
+
 export const POST = withLogging(
   "master-cv.upload",
   async (req: NextRequest, ctx) => {
@@ -39,16 +79,50 @@ export const POST = withLogging(
     if (!(file instanceof File)) throw new ApiError("invalid_request");
     if (file.size > MAX_BYTES) throw new ApiError("master_cv_too_large");
 
-    const mime = file.type;
+    const buffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    const reportedMime = file.type;
+    const sniffedMime = sniffMimeFromBytes(bytes);
+    const filenameExt = extFromFilename(file.name);
+
+    // Diagnostic context for request_logs (Decision Log [10] pattern).
+    // Always populated so even successful uploads carry the file
+    // shape; on failure the wrapper reads ctx.metadata when writing
+    // the error row, so we can debug the next failure without
+    // needing the user to ship us the file.
+    ctx.metadata = {
+      file_size_bytes: file.size,
+      reported_mime: reportedMime || "(empty)",
+      sniffed_mime: sniffedMime ?? "(unrecognised)",
+      filename_ext: filenameExt ?? "(none)",
+    };
+
+    // Trust the magic bytes over file.type. Browsers / OSs lie about
+    // file.type often enough that the sniff is the source of truth.
+    // Fall back to file.type only when bytes aren't a known signature
+    // but the browser said something we recognise.
+    const mime: string | null =
+      sniffedMime ??
+      (reportedMime === PDF_MIME || reportedMime === DOCX_MIME
+        ? reportedMime
+        : null);
+
     if (mime !== PDF_MIME && mime !== DOCX_MIME) {
       throw new ApiError("master_cv_unsupported_type");
     }
 
-    const buffer = await file.arrayBuffer();
     const parsedText =
       mime === PDF_MIME
         ? await parsePdf(buffer)
         : await parseDocx(buffer);
+
+    // Surface the post-parse text length too — a successful parse
+    // that lands just above the 200-char floor is a useful signal
+    // when triaging "the LLM said insufficient_input" later.
+    ctx.metadata = {
+      ...ctx.metadata,
+      parsed_text_length: parsedText.length,
+    };
 
     const ext = mime === PDF_MIME ? "pdf" : "docx";
     const cvId = crypto.randomUUID();
