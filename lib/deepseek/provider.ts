@@ -92,20 +92,21 @@ const DEFAULT_MAX_TOKENS = 16000;
 const BASE_URL = "https://api.deepseek.com";
 
 // Web-search budget. Realistic usage per system-prompt §3 Phase 2 +
-// Phase 4 is 2-3 calls. Lowered 5 → 3 (2026-05-03) after the
-// FUNCTION_INVOCATION_TIMEOUT incident: with reasoning_content
-// engaged on V4-Pro's gateway, every iteration carries thousands of
-// reasoning tokens, so each extra search round-trip costs both time
-// and budget. The system-prompt budget rule remains the primary
-// lever; the schema cushion was masking pressure on the time budget.
-// On the Anthropic path (web_search_20250305 server-side) this cap
-// is lib/anthropic/tool-schema.ts:webSearchTool.max_uses, separate.
-const MAX_WEB_SEARCH = 3;
+// Phase 4: 2 Phase-2 calls (about-page, recent news) + 2-3 Phase-4
+// calls (salary triangulation across multiple sources for a firm
+// prediction). 5 is the hard cap. The salary triangulation requires
+// multiple sources to cross-reference — relying on a single source
+// produces unreliable bands. On the Anthropic path
+// (web_search_20250305 server-side) this cap is
+// lib/anthropic/tool-schema.ts:webSearchTool.max_uses, separate.
+const MAX_WEB_SEARCH = 5;
 // Iteration cap = MAX_WEB_SEARCH searches + 1 final submit_application
-// emission + 1 buffer iteration. Lowered 8 → 5 (2026-05-03) for the
-// same FUNCTION_INVOCATION_TIMEOUT reason. Hitting the cap raises
-// llm_invalid_output rather than letting the loop balloon.
-const MAX_ITERATIONS = 5;
+// emission + 1 buffer iteration. Per-iteration timeout
+// (CHAT_COMPLETION_TIMEOUT_MS, 90s) bounds the worst-case runtime to
+// roughly (7 × 90s) + (5 × 15s) ≈ 705s, comfortably under the 800s
+// function ceiling. Hitting the cap raises llm_invalid_output rather
+// than letting the loop balloon further.
+const MAX_ITERATIONS = 7;
 // Per-iteration timeout on the DeepSeek chat completion. 90s is
 // well above the typical iteration time (~30-60s with reasoning
 // engaged) but short enough that a single hung iteration can't
@@ -344,7 +345,7 @@ async function runWebSearch(
       didSearch: false,
       content: JSON.stringify({
         error:
-          "web_search budget exhausted (3 calls maximum). " +
+          "web_search budget exhausted (5 calls maximum). " +
           "Proceed with the information already gathered.",
       }),
     };
@@ -427,9 +428,10 @@ function webSearchToolDef(): OpenAI.Chat.Completions.ChatCompletionTool {
         "research (Phase 2: about-page, recent news, industry context) " +
         "and salary research (Phase 4). Returns a list of {title, url, " +
         "content} results; the content is a short snippet, not the full " +
-        "page. Hard cap of 3 calls per generation — typical use is " +
-        "2 Phase-2 calls + 1 Phase-4 call. The 4th call returns a " +
-        "budget-exhausted error; plan accordingly.",
+        "page. Hard cap of 5 calls per generation — typical use is " +
+        "2 Phase-2 calls + 2-3 Phase-4 calls (salary needs triangulation " +
+        "across multiple sources). The 6th call returns a budget-" +
+        "exhausted error; plan accordingly.",
       parameters: {
         type: "object",
         properties: {
