@@ -18,6 +18,7 @@ import { CopyId } from "@/components/app/CopyId";
 import { ApplicationLiveView } from "@/components/application/ApplicationLiveView";
 import { CoverLetterPreview } from "@/components/application/CoverLetterPreview";
 import { CvPreview } from "@/components/application/CvPreview";
+import { PagedPreview } from "@/components/application/PagedPreview";
 import { RetryAbandonControls } from "@/components/application/RetryAbandonControls";
 import { RetryFailedButton } from "@/components/application/RetryFailedButton";
 import { createClient } from "@/lib/supabase/server";
@@ -299,11 +300,17 @@ function SuccessView({
           <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
             <div className="surface-card">
               <p className="eyebrow mb-4">CV preview</p>
-              <CvPreview content={success.cv_content} />
+              <PagedPreview ariaLabel="CV preview, paginated">
+                <CvPreview content={success.cv_content} />
+              </PagedPreview>
             </div>
             <div className="surface-card">
               <p className="eyebrow mb-4">Cover letter preview</p>
-              <CoverLetterPreview content={success.cover_letter_content} />
+              <PagedPreview ariaLabel="Cover letter preview, paginated">
+                <CoverLetterPreview
+                  content={success.cover_letter_content}
+                />
+              </PagedPreview>
             </div>
           </div>
         </div>

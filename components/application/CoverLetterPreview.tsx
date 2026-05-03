@@ -16,7 +16,7 @@ function pipe(parts: ReadonlyArray<string | null | undefined>): string {
 export function CoverLetterPreview({ content }: Props) {
   return (
     <article className="rounded-lg border border-l-border bg-l-bg p-10 font-sans text-l-text shadow-card">
-      <header>
+      <header data-page-section>
         <p className="font-semibold">{content.header.full_name}</p>
         <p className="text-xs text-l-mid">
           {pipe([
@@ -38,15 +38,19 @@ export function CoverLetterPreview({ content }: Props) {
         )}
       </div>
 
-      <p className="mt-6 text-sm">{content.salutation}</p>
+      <p className="mt-6 text-sm" data-page-section>
+        {content.salutation}
+      </p>
 
       <div className="mt-4 space-y-4 text-sm leading-relaxed">
         {content.paragraphs.map((p, i) => (
-          <p key={i}>{p}</p>
+          <p key={i} data-page-section>
+            {p}
+          </p>
         ))}
       </div>
 
-      <div className="mt-6 text-sm leading-relaxed">
+      <div className="mt-6 text-sm leading-relaxed" data-page-section>
         {content.signoff.split("\n").map((line, i) => (
           <p key={i}>{line}</p>
         ))}

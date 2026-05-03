@@ -3,6 +3,13 @@
 // user can sanity-check the content before downloading; not pixel
 // perfect — the DOCX is canonical. See CLAUDE.md §12 (light theme is
 // scoped to the preview cards via brand `l-*` tokens).
+//
+// 2026-05-03: each natural break candidate (header, sections, role
+// items, project items, education items) carries `data-page-section`
+// so PagedPreview can pack them into A4-sized pages without splitting
+// any single block across pages. The attribute is invisible / has
+// no styling effect; if the preview is used outside PagedPreview
+// (e.g. a future print view) the data attrs are harmless.
 
 import type { ApplicationOutputSuccess } from "@/lib/llm/output-schema";
 
@@ -17,7 +24,7 @@ function pipe(parts: ReadonlyArray<string | null | undefined>): string {
 export function CvPreview({ content }: Props) {
   return (
     <article className="rounded-lg border border-l-border bg-l-bg p-10 font-sans text-l-text shadow-card">
-      <header>
+      <header data-page-section>
         <h1 className="text-2xl font-bold leading-tight">
           {content.contact_details.full_name}
         </h1>
@@ -64,7 +71,7 @@ export function CvPreview({ content }: Props) {
       <Section title="Professional Experience">
         <div className="space-y-5">
           {content.professional_experience.map((role, i) => (
-            <div key={i}>
+            <div key={i} data-page-section>
               <p className="font-semibold">
                 {role.role_title}, {role.company}
               </p>
@@ -85,7 +92,7 @@ export function CvPreview({ content }: Props) {
         <Section title="Key Projects">
           <div className="space-y-5">
             {content.key_projects.map((p, i) => (
-              <div key={i}>
+              <div key={i} data-page-section>
                 <p>
                   <strong className="font-semibold">{p.name}</strong>
                   {" | "}
@@ -110,7 +117,7 @@ export function CvPreview({ content }: Props) {
       <Section title="Education">
         <div className="space-y-4">
           {content.education.map((e, i) => (
-            <div key={i}>
+            <div key={i} data-page-section>
               <p className="font-semibold">
                 {e.qualification}, {e.institution}
               </p>
@@ -157,7 +164,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="mt-6">
+    <section className="mt-6" data-page-section>
       <h2 className="border-b border-l-border pb-1 text-xs font-bold uppercase tracking-[0.08em] text-orange">
         {title}
       </h2>
