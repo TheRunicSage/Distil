@@ -1,32 +1,94 @@
-"use client";
-
 // Compact download menu for ChainCard rows whose chain has a success
 // leaf. A single icon-only trigger opens a small popover with the
 // two download options (CV + cover letter). Designed to live inside
 // the parent <Link>-wrapped card without hijacking its click — every
 // interaction stops propagation, and the popover closes on outside
-// click, Escape, or item activation.
+// click, Escape, scroll, viewport resize, or item activation.
+//
+// The popover is rendered through a React portal to document.body
+// so it escapes the parent ChainCard's backdrop-blur stacking
+// context. Without the portal, z-20 inside the card only outranks
+// elements within that card — the next ChainCard sibling renders
+// over the popover regardless. With the portal the popover sits at
+// the top of the body's stacking order.
+//
+// Position is computed from the trigger button's bounding client
+// rect on every open / scroll / resize so the popover tracks the
+// trigger reliably even mid-scroll.
 //
 // The downloads themselves are plain anchor tags hitting the
 // existing /api/applications/[id]/download/[kind] route, which
 // 302-redirects to a Supabase signed URL with the right
 // Content-Disposition filename. No new backend.
-//
-// Pattern matches the existing "icon-only secondary affordance"
-// language used by ThemeToggle and the Settings gear in the topbar.
 
-import { useEffect, useRef, useState } from "react";
+"use client";
+
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { DownloadIcon, FileTextIcon, MailIcon } from "lucide-react";
+
+const MENU_WIDTH = 208; // w-52
+const MENU_OFFSET = 6; // px below the trigger
+const VIEWPORT_MARGIN = 12; // keep menu off the viewport edge
+
+type Position = { top: number; left: number } | null;
 
 export function DownloadDropdown({ applicationId }: { applicationId: string }) {
   const [open, setOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [pos, setPos] = useState<Position>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
+  // createPortal needs document — defer rendering until mount so
+  // SSR doesn't choke. The trigger button still renders on the
+  // server in the closed state.
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Recompute the popover position from the trigger's client rect.
+  // Right-aligned to the trigger, clamped to the viewport so we
+  // don't bleed off the right edge on narrow screens. Re-runs on
+  // every relevant event to keep the popover glued to the trigger.
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    function update() {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const top = rect.bottom + MENU_OFFSET;
+      let left = rect.right - MENU_WIDTH;
+      // Don't run off the right edge — VIEWPORT_MARGIN gives a
+      // little breathing room from the scrollbar.
+      const maxLeft = window.innerWidth - MENU_WIDTH - VIEWPORT_MARGIN;
+      if (left > maxLeft) left = maxLeft;
+      // Don't run off the left edge either (very narrow screens).
+      if (left < VIEWPORT_MARGIN) left = VIEWPORT_MARGIN;
+      setPos({ top, left });
+    }
+
+    update();
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
+  }, [open]);
+
+  // Close on outside click, Escape, or scroll outside the menu
+  // itself. Scrolling closes (rather than just repositioning)
+  // because keeping a popover anchored to a row that's scrolling
+  // out of view feels jittery and the menu is one click to reopen.
   useEffect(() => {
     if (!open) return;
     function onDocClick(e: MouseEvent) {
-      if (!wrapperRef.current) return;
-      if (!wrapperRef.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (triggerRef.current?.contains(t)) return;
+      if (menuRef.current?.contains(t)) return;
+      setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
@@ -41,16 +103,15 @@ export function DownloadDropdown({ applicationId }: { applicationId: string }) {
 
   return (
     <div
-      ref={wrapperRef}
-      className="relative shrink-0"
+      // Wrapper still stops propagation so the parent <Link> doesn't
+      // navigate when the user is interacting with the menu trigger.
       onClick={(e) => {
-        // Stops the parent <Link> from navigating when the user is
-        // interacting with the menu.
         e.preventDefault();
         e.stopPropagation();
       }}
     >
       <button
+        ref={triggerRef}
         type="button"
         aria-label="Download files"
         aria-haspopup="menu"
@@ -65,28 +126,49 @@ export function DownloadDropdown({ applicationId }: { applicationId: string }) {
         <DownloadIcon className="h-4 w-4" />
       </button>
 
-      {open && (
-        <div
-          role="menu"
-          className="absolute right-0 top-full z-20 mt-1.5 w-52 overflow-hidden rounded-xl border border-border bg-dark4 shadow-lg backdrop-blur-md"
-        >
-          <DownloadItem
-            href={`/api/applications/${applicationId}/download/cv`}
-            label="Download CV"
-            sub="DOCX"
-            icon={<FileTextIcon className="h-4 w-4" />}
-            onPick={() => setOpen(false)}
-          />
-          <div className="h-px bg-border/60" />
-          <DownloadItem
-            href={`/api/applications/${applicationId}/download/cover_letter`}
-            label="Download cover letter"
-            sub="DOCX"
-            icon={<MailIcon className="h-4 w-4" />}
-            onPick={() => setOpen(false)}
-          />
-        </div>
-      )}
+      {mounted &&
+        open &&
+        pos &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
+            // Fixed positioning + portal to body sidesteps every
+            // parent stacking context. z-50 sits above the (app)
+            // shell's sticky topbar (z-30) and any other floating
+            // chrome.
+            style={{
+              position: "fixed",
+              top: pos.top,
+              left: pos.left,
+              width: MENU_WIDTH,
+            }}
+            className="z-50 overflow-hidden rounded-xl border border-border bg-dark4 shadow-lg backdrop-blur-md"
+            onClick={(e) => {
+              // Items inside the menu still need to navigate, so
+              // we stop propagation only at the wrapper boundary,
+              // not on the items themselves.
+              e.stopPropagation();
+            }}
+          >
+            <DownloadItem
+              href={`/api/applications/${applicationId}/download/cv`}
+              label="Download CV"
+              sub="DOCX"
+              icon={<FileTextIcon className="h-4 w-4" />}
+              onPick={() => setOpen(false)}
+            />
+            <div className="h-px bg-border/60" />
+            <DownloadItem
+              href={`/api/applications/${applicationId}/download/cover_letter`}
+              label="Download cover letter"
+              sub="DOCX"
+              icon={<MailIcon className="h-4 w-4" />}
+              onPick={() => setOpen(false)}
+            />
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
