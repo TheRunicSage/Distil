@@ -141,7 +141,7 @@ export default async function AdminTelemetryPage() {
         ) : (
           <div className="mt-4 overflow-x-auto">
             <table className="w-full table-auto text-sm">
-              <thead className="text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
+              <thead className="text-left text-xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
                 <tr className="border-b border-border">
                   <th className="whitespace-nowrap py-2 pr-3">Model</th>
                   <th className="whitespace-nowrap py-2 px-3 text-right">Calls</th>
@@ -211,7 +211,7 @@ export default async function AdminTelemetryPage() {
                               style={{ width: `${sharePct}%` }}
                             />
                           </div>
-                          <span className="font-mono text-[11px] text-muted-foreground">
+                          <span className="font-mono text-xs text-muted-foreground">
                             {sharePct.toFixed(0)}%
                           </span>
                         </div>

@@ -66,7 +66,7 @@ export default async function AdminUsersPage() {
 
       <section className="panel overflow-x-auto">
         <table className="w-full table-auto text-sm">
-          <thead className="bg-dark2 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
+          <thead className="bg-dark2 text-left text-xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
             <tr>
               <th className="whitespace-nowrap px-3 py-3">User</th>
               <th className="whitespace-nowrap px-3 py-3">Email</th>

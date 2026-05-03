@@ -30,8 +30,17 @@
   --color-dark3: #25252f;
   --color-dark4: #2f2f3a;
   --color-text: #f0efe8;
-  --color-dim: rgba(240, 239, 232, 0.28);
-  --color-text-muted: #9a9aa8;
+  /* Lifted 2026-05-03 from rgba(0.28) → rgba(0.36): subtle accents
+     and dividers were dropping below comfortable contrast on dark2
+     surfaces. Still well below the body-text level — this is a
+     dim-but-readable token, not a body token. */
+  --color-dim: rgba(240, 239, 232, 0.36);
+  /* Lifted 2026-05-03 from #9a9aa8 → #b6b5c4: secondary labels
+     ("date · status meta", "files expire on", admin table headers,
+     short ID chips) were sitting around AA-borderline on dark2.
+     New value lands ~10% lighter while staying clearly distinct
+     from --color-text so hierarchy is preserved. */
+  --color-text-muted: #b6b5c4;
 
   /* ---- Light theme tokens (preview cards + email body only) ---- */
   --color-l-bg: #fbfaf6;
@@ -202,7 +211,13 @@
   --color-dark3: #ffffff;
   --color-dark4: #ffffff;
   --color-text: #15140e;
-  --color-text-muted: #6c6a60;
+  /* Lifted 2026-05-03 from #6c6a60 → #5a5851: on the warm-white
+     light surface the muted token was reading washed-out. We go
+     the OPPOSITE direction from the dark-mode change because
+     muted-on-light wants more contrast (darker), while muted-on-
+     dark wants more contrast (lighter). Same readability outcome,
+     opposite direction in lightness space. */
+  --color-text-muted: #5a5851;
   /* Flat warm-grey (not rgba) so bg-dim/15 produces a visible 15%
      warm-grey wash instead of vanishing into the surface. */
   --color-dim: #b8b6ad;
@@ -293,12 +308,24 @@
    ============================================================ */
 
 @layer components {
-  /* Type primitives */
+  /* Type primitives.
+     2026-05-03 readability pass (Decision Log [14] follow-up):
+     - .eyebrow + .eyebrow-muted nudged 11px → 12px and tracking
+       widened 0.18em → 0.20em. Eyebrow micro-labels were sitting
+       at the lower edge of legible at small viewports; the widened
+       tracking keeps the airy uppercase rhythm intact.
+     - .text-meta nudged from text-xs (12px) → text-[12.5px]
+       (12.5px) plus a slight line-height bump. ~50 callsites use
+       .text-meta for date / id / "files expire" lines that were
+       compressing too tight against neighbouring rows. Half-pixel
+       size lift + ~5% line-height lift reads as deliberate breathing
+       rather than just bigger.
+     - Heading scales unchanged — they read fine. */
   .eyebrow {
-    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-orange;
+    @apply text-[12px] font-semibold uppercase tracking-[0.20em] text-orange;
   }
   .eyebrow-muted {
-    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground;
+    @apply text-[12px] font-semibold uppercase tracking-[0.20em] text-muted-foreground;
   }
   .heading-display {
     @apply font-serif text-4xl font-light leading-[1.15] tracking-tight text-text;
@@ -307,7 +334,7 @@
     @apply font-serif text-2xl font-normal leading-tight tracking-tight text-text;
   }
   .text-meta {
-    @apply text-xs text-muted-foreground;
+    @apply text-[12.5px] leading-[1.5] text-muted-foreground;
   }
 
   /* Surface primitives. Tailwind v4's @apply only resolves utilities,

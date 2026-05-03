@@ -68,7 +68,7 @@ export function ChainCard({ chain }: { chain: Chain }) {
 
       {hasRetries && (
         <details className="border-t border-border/50">
-          <summary className="cursor-pointer px-4 py-2 text-[11px] text-muted-foreground transition-colors hover:text-text">
+          <summary className="cursor-pointer px-4 py-2 text-xs text-muted-foreground transition-colors hover:text-text">
             {chain.attempts.length} attempts
           </summary>
           <ul className="space-y-1 px-4 pb-3 pt-1 text-xs">
@@ -79,7 +79,7 @@ export function ChainCard({ chain }: { chain: Chain }) {
                   className="flex items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-dark3/60"
                 >
                   <span className="text-muted-foreground">#{i + 1}</span>
-                  <span className="font-mono text-[11px] text-text/70">
+                  <span className="font-mono text-xs text-text/70">
                     {a.id.slice(0, 8)}
                   </span>
                   <span
@@ -87,7 +87,7 @@ export function ChainCard({ chain }: { chain: Chain }) {
                   >
                     {a.effectiveLabel}
                   </span>
-                  <span className="w-32 shrink-0 text-right text-[11px] text-muted-foreground">
+                  <span className="w-32 shrink-0 text-right text-xs text-muted-foreground">
                     {formatDate(a.created_at)}
                   </span>
                 </Link>

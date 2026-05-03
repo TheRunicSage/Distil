@@ -87,10 +87,10 @@ export default async function AdminLogsPage() {
                         {truncate(row.error_message, 90)}
                       </span>
                     </span>
-                    <span className="font-mono text-[11px] text-danger">
+                    <span className="font-mono text-xs text-danger">
                       {row.error_code ?? "internal_error"}
                     </span>
-                    <span className="whitespace-nowrap text-[11px] text-muted-foreground">
+                    <span className="whitespace-nowrap text-xs text-muted-foreground">
                       {formatTime(row.created_at)}
                     </span>
                   </summary>
@@ -100,7 +100,7 @@ export default async function AdminLogsPage() {
                         {row.error_message}
                       </pre>
                     )}
-                    <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                       <span>{row.duration_ms}ms</span>
                       {row.application_id && (
                         <span className="font-mono">
