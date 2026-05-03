@@ -179,10 +179,12 @@ export default async function SettingsPage() {
           <li className="flex items-baseline gap-3">
             <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-orange/70" aria-hidden />
             <span>
-              <strong className="text-text">Sent to an LLM provider.</strong>{" "}
-              Each generation calls our LLM provider's API. We don't
-              currently advertise zero-data-retention agreements; see
-              the FAQ for the honest detail.
+              <strong className="text-text">Sent to DeepSeek (default) or Anthropic.</strong>{" "}
+              We don't have ZDR addenda with either. DeepSeek's
+              default terms allow inputs to be used for service
+              improvement; Anthropic's terms don't train on your
+              data but retain it for 30 days. Full detail in the
+              FAQ.
             </span>
           </li>
         </ul>

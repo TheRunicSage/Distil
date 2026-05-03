@@ -1,8 +1,9 @@
 // Public FAQ page. Two purposes:
 //   1. Trust surface — be honest about what we store, what we send to
-//      LLM providers, what's encrypted, and what isn't (we do NOT
-//      claim ZDR with our LLM providers because as of 2026-05-03 that
-//      hasn't been confirmed; the copy will be tightened once it is).
+//      LLM providers, what's encrypted, and what isn't. We do NOT
+//      have signed zero-data-retention addenda with either Anthropic
+//      or DeepSeek; the data section reflects each provider's
+//      published default API policy.
 //   2. Standards explainer — what ATS is, why it matters, what
 //      recruiters actually look for, and how Distil's outputs are
 //      built to clear those hurdles.
@@ -172,13 +173,58 @@ const SECTIONS: FaqSection[] = [
         a: (
           <>
             Distil itself doesn't train any AI models. Your CV and
-            the job description are sent to our LLM provider
-            (currently DeepSeek; previously Anthropic) for the single
-            generation call. We use the providers' API endpoints
-            rather than chat products, but we have not yet confirmed
-            written zero-data-retention agreements with each — when
-            that's confirmed, we'll update this page. For now: assume
-            standard API terms apply.
+            the job description are sent to our LLM provider for the
+            single generation call. We use API endpoints (not the
+            consumer chat products), but we have not signed
+            zero-data-retention addenda with either provider — so
+            the standard published API policies apply, summarised
+            honestly below.
+          </>
+        ),
+      },
+      {
+        q: "Which LLM provider runs the generation?",
+        a: (
+          <>
+            <p>
+              By default, Distil currently uses{" "}
+              <strong>DeepSeek V4 Pro</strong> via DeepSeek's chat
+              completions API. We can fall back to{" "}
+              <strong>Anthropic Claude Sonnet 4.6</strong> behind a
+              runtime toggle. The provider running any given
+              generation is recorded against that generation in our
+              admin records.
+            </p>
+            <p className="mt-3">
+              <strong className="text-text">DeepSeek default policy:</strong>{" "}
+              per their published terms, inputs and outputs may be
+              retained and used to improve their services, which can
+              include model training. We have not opted out of this.
+              Treat anything you put into a generation as something
+              that could be processed by DeepSeek under their default
+              terms.
+            </p>
+            <p className="mt-3">
+              <strong className="text-text">Anthropic default policy:</strong>{" "}
+              per Anthropic's commercial terms, API inputs and
+              outputs are <em>not</em> used to train their models.
+              They retain prompts and completions for up to 30 days
+              for trust-and-safety review, then delete. We have not
+              signed a separate ZDR addendum, so the 30-day retention
+              window applies.
+            </p>
+            <p className="mt-3">
+              If you'd prefer the Anthropic path, email{" "}
+              <a
+                href="mailto:hello@curiosum.ai"
+                className="btn-link-orange"
+              >
+                hello@curiosum.ai
+              </a>{" "}
+              — we'll switch your generations to it. We'll tighten
+              this answer further if and when we secure ZDR
+              addenda with either provider.
+            </p>
           </>
         ),
       },
