@@ -34,25 +34,33 @@
 // tokens in the usage object; we sum them across iterations so
 // calculateCost gets the totals right.
 //
-// Thinking-mode reasoning_content passthrough: V4-Pro's preview
-// gateway routes to a reasoner backend even when we send no
-// thinking flags (no extra_body, no reasoning_effort) — the same
-// gateway behaviour that earlier forced us off tool_choice:"required"
-// onto "auto" + a final-iteration submit reference. The reasoner
-// backend always emits a reasoning_content field on each assistant
-// turn, and per the DeepSeek docs:
-//   "When using tool calls in thinking mode, it is crucial to pass
-//    the complete reasoning_content back to the API in all
-//    subsequent requests. Failure to do so will result in a 400
-//    error from the API."
-//   (https://api-docs.deepseek.com/guides/thinking_mode)
-// So every assistant message we append to `messages` for the next
-// loop iteration carries its reasoning_content. The OpenAI SDK's
-// ChatCompletionMessageParam type doesn't surface the field, so the
-// push site uses a narrow cast — DeepSeek accepts the extra
-// property as a passthrough. Do not remove this on a future
-// refactor; the loop will start 400-ing again the moment a
-// reasoning-bearing turn isn't echoed back verbatim.
+// Thinking mode disabled (2026-05-03 latency fix): we explicitly
+// send `thinking: { type: "disabled" }` on every chat completion
+// per the DeepSeek API reference
+// (https://api-docs.deepseek.com/api/create-chat-completion —
+// "Setting type to enabled uses thinking mode, while disabled uses
+// non-thinking mode"). Without the disable flag, V4-Pro's preview
+// gateway routes to the reasoner backend by default, which emitted
+// thousands of reasoning tokens per turn and pushed worst-case
+// runs past the 300s Vercel function ceiling
+// (FUNCTION_INVOCATION_TIMEOUT incident, same date). The disable
+// flag drops both per-iteration time and total cost without
+// changing the prompt or schema.
+//
+// Defence-in-depth: we still capture reasoning_content from
+// responses and pass it back on the next iteration's assistant
+// message (extractReasoning + the reasoningContent branch in the
+// loop body). Per the docs, omitting reasoning_content in thinking
+// mode is what produced the original 400 error
+// ("The reasoning_content in the thinking mode must be passed
+// back to the API"). If the gateway ever ignores our disable flag
+// on a given call — e.g. for a model variant that doesn't honour
+// it, or a transient gateway issue — the passthrough keeps the
+// loop alive instead of 400-ing on the next iteration. When
+// disable takes effect (the expected case), reasoning_content is
+// absent from responses and the passthrough is a no-op. Do not
+// remove the passthrough; it is the safety net for the disable
+// flag, and the cost when disable works is zero.
 //
 // Error mapping:
 //   - Non-2xx from DeepSeek → ApiError("llm_failed").
@@ -186,14 +194,31 @@ export class DeepseekProvider implements LlmProvider {
 
       let response: OpenAI.Chat.Completions.ChatCompletion;
       try {
+        // thinking: { type: "disabled" } is the documented disable
+        // flag per
+        // https://api-docs.deepseek.com/api/create-chat-completion
+        // ("Setting type to enabled uses thinking mode, while
+        // disabled uses non-thinking mode"). Sent as a top-level
+        // body field — DeepSeek accepts it directly per their cURL
+        // examples; the Python SDK exposes it as extra_body but the
+        // Node SDK forwards extra body keys verbatim. We use a cast
+        // because the OpenAI SDK's type omits the field.
+        // We KEEP the reasoning_content passthrough on assistant
+        // messages (extractReasoning + assistantMessage block below)
+        // as a defence-in-depth measure: if the gateway ignores the
+        // disable flag on a given call, the loop won't 400 on the
+        // next iteration. When disable takes effect, reasoning_content
+        // is absent from responses and the passthrough is a no-op.
+        const requestBody = {
+          model: MODEL,
+          max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
+          messages,
+          tools,
+          tool_choice: toolChoice,
+          thinking: { type: "disabled" },
+        } as unknown as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming;
         response = await client.chat.completions.create(
-          {
-            model: MODEL,
-            max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
-            messages,
-            tools,
-            tool_choice: toolChoice,
-          },
+          requestBody,
           // Per-call timeout shorter than the SDK default. See the
           // CHAT_COMPLETION_TIMEOUT_MS const above for reasoning.
           { timeout: CHAT_COMPLETION_TIMEOUT_MS },
