@@ -376,7 +376,7 @@ export function ApplicationLiveView({
           <ProgressBar pct={progressPct} />
 
           <p className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground">
-            {formatElapsed(elapsed)} elapsed · typically 1m 30s to 2m
+            {formatElapsed(elapsed)} elapsed
           </p>
         </div>
 

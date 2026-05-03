@@ -131,7 +131,7 @@ export default async function AdminTelemetryPage() {
             LLM spend by provider (7 days)
           </h2>
           <span className="font-mono text-[10px] text-muted-foreground">
-            active: LLM_PROVIDER={activeProvider}
+            active: {activeProvider === "deepseek" ? "DeepSeek" : "Anthropic"}
           </span>
         </div>
         {providerStats.length === 0 ? (

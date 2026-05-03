@@ -220,7 +220,6 @@ export default async function AdminUsagePage({
             <Stat
               label="Active provider"
               value={activeProvider === "deepseek" ? "DeepSeek" : "Anthropic"}
-              sub={`LLM_PROVIDER=${activeProvider}`}
               tone={activeProvider === "deepseek" ? "info" : "orange"}
               labelTone="cyan"
             />
