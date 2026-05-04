@@ -99,26 +99,27 @@ const MODEL: ModelName = "deepseek-v4-pro";
 const DEFAULT_MAX_TOKENS = 16000;
 const BASE_URL = "https://api.deepseek.com";
 
-// Web-search budget. Realistic usage per system-prompt §3 Phase 2 +
-// Phase 4: 2 Phase-2 calls (about-page, recent news) + 2-3 Phase-4
-// calls (salary triangulation across multiple sources for a firm
-// prediction). 5 is the hard cap. The salary triangulation requires
-// multiple sources to cross-reference — relying on a single source
-// produces unreliable bands. On the Anthropic path
-// (web_search_20250305 server-side) this cap is
-// lib/anthropic/tool-schema.ts:webSearchTool.max_uses, separate.
-const MAX_WEB_SEARCH = 5;
-// Iteration cap = MAX_WEB_SEARCH searches + 1 final submit_application
-// emission + 1 buffer iteration. Per-iteration timeout
-// (CHAT_COMPLETION_TIMEOUT_MS, 90s) bounds the worst-case runtime to
-// roughly (7 × 90s) + (5 × 15s) ≈ 705s, comfortably under the 800s
-// function ceiling. Hitting the cap raises llm_invalid_output rather
-// than letting the loop balloon further.
-const MAX_ITERATIONS = 7;
-// Per-iteration timeout on the DeepSeek chat completion. 90s is
-// well above the typical iteration time (~30-60s with reasoning
-// engaged) but short enough that a single hung iteration can't
-// blow the per-invocation Vercel ceiling.
+// Web-search budget. Tightened to 3 (2026-05-03) to fit inside the
+// Hobby plan's 300s function ceiling. Realistic allocation:
+// 1 Phase-2 about-page call + 1 Phase-2 news call + 1 Phase-4
+// broad salary call. Salary triangulation degrades from 2-3 sources
+// to 1; the prompt's confidence-level scale already covers the
+// "single source = low confidence" case honestly. If we move to Pro
+// and lift maxDuration back to 800s, this cap can climb back to 5.
+// On the Anthropic path (web_search_20250305 server-side) the cap
+// is lib/anthropic/tool-schema.ts:webSearchTool.max_uses, separate.
+const MAX_WEB_SEARCH = 3;
+// Iteration cap = MAX_WEB_SEARCH (3) + 1 final submit_application.
+// Per-iteration timeout (60s) × 4 iterations = 240s, exactly
+// matching TOTAL_LOOP_BUDGET_MS. Hitting the cap raises
+// llm_invalid_output rather than letting the loop balloon further.
+const MAX_ITERATIONS = 4;
+// Per-iteration timeout on the DeepSeek chat completion. 60s is
+// short enough to fit ~3-4 iterations inside the Hobby plan's
+// 300s function ceiling with headroom for the rest of the
+// pipeline (validate, quality, render, upload, finalize ≈ 10-15s).
+// With thinking mode disabled (f1e292c), typical iterations are
+// ~20-40s, so 60s is generous-but-bounded.
 //
 // We DO NOT rely on the OpenAI SDK's `{ timeout: ... }` option
 // alone — observed in production 2026-05-03: a call-llm step
@@ -130,13 +131,12 @@ const MAX_ITERATIONS = 7;
 // Both are kept (`{ timeout }` as the SDK's best-effort attempt,
 // the race as the airtight backstop) so the inner controller can
 // also try to abort the in-flight fetch.
-const CHAT_COMPLETION_TIMEOUT_MS = 90_000;
-// Global wall clock on the entire callLLM() execution. If the
-// loop drifts (multiple iterations, retries, network sluggishness),
-// this hard-stops the whole step before the Vercel function ceiling
-// or the Inngest retry kicks in. Sized below maxDuration (800s) but
-// with headroom for the rest of the pipeline downstream.
-const TOTAL_LOOP_BUDGET_MS = 600_000;
+const CHAT_COMPLETION_TIMEOUT_MS = 60_000;
+// Global wall clock on the entire callLLM() execution. Hard-stops
+// the whole step before the Vercel function ceiling kicks in.
+// 240s leaves ~60s headroom under the 300s Hobby ceiling for the
+// rest of the pipeline (downstream steps + Inngest overhead).
+const TOTAL_LOOP_BUDGET_MS = 240_000;
 
 const WEB_SEARCH_TOOL_NAME = "web_search";
 
@@ -458,7 +458,7 @@ async function runWebSearch(
       didSearch: false,
       content: JSON.stringify({
         error:
-          "web_search budget exhausted (5 calls maximum). " +
+          "web_search budget exhausted (3 calls maximum). " +
           "Proceed with the information already gathered.",
       }),
     };
@@ -541,10 +541,9 @@ function webSearchToolDef(): OpenAI.Chat.Completions.ChatCompletionTool {
         "research (Phase 2: about-page, recent news, industry context) " +
         "and salary research (Phase 4). Returns a list of {title, url, " +
         "content} results; the content is a short snippet, not the full " +
-        "page. Hard cap of 5 calls per generation — typical use is " +
-        "2 Phase-2 calls + 2-3 Phase-4 calls (salary needs triangulation " +
-        "across multiple sources). The 6th call returns a budget-" +
-        "exhausted error; plan accordingly.",
+        "page. Hard cap of 3 calls per generation — typical use is " +
+        "1 about-page call + 1 news call + 1 salary call. The 4th call " +
+        "returns a budget-exhausted error; plan accordingly.",
       parameters: {
         type: "object",
         properties: {

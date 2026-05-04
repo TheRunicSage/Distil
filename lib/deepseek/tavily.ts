@@ -19,14 +19,13 @@ import { ApiError } from "@/lib/errors/api-error";
 
 const TAVILY_ENDPOINT = "https://api.tavily.com/search";
 
-// 15s per Tavily call. The basic-depth endpoint typically returns in
-// 1-3s; 15s is generous-but-bounded so a single hung query can't
-// indefinitely wedge the DeepSeek tool-call loop and blow the
-// per-invocation Vercel ceiling. On timeout we throw the same
-// ApiError shape as a network failure — caller already handles it
-// as a tool-result error and the model can try a different query
-// or proceed with what it has.
-const TAVILY_TIMEOUT_MS = 15_000;
+// 10s per Tavily call. The basic-depth endpoint typically returns in
+// 1-3s; 10s is bounded enough that 3 timed-out searches still leaves
+// ~210s for the DeepSeek loop within the 240s wall clock. On timeout
+// we throw the same ApiError shape as a network failure — caller
+// already handles it as a tool-result error and the model can try
+// a different query or proceed with what it has.
+const TAVILY_TIMEOUT_MS = 10_000;
 
 export type TavilyResult = {
   title: string;
