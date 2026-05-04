@@ -174,7 +174,7 @@ If the JD is too short (under 150 words of substantive content), gibberish, in a
 
 Use web search to research the company. You must do live research; do not rely on training data for company facts.
 
-**Search budget for this phase: 2 `web_search` calls.** This is part of an overall **3-call hard cap** across Phase 2 + Phase 4. Phase 4 only has 1 call available, so Phase 2's 2 calls cover everything from the about-page through recent news. Each search appends its full result blocks to the conversation context; cost and latency grow quadratically with search count, so efficiency here is mandatory, not optional.
+**Search budget for this phase: 2 `web_search` calls.** This is part of an overall **5-call hard cap** across Phase 2 + Phase 4. Phase 4 needs 2-3 of those calls for salary triangulation, so do not exceed 2 here unless your first query missed and a single reformulation will rescue the round. Each search appends its full result blocks to the conversation context; cost and latency grow quadratically with search count, so efficiency here is mandatory, not optional.
 
 Run searches in this order, deriving as much as possible from each:
 
@@ -206,12 +206,19 @@ Compare the candidate's master CV against the must-haves and nice-to-haves ident
 
 ### Phase 4: Salary Band Research
 
-**Search budget for this phase: 1 `web_search` call.** Part of the overall 3-call hard cap shared with Phase 2. Single broad query like "[role] [seniority] salary NZ 2026" — typically returns Hays, Robert Walters, Seek, Trade Me Jobs aggregator results in one pass. Mark `confidence: "low"` if the single result has sparse data, `"medium"` if it returns one or two consistent sources, `"high"` only if multiple consistent sources appear in the single result set. Triangulation across multiple searches is not available within this budget; do not retry.
+**Search budget for this phase: 2 to 3 `web_search` calls.** Part of the overall 5-call hard cap shared with Phase 2. Salary needs **active triangulation** across multiple sources to land on a firm prediction tailored to the candidate's seniority and location — relying on one aggregator's headline range produces unreliable bands.
+
+Triangulate as follows:
+1. **One broad aggregator query** — e.g. "[role] [seniority] salary NZ 2026". Captures Hays, Robert Walters, Seek, Trade Me Jobs, Frog Recruitment guides in one pass.
+2. **One source-specific query** — e.g. "[role] salary Hays salary guide 2026" or "[role] [seniority] [city] Robert Walters" — to lock in one firm published number from a named recruiter.
+3. **Optional third query** *only if the first two disagreed by more than ~20%* — e.g. a Glassdoor / Payscale / LinkedIn Salary check, or a city-specific narrowing (Auckland vs Wellington vs Christchurch). Skip if the first two agree.
+
+If Phase 2 already used 3 calls (the maximum), you have 2 calls available here; pick the broad query + the source-specific query and skip the optional third. If Phase 2 somehow used more than 3 (do not), emit a placeholder salary_band with confidence "low" and a source noting "no salary research performed within budget" rather than starving Phase 4 of all triangulation.
 
 Produce:
 - Range as a string (e.g. "NZD 75,000 to 95,000").
 - Source name and URL.
-- Confidence level: "high" (single result returned 3+ consistent sources within the same response), "medium" (single result returned 2 sources roughly aligned), "low" (1 source only, or sparse data). Be honest about the level — without a multi-search budget, "low" or "medium" will be the typical outcome and that is fine.
+- Confidence level: "high" (3+ consistent sources, or 2 sources within ~10%), "medium" (2 sources roughly aligned within ~20%), "low" (1 source only, sparse data, or 2 sources disagreeing by more than ~20% with no third tiebreaker). Be honest about the level — "high" is reserved for genuinely well-triangulated bands.
 
 This is shown to the user as metadata alongside the download buttons. It is not used in the documents themselves.
 

@@ -88,38 +88,45 @@ import type {
 
 import { tavilySearch } from "./tavily";
 
-// Hard-locked to Pro. There is no env-var override that swaps this
-// for Flash — Pro is the only DeepSeek variant Distil ever calls.
-// Flash entries in lib/llm/pricing.ts and lib/admin/model-pill.ts
-// exist solely so historical token_usage rows (or a deliberate
-// future Flash experiment carved out as its own commit + Decision
-// Point) still cost-out and render correctly. Changing this constant
-// is the one and only way to route to Flash; it is not a config flip.
-const MODEL: ModelName = "deepseek-v4-pro";
+// Hard-locked to Flash (2026-05-04, post-Pro experiment). Pro's
+// non-streaming throughput on the final submit_application emission
+// (~6500 output tokens) routinely exceeded our per-iteration timeout
+// even with thinking mode disabled — observed iteration 3 consuming
+// the full 60s ceiling. Flash's output throughput is ~5-10x faster
+// (~25s on the same payload), which fits the Hobby plan's 300s
+// function ceiling with room for 5 web_search calls and salary
+// triangulation. Quality risk is bounded by the heavily-specified
+// system prompt: research is mechanical, fit assessment is rule-
+// driven, writing follows a strict template — Flash without
+// reasoning is roughly comparable to Pro without reasoning on
+// structured output. If quality drops materially on storytelling
+// (cover-letter paragraph 2) or fit nuance, revert this constant
+// to "deepseek-v4-pro" and accept the runtime hit. Historical
+// Pro token_usage rows still cost-out correctly via lib/llm/pricing.ts.
+const MODEL: ModelName = "deepseek-v4-flash";
 const DEFAULT_MAX_TOKENS = 16000;
 const BASE_URL = "https://api.deepseek.com";
 
-// Web-search budget. Tightened to 3 (2026-05-03) to fit inside the
-// Hobby plan's 300s function ceiling. Realistic allocation:
-// 1 Phase-2 about-page call + 1 Phase-2 news call + 1 Phase-4
-// broad salary call. Salary triangulation degrades from 2-3 sources
-// to 1; the prompt's confidence-level scale already covers the
-// "single source = low confidence" case honestly. If we move to Pro
-// and lift maxDuration back to 800s, this cap can climb back to 5.
+// Web-search budget. 5 calls — 2 Phase-2 (about-page + recent news)
+// + 2-3 Phase-4 (salary triangulation across multiple sources for a
+// firm prediction). Restored to 5 (2026-05-04) when we moved to
+// Flash; Flash's faster throughput per iteration leaves room for
+// the full research depth even under the Hobby plan's 300s ceiling.
 // On the Anthropic path (web_search_20250305 server-side) the cap
 // is lib/anthropic/tool-schema.ts:webSearchTool.max_uses, separate.
-const MAX_WEB_SEARCH = 3;
-// Iteration cap = MAX_WEB_SEARCH (3) + 1 final submit_application.
-// Per-iteration timeout (60s) × 4 iterations = 240s, exactly
-// matching TOTAL_LOOP_BUDGET_MS. Hitting the cap raises
-// llm_invalid_output rather than letting the loop balloon further.
-const MAX_ITERATIONS = 4;
-// Per-iteration timeout on the DeepSeek chat completion. 60s is
-// short enough to fit ~3-4 iterations inside the Hobby plan's
-// 300s function ceiling with headroom for the rest of the
-// pipeline (validate, quality, render, upload, finalize ≈ 10-15s).
-// With thinking mode disabled (f1e292c), typical iterations are
-// ~20-40s, so 60s is generous-but-bounded.
+const MAX_WEB_SEARCH = 5;
+// Iteration cap = MAX_WEB_SEARCH (5) + 1 final submit_application.
+// Search iterations on Flash typically run ~5s each
+// (CHAT_COMPLETION_TIMEOUT_MS, 45s); the final submit emission gets
+// FINAL_ITERATION_TIMEOUT_MS (60s) since it produces ~6500 output
+// tokens. Worst case 5 × 45s + 60s = 285s, fits under the 300s
+// Hobby ceiling. Hitting the cap raises llm_invalid_output rather
+// than letting the loop balloon further.
+const MAX_ITERATIONS = 6;
+// Per-iteration timeout for SEARCH iterations (anything that isn't
+// the final submit_application emission). 45s is generous-but-
+// bounded for Flash's typical search-iteration latency of ~3-5s,
+// while leaving budget for slower outliers.
 //
 // We DO NOT rely on the OpenAI SDK's `{ timeout: ... }` option
 // alone — observed in production 2026-05-03: a call-llm step
@@ -131,12 +138,21 @@ const MAX_ITERATIONS = 4;
 // Both are kept (`{ timeout }` as the SDK's best-effort attempt,
 // the race as the airtight backstop) so the inner controller can
 // also try to abort the in-flight fetch.
-const CHAT_COMPLETION_TIMEOUT_MS = 60_000;
+const CHAT_COMPLETION_TIMEOUT_MS = 45_000;
+// Per-iteration timeout for the FINAL submit_application emission.
+// This iteration generates the entire structured payload (~6500
+// output tokens) so it needs more headroom than search iterations.
+// 60s on Flash is sufficient — observed ~25s on Pro's pre-disable
+// runs; Flash without reasoning should be comparable or faster.
+// Pro hit a 60s wall on the same emission shape; Flash's ~5x
+// throughput lift is the entire reason this works.
+const FINAL_ITERATION_TIMEOUT_MS = 60_000;
 // Global wall clock on the entire callLLM() execution. Hard-stops
 // the whole step before the Vercel function ceiling kicks in.
-// 240s leaves ~60s headroom under the 300s Hobby ceiling for the
-// rest of the pipeline (downstream steps + Inngest overhead).
-const TOTAL_LOOP_BUDGET_MS = 240_000;
+// 270s leaves 30s headroom under the 300s Hobby ceiling for the
+// rest of the pipeline (validate, quality, render, upload,
+// finalize ≈ 10-15s + Inngest step overhead).
+const TOTAL_LOOP_BUDGET_MS = 270_000;
 
 const WEB_SEARCH_TOOL_NAME = "web_search";
 
@@ -264,10 +280,17 @@ export class DeepseekProvider implements LlmProvider {
         // The SDK's `{ timeout }` option is best-effort but observed
         // unreliable on Vercel (2026-05-03 incident: 14+ min hang
         // with no thrown error). The race below guarantees a thrown
-        // ApiError after CHAT_COMPLETION_TIMEOUT_MS regardless.
+        // ApiError after the timeout regardless.
+        // Final iteration (the submit_application emission) gets a
+        // longer timeout because it generates ~6500 output tokens
+        // versus ~100 for a search-iteration tool_call.
+        const isFinalIteration = iteration === MAX_ITERATIONS - 1;
+        const iterationTimeoutMs = isFinalIteration
+          ? FINAL_ITERATION_TIMEOUT_MS
+          : CHAT_COMPLETION_TIMEOUT_MS;
         const abortController = new AbortController();
         const sdkPromise = client.chat.completions.create(requestBody, {
-          timeout: CHAT_COMPLETION_TIMEOUT_MS,
+          timeout: iterationTimeoutMs,
           signal: abortController.signal,
         });
         let timeoutHandle: NodeJS.Timeout | undefined;
@@ -277,10 +300,10 @@ export class DeepseekProvider implements LlmProvider {
             reject(
               new ApiError(
                 "llm_failed",
-                `DeepSeek chat completion exceeded ${CHAT_COMPLETION_TIMEOUT_MS}ms (iteration ${iteration})`,
+                `DeepSeek chat completion exceeded ${iterationTimeoutMs}ms (iteration ${iteration})`,
               ),
             );
-          }, CHAT_COMPLETION_TIMEOUT_MS);
+          }, iterationTimeoutMs);
         });
         try {
           response = await Promise.race([sdkPromise, timeoutPromise]);
@@ -458,7 +481,7 @@ async function runWebSearch(
       didSearch: false,
       content: JSON.stringify({
         error:
-          "web_search budget exhausted (3 calls maximum). " +
+          "web_search budget exhausted (5 calls maximum). " +
           "Proceed with the information already gathered.",
       }),
     };
@@ -541,9 +564,10 @@ function webSearchToolDef(): OpenAI.Chat.Completions.ChatCompletionTool {
         "research (Phase 2: about-page, recent news, industry context) " +
         "and salary research (Phase 4). Returns a list of {title, url, " +
         "content} results; the content is a short snippet, not the full " +
-        "page. Hard cap of 3 calls per generation — typical use is " +
-        "1 about-page call + 1 news call + 1 salary call. The 4th call " +
-        "returns a budget-exhausted error; plan accordingly.",
+        "page. Hard cap of 5 calls per generation — typical use is " +
+        "2 Phase-2 calls + 2-3 Phase-4 calls (salary needs triangulation " +
+        "across multiple sources). The 6th call returns a budget-" +
+        "exhausted error; plan accordingly.",
       parameters: {
         type: "object",
         properties: {
