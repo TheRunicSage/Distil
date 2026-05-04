@@ -268,6 +268,20 @@ export class DeepseekProvider implements LlmProvider {
         // disable flag on a given call, the loop won't 400 on the
         // next iteration. When disable takes effect, reasoning_content
         // is absent from responses and the passthrough is a no-op.
+        // temperature: 0.4 is below DeepSeek's default of 1.0,
+        // chosen for hallucination control rather than narrative
+        // flair. Once thinking mode is disabled (which we always
+        // do for V4-Flash), `temperature` becomes effective —
+        // per the DeepSeek API reference, sampling parameters
+        // are no-ops when thinking is enabled. Lower temperature
+        // tightens the model's output to the prompt and the
+        // master CV / search results, reducing the model's
+        // tendency to invent generic plausible-sounding sentences
+        // (§5.4 hallucination class). Quality of structured
+        // output (CV fields, fit assessment, salary band) is
+        // unchanged at 0.4. Cover-letter prose loses some
+        // expressive variation but gains correctness — the right
+        // tradeoff per the user's "no hallucinations" priority.
         const requestBody = {
           model: MODEL,
           max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
@@ -275,6 +289,7 @@ export class DeepseekProvider implements LlmProvider {
           tools,
           tool_choice: toolChoice,
           thinking: { type: "disabled" },
+          temperature: 0.4,
         } as unknown as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming;
         // Race the SDK call against a manual timer + AbortController.
         // The SDK's `{ timeout }` option is best-effort but observed
