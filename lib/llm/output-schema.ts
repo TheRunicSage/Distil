@@ -49,6 +49,28 @@
 // caps where the prompt and schema agree the upper bound is content
 // quality (e.g. paragraphs.max(5), what_we_did_checklist.max(8)).
 //
+// 2026-05-05 strictness audit (technical_skills empty-group pass).
+// Real failure: model emitted a technical_skills group at index 5
+// with an empty skills array, tripping the inner array's min(1)
+// guard. Same pattern as the cover-letter paragraphs preprocess
+// (2026-05-01) and research_summary nullable strings (2026-05-03):
+// strict validation on shapes the model occasionally emits with
+// edge-case empties. Two-layer preprocess applied:
+//   - Per-group: skills filtered to drop non-string and
+//     empty/whitespace-only entries before min/max bounds run.
+//   - Per-array: groups with empty category or zero usable skills
+//     are stripped before the outer min(1).max(8) bounds run.
+// Net effect: a group with a typo'd empty entry still validates
+// (entry stripped); a genuinely-orphan group is silently dropped
+// rather than failing the whole generation. min(1) on the outer
+// array still catches the truly-empty case (no groups at all).
+// Other CV array-of-non-empty-string fields (professional_experience.
+// bullets, key_projects.bullets, key_projects.technologies,
+// education.details, leadership_and_interests) NOT preprocessed in
+// this pass — no failure evidence yet, deferred per the targeted-
+// fix-per-surfaced-failure discipline. Re-audit if any surface in
+// future request_logs.metadata.zod_issues.
+//
 // 2026-05-03 strictness audit (research_summary metadata pass).
 // Real failure: model emitted explicit null on
 // research_summary.company_reference_note, tripping the schema's
@@ -181,9 +203,25 @@ const ContactDetailsSchema = z.object({
   availability: z.string().min(1).max(120),
 });
 
+// TechnicalSkillsGroupSchema: skills array is preprocess-filtered
+// to drop non-string and empty/whitespace-only entries before the
+// min/max bounds run. Real failure 2026-05-05: model emitted a
+// group at index 5 with an empty skills array, dropping the whole
+// generation. The min(1) is still enforced post-filter — a group
+// the model emits with no actual skill content is genuinely empty
+// and gets caught by the outer technical_skills preprocess (which
+// strips empty groups before applying the array's min/max bounds).
 const TechnicalSkillsGroupSchema = z.object({
   category: z.string().min(1).max(120),
-  skills: z.array(z.string().min(1).max(160)).min(1).max(20),
+  skills: z.preprocess(
+    (val) =>
+      Array.isArray(val)
+        ? val.filter(
+            (s) => typeof s === "string" && s.trim().length > 0,
+          )
+        : val,
+    z.array(z.string().min(1).max(160)).min(1).max(20),
+  ),
 });
 
 const ProfessionalExperienceItemSchema = z.object({
@@ -229,7 +267,35 @@ const CvContentSchema = z.object({
   // graduate profiles can land below 150 chars. Renderer / quality
   // scan still flag short profiles via the sentence-bound check.
   profile: z.string().min(100).max(1400),
-  technical_skills: z.array(TechnicalSkillsGroupSchema).min(1).max(8),
+  // technical_skills: preprocess strips groups that have no usable
+  // category or no usable skills *before* the array's min/max bounds
+  // are applied. Pairs with the per-group skills preprocess above:
+  // a group whose skills filter to empty would otherwise fail
+  // min(1) on the inner array; here we drop it entirely so the
+  // CV still validates with the remaining groups. min(1) on the
+  // outer array catches the genuinely-empty case (no groups at
+  // all) which would correctly fail.
+  technical_skills: z.preprocess(
+    (val) =>
+      Array.isArray(val)
+        ? val.filter((g) => {
+            if (typeof g !== "object" || g === null) return false;
+            const group = g as { category?: unknown; skills?: unknown };
+            const category =
+              typeof group.category === "string"
+                ? group.category.trim()
+                : "";
+            if (category.length === 0) return false;
+            const skills = Array.isArray(group.skills)
+              ? group.skills.filter(
+                  (s) => typeof s === "string" && s.trim().length > 0,
+                )
+              : [];
+            return skills.length > 0;
+          })
+        : val,
+    z.array(TechnicalSkillsGroupSchema).min(1).max(8),
+  ),
   professional_experience: z
     .array(ProfessionalExperienceItemSchema)
     .min(1)
