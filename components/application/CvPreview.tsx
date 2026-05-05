@@ -23,7 +23,7 @@ function pipe(parts: ReadonlyArray<string | null | undefined>): string {
 
 export function CvPreview({ content }: Props) {
   return (
-    <article className="rounded-lg border border-l-border bg-l-bg p-14 font-sans text-l-text shadow-card">
+    <article className="rounded-lg border border-l-border bg-l-bg p-14 font-sans text-l-text leading-[1.15] shadow-card">
       <header data-page-section>
         <h1 className="text-2xl font-bold leading-tight">
           {content.contact_details.full_name}
@@ -52,7 +52,7 @@ export function CvPreview({ content }: Props) {
       </header>
 
       <Section title="Profile">
-        <p className="text-sm leading-relaxed">{content.profile}</p>
+        <p className="text-sm">{content.profile}</p>
       </Section>
 
       {content.technical_skills.length > 0 && (
