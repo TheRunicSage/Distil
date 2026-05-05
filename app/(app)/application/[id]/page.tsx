@@ -13,7 +13,11 @@
 
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AlarmClockOffIcon, CheckCircleIcon } from "lucide-react";
+import {
+  AlarmClockOffIcon,
+  CheckCircleIcon,
+  DownloadIcon,
+} from "lucide-react";
 import { CopyId } from "@/components/app/CopyId";
 import { ApplicationLiveView } from "@/components/application/ApplicationLiveView";
 import { CoverLetterPreview } from "@/components/application/CoverLetterPreview";
@@ -265,47 +269,46 @@ function SuccessView({
         </ul>
       </section>
 
-      <section className="flex flex-wrap items-center gap-3">
-        <a
-          href={`/api/applications/${applicationId}/download/cv`}
-          className="btn-primary"
-        >
-          Download CV
-        </a>
-        <a
-          href={`/api/applications/${applicationId}/download/cover_letter`}
-          className="btn-primary"
-        >
-          Download cover letter
-        </a>
-        {filesExpireAt && (
-          <span className="text-meta">
-            Files available until{" "}
-            {new Date(filesExpireAt).toLocaleDateString("en-NZ", {
-              timeZone: "Pacific/Auckland",
-            })}
-          </span>
-        )}
-      </section>
-
       {/* Side-by-side previews. The (app) layout caps content at 720px;
           this section breaks out to ~viewport width via a 50vw negative-
           margin trick so the CV and cover letter sit next to each other
-          on wide screens. Stacks vertically below 1024px. Always-open —
-          previously each was inside a <details> the user had to expand. */}
+          on wide screens. Stacks vertically below 1024px. Each preview
+          panel has its own download icon button at the top-right of
+          the panel header, so the action sits next to the artefact it
+          downloads instead of in a separate buttons row above. */}
       <section className="relative left-1/2 right-1/2 -mx-[50vw] w-screen px-6">
         <div className="mx-auto max-w-[1280px]">
           {/* `items-start` keeps each card at its content height so the
               cover letter doesn't stretch to match the CV's longer body. */}
           <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
             <div className="surface-card">
-              <p className="eyebrow mb-4">CV preview</p>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <p className="eyebrow">CV preview</p>
+                <a
+                  href={`/api/applications/${applicationId}/download/cv`}
+                  aria-label="Download CV"
+                  title="Download CV"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-orange text-white transition-colors hover:bg-orange-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40"
+                >
+                  <DownloadIcon size={16} aria-hidden />
+                </a>
+              </div>
               <PagedPreview ariaLabel="CV preview, paginated">
                 <CvPreview content={success.cv_content} />
               </PagedPreview>
             </div>
             <div className="surface-card">
-              <p className="eyebrow mb-4">Cover letter preview</p>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <p className="eyebrow">Cover letter preview</p>
+                <a
+                  href={`/api/applications/${applicationId}/download/cover_letter`}
+                  aria-label="Download cover letter"
+                  title="Download cover letter"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-orange text-white transition-colors hover:bg-orange-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40"
+                >
+                  <DownloadIcon size={16} aria-hidden />
+                </a>
+              </div>
               <PagedPreview ariaLabel="Cover letter preview, paginated">
                 <CoverLetterPreview
                   content={success.cover_letter_content}
@@ -332,6 +335,15 @@ function SuccessView({
         <p className="mt-3 text-xs text-muted-foreground">
           Send it through and back yourself.
         </p>
+        {filesExpireAt && (
+          <p className="mt-6 text-[11px] text-muted-foreground/70">
+            Files available until{" "}
+            {new Date(filesExpireAt).toLocaleDateString("en-NZ", {
+              timeZone: "Pacific/Auckland",
+            })}
+            .
+          </p>
+        )}
       </section>
     </div>
   );

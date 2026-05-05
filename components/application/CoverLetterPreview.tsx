@@ -15,7 +15,7 @@ function pipe(parts: ReadonlyArray<string | null | undefined>): string {
 
 export function CoverLetterPreview({ content }: Props) {
   return (
-    <article className="rounded-lg border border-l-border bg-l-bg p-10 font-sans text-l-text shadow-card">
+    <article className="rounded-lg border border-l-border bg-l-bg p-14 font-sans text-l-text shadow-card">
       <header data-page-section>
         <p className="font-semibold">{content.header.full_name}</p>
         <p className="text-xs text-l-mid">
