@@ -5,6 +5,7 @@
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { DownloadIcon } from "lucide-react";
 import { signOut } from "@/app/(auth)/login/actions";
 import { DeleteAccountForm } from "@/components/settings/DeleteAccountForm";
 import { createClient } from "@/lib/supabase/server";
@@ -96,8 +97,17 @@ export default async function SettingsPage() {
               queue. They keep using the snapshot from when they were
               submitted.
             </p>
+            {/* Download routes through /api/master-cv/download which
+                redirects to a 60-second signed Supabase URL. Icon
+                button for primary affordance; "Replace" stays
+                secondary so the read action reads first. */}
             <div className="mt-7 flex flex-wrap gap-3">
-              <a href="/api/master-cv/download" className="btn-primary">
+              <a
+                href="/api/master-cv/download"
+                className="btn-primary"
+                aria-label="Download your master CV"
+              >
+                <DownloadIcon size={18} aria-hidden />
                 Download CV
               </a>
               <Link href="/upload" className="btn-secondary">
