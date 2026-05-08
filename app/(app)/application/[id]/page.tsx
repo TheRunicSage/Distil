@@ -13,16 +13,12 @@
 
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import {
-  AlarmClockOffIcon,
-  CheckCircleIcon,
-  DownloadIcon,
-} from "lucide-react";
+import { AlarmClockOffIcon, CheckCircleIcon } from "lucide-react";
 import { CopyId } from "@/components/app/CopyId";
 import { ApplicationLiveView } from "@/components/application/ApplicationLiveView";
 import { CoverLetterPreview } from "@/components/application/CoverLetterPreview";
 import { CvPreview } from "@/components/application/CvPreview";
-import { PagedPreview } from "@/components/application/PagedPreview";
+import { PreviewPanel } from "@/components/application/PreviewPanel";
 import { RetryAbandonControls } from "@/components/application/RetryAbandonControls";
 import { RetryFailedButton } from "@/components/application/RetryFailedButton";
 import { createClient } from "@/lib/supabase/server";
@@ -265,52 +261,39 @@ function SuccessView({
         </ul>
       </section>
 
-      {/* Side-by-side previews. The (app) layout caps content at 720px;
+      {/* Side-by-side previews. The (app) layout caps content at 800px;
           this section breaks out to ~viewport width via a 50vw negative-
           margin trick so the CV and cover letter sit next to each other
           on wide screens. Stacks vertically below 1024px. Each preview
-          panel has its own download icon button at the top-right of
-          the panel header, so the action sits next to the artefact it
-          downloads instead of in a separate buttons row above. */}
+          panel renders inside PreviewPanel, which carries its own zoom
+          + download icon buttons in the card header (zoom opens a
+          full-viewport modal with the same preview). The CV preview
+          is a continuous scroll inside a max-height frame; the cover
+          letter is one A4 page (CoverLetterPreview's own min-height
+          fills the card naturally). */}
       <section className="relative left-1/2 right-1/2 -mx-[50vw] w-screen px-6">
         <div className="mx-auto max-w-[1280px]">
           {/* `items-start` keeps each card at its content height so the
               cover letter doesn't stretch to match the CV's longer body. */}
           <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
-            <div className="surface-card">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <p className="eyebrow">CV preview</p>
-                <a
-                  href={`/api/applications/${applicationId}/download/cv`}
-                  aria-label="Download CV"
-                  title="Download CV"
-                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-orange text-white transition-colors hover:bg-orange-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40"
-                >
-                  <DownloadIcon size={16} aria-hidden />
-                </a>
-              </div>
-              <PagedPreview ariaLabel="CV preview, paginated">
-                <CvPreview content={success.cv_content} />
-              </PagedPreview>
-            </div>
-            <div className="surface-card">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <p className="eyebrow">Cover letter preview</p>
-                <a
-                  href={`/api/applications/${applicationId}/download/cover_letter`}
-                  aria-label="Download cover letter"
-                  title="Download cover letter"
-                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-orange text-white transition-colors hover:bg-orange-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40"
-                >
-                  <DownloadIcon size={16} aria-hidden />
-                </a>
-              </div>
-              <PagedPreview ariaLabel="Cover letter preview, paginated">
-                <CoverLetterPreview
-                  content={success.cover_letter_content}
-                />
-              </PagedPreview>
-            </div>
+            <PreviewPanel
+              eyebrow="CV preview"
+              downloadHref={`/api/applications/${applicationId}/download/cv`}
+              downloadLabel="Download CV"
+              zoomLabel="Open CV in full screen"
+              scrollMaxHeight="max-h-[900px]"
+            >
+              <CvPreview content={success.cv_content} />
+            </PreviewPanel>
+            <PreviewPanel
+              eyebrow="Cover letter preview"
+              downloadHref={`/api/applications/${applicationId}/download/cover_letter`}
+              downloadLabel="Download cover letter"
+              zoomLabel="Open cover letter in full screen"
+              scrollMaxHeight="max-h-[900px]"
+            >
+              <CoverLetterPreview content={success.cover_letter_content} />
+            </PreviewPanel>
           </div>
         </div>
       </section>

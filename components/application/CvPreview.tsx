@@ -23,33 +23,40 @@ function pipe(parts: ReadonlyArray<string | null | undefined>): string {
 
 export function CvPreview({ content }: Props) {
   return (
-    <article className="rounded-lg border border-l-border bg-l-bg p-14 font-sans text-l-text leading-[1.15] shadow-card">
-      <header data-page-section>
-        <h1 className="text-2xl font-bold leading-tight">
-          {content.contact_details.full_name}
-        </h1>
-        <p className="mt-2 border-b border-l-border pb-2 text-xs text-l-mid">
-          {pipe([
-            content.contact_details.location,
-            content.contact_details.email,
-            content.contact_details.phone,
-            content.contact_details.linkedin,
-          ])}
-          {content.contact_details.work_rights || content.contact_details.availability ? (
-            <>
-              <br />
-              {pipe([
-                content.contact_details.work_rights
-                  ? `Work Rights: ${content.contact_details.work_rights}`
-                  : null,
-                content.contact_details.availability
-                  ? `Availability: ${content.contact_details.availability}`
-                  : null,
-              ])}
-            </>
-          ) : null}
-        </p>
-      </header>
+    <article className="overflow-hidden rounded-lg border border-l-border bg-l-bg font-sans text-l-text leading-[1.15] shadow-card">
+      {/* Brand band — full-width orange stripe at the top of the
+          paper. Gives the preview a Distil signature without
+          interfering with ATS-relevant content (the DOCX is the
+          canonical artefact; the preview is allowed to read more
+          on-brand than the parsed download). */}
+      <div className="h-1.5 bg-orange" aria-hidden />
+      <div className="p-14">
+        <header data-page-section>
+          <h1 className="text-2xl font-bold leading-tight">
+            {content.contact_details.full_name}
+          </h1>
+          <p className="mt-2 border-b-2 border-orange/40 pb-2 text-xs text-l-mid">
+            {pipe([
+              content.contact_details.location,
+              content.contact_details.email,
+              content.contact_details.phone,
+              content.contact_details.linkedin,
+            ])}
+            {content.contact_details.work_rights || content.contact_details.availability ? (
+              <>
+                <br />
+                {pipe([
+                  content.contact_details.work_rights
+                    ? `Work Rights: ${content.contact_details.work_rights}`
+                    : null,
+                  content.contact_details.availability
+                    ? `Availability: ${content.contact_details.availability}`
+                    : null,
+                ])}
+              </>
+            ) : null}
+          </p>
+        </header>
 
       <Section title="Profile">
         <p className="text-sm">{content.profile}</p>
@@ -149,9 +156,10 @@ export function CvPreview({ content }: Props) {
         </Section>
       )}
 
-      <Section title="Referees">
-        <p className="text-sm">{content.referees}</p>
-      </Section>
+        <Section title="Referees">
+          <p className="text-sm">{content.referees}</p>
+        </Section>
+      </div>
     </article>
   );
 }
@@ -165,7 +173,7 @@ function Section({
 }) {
   return (
     <section className="mt-6" data-page-section>
-      <h2 className="border-b border-l-border pb-1 text-xs font-bold uppercase tracking-[0.08em] text-orange">
+      <h2 className="border-b-2 border-orange/30 pb-1 text-xs font-bold uppercase tracking-[0.08em] text-orange">
         {title}
       </h2>
       <div className="mt-2.5">{children}</div>
