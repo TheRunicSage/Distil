@@ -96,7 +96,10 @@ export default async function SettingsPage() {
               queue. They keep using the snapshot from when they were
               submitted.
             </p>
-            <div className="mt-5">
+            <div className="mt-5 flex flex-wrap gap-3">
+              <a href="/api/master-cv/download" className="btn-primary">
+                Download CV
+              </a>
               <Link href="/upload" className="btn-secondary">
                 Replace master CV
               </Link>

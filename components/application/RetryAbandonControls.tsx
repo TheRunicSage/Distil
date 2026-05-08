@@ -32,7 +32,7 @@ export function RetryAbandonControls({
   async function callRoute(
     path: string,
     body?: Record<string, unknown>,
-  ): Promise<boolean> {
+  ): Promise<{ ok: boolean; data: unknown }> {
     setPending(true);
     setError(null);
     try {
@@ -41,42 +41,49 @@ export function RetryAbandonControls({
         headers: { "Content-Type": "application/json" },
         body: body ? JSON.stringify(body) : "{}",
       });
+      const data = await res.json().catch(() => null);
       if (!res.ok) {
-        const errBody = await res.json().catch(() => null);
-        setError(errBody?.error?.message ?? "Action failed. Try again.");
+        setError(
+          (data as { error?: { message?: string } } | null)?.error?.message ??
+            "Action failed. Try again.",
+        );
         setPending(false);
-        return false;
+        return { ok: false, data: null };
       }
-      return true;
+      return { ok: true, data };
     } catch {
       setError("Network error. Try again.");
       setPending(false);
-      return false;
+      return { ok: false, data: null };
     }
   }
 
   async function retry(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const ok = await callRoute(`/api/applications/${applicationId}/retry`, {
-      job_description: jd,
-      user_notes: notes.trim() || undefined,
-      use_new_master_cv: useNewCv,
-    });
+    const { ok, data } = await callRoute(
+      `/api/applications/${applicationId}/retry`,
+      {
+        job_description: jd,
+        user_notes: notes.trim() || undefined,
+        use_new_master_cv: useNewCv,
+      },
+    );
     if (ok) {
-      const data = (await fetch("/api/applications/" + applicationId)
-        .then((r) => r.json())
-        .catch(() => null)) as { id?: string } | null;
-      // The retry route returns the new id; we already navigated here
-      // with the parent id, so simplest is to bounce back to dashboard
-      // and let the dashboard list show the new queued item.
-      router.push("/dashboard");
+      // The retry route returns { id, parent_application_id, attempt_number }
+      // for the new row. Navigate the user to that new generation's
+      // detail page so they can watch it run, instead of bouncing back
+      // to /dashboard and losing context. Falls back to /dashboard if
+      // the response shape is unexpected.
+      const newId = (data as { id?: string } | null)?.id;
+      router.push(newId ? `/application/${newId}` : "/dashboard");
       router.refresh();
-      void data;
     }
   }
 
   async function abandon() {
-    const ok = await callRoute(`/api/applications/${applicationId}/abandon`);
+    const { ok } = await callRoute(
+      `/api/applications/${applicationId}/abandon`,
+    );
     if (ok) {
       router.push("/dashboard");
       router.refresh();
