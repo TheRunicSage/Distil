@@ -260,57 +260,70 @@ export class DeepseekProvider implements LlmProvider {
 
       let response: OpenAI.Chat.Completions.ChatCompletion;
       const iterStartedAt = Date.now();
-      try {
-        // thinking: { type: "disabled" } is the documented disable
-        // flag per
-        // https://api-docs.deepseek.com/api/create-chat-completion
-        // ("Setting type to enabled uses thinking mode, while
-        // disabled uses non-thinking mode"). Sent as a top-level
-        // body field — DeepSeek accepts it directly per their cURL
-        // examples; the Python SDK exposes it as extra_body but the
-        // Node SDK forwards extra body keys verbatim. We use a cast
-        // because the OpenAI SDK's type omits the field.
-        // We KEEP the reasoning_content passthrough on assistant
-        // messages (extractReasoning + assistantMessage block below)
-        // as a defence-in-depth measure: if the gateway ignores the
-        // disable flag on a given call, the loop won't 400 on the
-        // next iteration. When disable takes effect, reasoning_content
-        // is absent from responses and the passthrough is a no-op.
-        // temperature: 0.4 is below DeepSeek's default of 1.0,
-        // chosen for hallucination control rather than narrative
-        // flair. Once thinking mode is disabled (which we always
-        // do for V4-Flash), `temperature` becomes effective —
-        // per the DeepSeek API reference, sampling parameters
-        // are no-ops when thinking is enabled. Lower temperature
-        // tightens the model's output to the prompt and the
-        // master CV / search results, reducing the model's
-        // tendency to invent generic plausible-sounding sentences
-        // (§5.4 hallucination class). Quality of structured
-        // output (CV fields, fit assessment, salary band) is
-        // unchanged at 0.4. Cover-letter prose loses some
-        // expressive variation but gains correctness — the right
-        // tradeoff per the user's "no hallucinations" priority.
-        const requestBody = {
-          model: MODEL,
-          max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
-          messages,
-          tools,
-          tool_choice: toolChoice,
-          thinking: { type: "disabled" },
-          temperature: 0.4,
-        } as unknown as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming;
-        // Race the SDK call against a manual timer + AbortController.
-        // The SDK's `{ timeout }` option is best-effort but observed
-        // unreliable on Vercel (2026-05-03 incident: 14+ min hang
-        // with no thrown error). The race below guarantees a thrown
-        // ApiError after the timeout regardless.
-        // Final iteration (the submit_application emission) gets a
-        // longer timeout because it generates ~6500 output tokens
-        // versus ~100 for a search-iteration tool_call.
-        const isFinalIteration = iteration === MAX_ITERATIONS - 1;
-        const iterationTimeoutMs = isFinalIteration
-          ? FINAL_ITERATION_TIMEOUT_MS
-          : CHAT_COMPLETION_TIMEOUT_MS;
+      // thinking: { type: "disabled" } is the documented disable
+      // flag per
+      // https://api-docs.deepseek.com/api/create-chat-completion
+      // ("Setting type to enabled uses thinking mode, while
+      // disabled uses non-thinking mode"). Sent as a top-level
+      // body field — DeepSeek accepts it directly per their cURL
+      // examples; the Python SDK exposes it as extra_body but the
+      // Node SDK forwards extra body keys verbatim. We use a cast
+      // because the OpenAI SDK's type omits the field.
+      // We KEEP the reasoning_content passthrough on assistant
+      // messages (extractReasoning + assistantMessage block below)
+      // as a defence-in-depth measure: if the gateway ignores the
+      // disable flag on a given call, the loop won't 400 on the
+      // next iteration. When disable takes effect, reasoning_content
+      // is absent from responses and the passthrough is a no-op.
+      // temperature: 0.4 is below DeepSeek's default of 1.0,
+      // chosen for hallucination control rather than narrative
+      // flair. Once thinking mode is disabled (which we always
+      // do for V4-Flash), `temperature` becomes effective —
+      // per the DeepSeek API reference, sampling parameters
+      // are no-ops when thinking is enabled. Lower temperature
+      // tightens the model's output to the prompt and the
+      // master CV / search results, reducing the model's
+      // tendency to invent generic plausible-sounding sentences
+      // (§5.4 hallucination class). Quality of structured
+      // output (CV fields, fit assessment, salary band) is
+      // unchanged at 0.4. Cover-letter prose loses some
+      // expressive variation but gains correctness — the right
+      // tradeoff per the user's "no hallucinations" priority.
+      const requestBody = {
+        model: MODEL,
+        max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
+        messages,
+        tools,
+        tool_choice: toolChoice,
+        thinking: { type: "disabled" },
+        temperature: 0.4,
+      } as unknown as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming;
+      // Final iteration (the submit_application emission) gets a
+      // longer timeout because it generates ~6500 output tokens
+      // versus ~100 for a search-iteration tool_call.
+      const isFinalIteration = iteration === MAX_ITERATIONS - 1;
+      const iterationTimeoutMs = isFinalIteration
+        ? FINAL_ITERATION_TIMEOUT_MS
+        : CHAT_COMPLETION_TIMEOUT_MS;
+
+      // Race the SDK call against a manual timer + AbortController.
+      // The SDK's `{ timeout }` option is best-effort but observed
+      // unreliable on Vercel (2026-05-03 incident: 14+ min hang
+      // with no thrown error). The race below guarantees a thrown
+      // ApiError after the timeout regardless.
+      //
+      // 2026-05-08 retry-once-on-timeout (Decision Log [8]). Real
+      // failure: two concurrent generations both timed out at iter 0
+      // > 60s, while 4 other generations in the same 6-hour window
+      // succeeded normally. Diagnosis: DeepSeek's API has
+      // intermittent slow first-calls; the typical regime is fine
+      // (~5-15s per search iter) but a single bad call shouldn't
+      // kill the whole generation. On the first timeout in any
+      // iter, we retry once with a fresh AbortController. The
+      // total wall-clock guard (TOTAL_LOOP_BUDGET_MS=270s) is still
+      // the real ceiling, so an iter that retries doesn't get
+      // unlimited budget — just one extra swing.
+      async function attemptOnce(): Promise<OpenAI.Chat.Completions.ChatCompletion> {
         const abortController = new AbortController();
         const sdkPromise = client.chat.completions.create(requestBody, {
           timeout: iterationTimeoutMs,
@@ -329,9 +342,55 @@ export class DeepseekProvider implements LlmProvider {
           }, iterationTimeoutMs);
         });
         try {
-          response = await Promise.race([sdkPromise, timeoutPromise]);
+          return await Promise.race([sdkPromise, timeoutPromise]);
         } finally {
           if (timeoutHandle) clearTimeout(timeoutHandle);
+        }
+      }
+
+      // Detect whether an ApiError came from our timeout race
+      // specifically (vs other ApiError shapes thrown by callers).
+      // Only timeouts are retryable — other errors (HTTP 4xx/5xx,
+      // network failures, etc.) get thrown immediately.
+      function isTimeoutApiError(err: unknown): boolean {
+        return (
+          err instanceof ApiError &&
+          typeof err.message === "string" &&
+          /DeepSeek chat completion exceeded \d+ms/.test(err.message)
+        );
+      }
+
+      try {
+        try {
+          response = await attemptOnce();
+        } catch (firstErr) {
+          if (isTimeoutApiError(firstErr)) {
+            const firstDuration = Date.now() - iterStartedAt;
+            console.warn(
+              "[deepseek.callLLM] iter",
+              iteration,
+              "timed out after",
+              firstDuration,
+              "ms — retrying once for app",
+              opts.applicationId,
+            );
+            try {
+              response = await attemptOnce();
+            } catch (secondErr) {
+              if (isTimeoutApiError(secondErr)) {
+                // Both attempts timed out — surface a distinct
+                // message so the request_logs failure is recognisable
+                // as a retry-failed shape vs a single-shot timeout.
+                throw new ApiError(
+                  "llm_failed",
+                  `DeepSeek chat completion exceeded ${iterationTimeoutMs}ms twice (iteration ${iteration} retry failed)`,
+                );
+              }
+              throw secondErr;
+            }
+          } else {
+            throw firstErr;
+          }
         }
       } catch (err) {
         const iterDuration = Date.now() - iterStartedAt;

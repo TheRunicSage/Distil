@@ -1070,6 +1070,25 @@ What was not changed: helpers' canonical defaults (still SPACING / SIZES, so cov
 
   Test path: next real generation exercises this. If it succeeds, fix held; if it fails with `iter N > 60_000ms`, retry-once-on-timeout (Option C above) becomes the next move. Rollback is a single `git revert`.
 
+[8] DeepSeek retry-once-on-timeout (2026-05-08, follow-up). Real failure later same day: two concurrent generations both timed out at `iteration 0 > 60_000ms`. Different shape from the morning's iter-3 fix:
+
+  - Iter 0 = first call to DeepSeek, messages array is just `[system, user]`, no accumulated context. Output expected ~50-100 tokens (a `web_search` tool call). Healthy iter 0 on Flash should finish in 3-8s. Consistent >60s is base-latency degradation, not tail-latency jitter.
+  - Diagnostic query: `select count(*), avg(web_search_count) from token_usage where created_at > now() - interval '6 hours'` returned 4 successful generations averaging 4.5 web_searches in the same 6-hour window. So DeepSeek wasn't down — the API is intermittently slow on first calls, with most generations completing normally.
+
+  Bumping the timeout further would mask the symptom without fixing it. The right fix is the Option C deferred yesterday — retry-once-on-timeout per iteration. Implementation in `lib/deepseek/provider.ts`:
+
+  - Iter loop's race-against-timeout block extracted into `attemptOnce()` inner function (creates fresh `AbortController` + `Promise.race` per call).
+  - On the first timeout in any iter, log a warn line and call `attemptOnce()` again.
+  - On the second timeout, throw a distinct `ApiError("llm_failed")` with `(iteration N retry failed)` in the message so the failure mode is recognisable in `request_logs` vs a single-shot timeout.
+  - Non-timeout errors (HTTP 4xx/5xx, network failures) throw immediately on the first attempt as before — only timeouts are retryable.
+  - `isTimeoutApiError(err)` discriminates by regex on the message text, narrow enough that no other ApiError shape matches.
+
+  Worst-case wall-clock impact: today's worst case (5 search × 60s + 1 final × 60s = 360s) is already capped by `TOTAL_LOOP_BUDGET_MS=270s`. With retry-once it becomes 5 × 120s + 60s = 660s on paper, still capped at 270s by the wall-clock guard. The total budget stays the real ceiling; retry-once just gives one slow call a second swing inside that ceiling instead of dying on the first miss.
+
+  Next-move ladder if this isn't enough: provider-layer Anthropic failover (Option D from yesterday's DPs — on persistent DeepSeek failure, automatically retry on Anthropic), or temporary `LLM_PROVIDER=anthropic` env-var flip (zero code change, ~$0.29/gen vs ~$0.05/gen). Both deferred until we see whether retry-once holds.
+
+  Rollback: single `git revert`.
+
 [18] Region detection on the fly + universal-floor §8 rewrite (2026-05-08). User-reported: an Australian-visa job came through and the system applied NZ rules (the runtime hardcoded `region: "NZ"` at insert and the prompt's §8 was a NZ-only block). User asked for "research how to cleanly implement that it searches for best practices for that country research on the fly. No region boundation."
 
   Five DPs decided before edits:
