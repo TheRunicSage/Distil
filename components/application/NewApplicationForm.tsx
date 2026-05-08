@@ -104,13 +104,13 @@ export function NewApplicationForm() {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-6">
+    <form onSubmit={submit} className="space-y-7">
       <div>
         <div className="flex items-baseline justify-between">
           <label htmlFor="jd-input" className="eyebrow">
             Job description
           </label>
-          <span className="flex items-baseline gap-3 text-xs">
+          <span className="flex items-baseline gap-3 text-sm">
             <span className={meta.tone}>{meta.label}</span>
             <span className="text-muted-foreground">{jdWords} words</span>
           </span>
@@ -122,15 +122,15 @@ export function NewApplicationForm() {
           required
           rows={16}
           placeholder="Paste the full posting here — title, company, responsibilities, requirements, the whole thing."
-          className="mt-4 block w-full resize-y rounded-2xl border border-border bg-dark2/60 p-6 text-base leading-relaxed text-text backdrop-blur-sm placeholder:text-muted-foreground focus:border-orange/60 focus:outline-none focus:ring-2 focus:ring-orange/20"
+          className="mt-5 block w-full resize-y rounded-2xl border border-border bg-dark2/60 p-7 text-lg leading-relaxed text-text backdrop-blur-sm placeholder:text-muted-foreground focus:border-orange/60 focus:outline-none focus:ring-2 focus:ring-orange/20"
         />
-        <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-dark3">
+        <div className="mt-5 h-2 w-full overflow-hidden rounded-full bg-dark3">
           <div
             className={`h-full transition-all duration-300 ${STRENGTH_BAR[strength]}`}
             style={{ width: `${meta.bar}%` }}
           />
         </div>
-        <p className="mt-3 min-h-[1.5rem] text-sm">
+        <p className="mt-4 min-h-[1.75rem] text-base">
           {strength === "too_short" && (
             <span className="text-danger">
               We need at least {MIN_JD_CHARS} characters before submitting.
@@ -152,7 +152,7 @@ export function NewApplicationForm() {
       </div>
 
       {error && (
-        <p role="alert" className="text-base text-danger">
+        <p role="alert" className="text-lg text-danger">
           {error}
         </p>
       )}
@@ -172,7 +172,7 @@ export function NewApplicationForm() {
           {pending ? "Submitting…" : "Tailor my CV and cover letter"}
         </button>
         {debounced && !pending && (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-base text-muted-foreground">
             Just a sec — preventing duplicate submission.
           </span>
         )}

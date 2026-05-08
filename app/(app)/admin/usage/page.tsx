@@ -197,10 +197,10 @@ export default async function AdminUsagePage({
   const activeProvider = getLlmProvider();
 
   return (
-    <div className="space-y-9">
+    <div className="space-y-10">
       <div>
-        <h1 className="text-3xl font-semibold text-text">Usage</h1>
-        <p className="mt-2 text-base text-muted-foreground">
+        <h1 className="text-4xl font-semibold text-text">Usage</h1>
+        <p className="mt-3 text-lg text-muted-foreground">
           Last 50 applications and the 7-day spend.
         </p>
       </div>
@@ -239,11 +239,11 @@ export default async function AdminUsagePage({
         );
       })()}
 
-      <section className="panel p-7">
-        <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-orange">
+      <section className="panel p-8">
+        <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-orange">
           7-day spend by provider
         </h2>
-        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <ProviderSpend
             label="Anthropic"
             cost={sevenDayByProvider.anthropic}
@@ -275,7 +275,7 @@ export default async function AdminUsagePage({
             <Link
               key={g.key}
               href={href}
-              className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+              className={`rounded-full border px-5 py-2 text-base font-medium transition-colors ${
                 active
                   ? "border-orange/60 bg-[var(--color-orange-subtle)] text-orange"
                   : "border-border bg-dark2/60 text-muted-foreground hover:border-orange/40 hover:text-text"
@@ -288,17 +288,17 @@ export default async function AdminUsagePage({
       </nav>
 
       <section className="panel overflow-x-auto">
-        <table className="w-full table-auto text-base">
-          <thead className="bg-dark2 text-left text-sm font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        <table className="w-full table-auto text-lg">
+          <thead className="bg-dark2 text-left text-base font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             <tr>
-              <th className="whitespace-nowrap px-3 py-3">Created</th>
-              <th className="whitespace-nowrap px-3 py-3">Application</th>
-              <th className="hidden whitespace-nowrap px-3 py-3 lg:table-cell">User</th>
-              <th className="whitespace-nowrap px-3 py-3">Status</th>
-              <th className="hidden whitespace-nowrap px-3 py-3 sm:table-cell">Attempt</th>
-              <th className="hidden whitespace-nowrap px-3 py-3 md:table-cell">Model</th>
-              <th className="whitespace-nowrap px-3 py-3">Duration</th>
-              <th className="whitespace-nowrap px-3 py-3 text-right">Cost</th>
+              <th className="whitespace-nowrap px-3 py-3.5">Created</th>
+              <th className="whitespace-nowrap px-3 py-3.5">Application</th>
+              <th className="hidden whitespace-nowrap px-3 py-3.5 lg:table-cell">User</th>
+              <th className="whitespace-nowrap px-3 py-3.5">Status</th>
+              <th className="hidden whitespace-nowrap px-3 py-3.5 sm:table-cell">Attempt</th>
+              <th className="hidden whitespace-nowrap px-3 py-3.5 md:table-cell">Model</th>
+              <th className="whitespace-nowrap px-3 py-3.5">Duration</th>
+              <th className="whitespace-nowrap px-3 py-3.5 text-right">Cost</th>
             </tr>
           </thead>
           <tbody>
@@ -322,7 +322,7 @@ export default async function AdminUsagePage({
                   key={row.id}
                   className="border-t border-border text-text/90"
                 >
-                  <td className="whitespace-nowrap px-3 py-3.5 text-sm text-muted-foreground">
+                  <td className="whitespace-nowrap px-3 py-4 text-base text-muted-foreground">
                     {new Date(row.created_at).toLocaleString("en-NZ", {
                       timeZone: "Pacific/Auckland",
                       day: "2-digit",
@@ -331,27 +331,27 @@ export default async function AdminUsagePage({
                       minute: "2-digit",
                     })}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-3.5 font-mono text-sm">
+                  <td className="whitespace-nowrap px-3 py-4 font-mono text-base">
                     {row.id.slice(0, 8)}
                   </td>
-                  <td className="hidden whitespace-nowrap px-3 py-3.5 lg:table-cell">
+                  <td className="hidden whitespace-nowrap px-3 py-4 lg:table-cell">
                     <span
-                      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-[11px] font-semibold ${userPillTone(row.user_id)}`}
+                      className={`inline-flex items-center rounded-full border px-3 py-0.5 font-mono text-xs font-semibold ${userPillTone(row.user_id)}`}
                     >
                       {userPillLabel(row.user_id)}
                     </span>
                   </td>
-                  <td className="whitespace-nowrap px-3 py-3.5">
+                  <td className="whitespace-nowrap px-3 py-4">
                     <span
-                      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em] ${tone}`}
+                      className={`inline-flex items-center rounded-full border px-3 py-0.5 text-xs font-bold uppercase tracking-[0.06em] ${tone}`}
                     >
                       {row.status}
                     </span>
                   </td>
-                  <td className="hidden whitespace-nowrap px-3 py-3.5 text-sm sm:table-cell">
+                  <td className="hidden whitespace-nowrap px-3 py-4 text-base sm:table-cell">
                     {row.attempt_number}
                   </td>
-                  <td className="hidden whitespace-nowrap px-3 py-3.5 md:table-cell">
+                  <td className="hidden whitespace-nowrap px-3 py-4 md:table-cell">
                     {(() => {
                       const raw = modelByApp.get(row.id) ?? null;
                       const drift = raw?.endsWith("+");
@@ -359,14 +359,14 @@ export default async function AdminUsagePage({
                       const m = modelLabel(model);
                       return model ? (
                         <span
-                          className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${m.tone}`}
+                          className={`inline-flex items-center rounded-full border px-3 py-0.5 text-xs font-semibold ${m.tone}`}
                           title={drift ? `${m.label} (mixed across attempts)` : m.label}
                         >
                           {m.short}
                           {drift ? "+" : ""}
                         </span>
                       ) : (
-                        <span className="text-[11px] text-muted-foreground">—</span>
+                        <span className="text-xs text-muted-foreground">—</span>
                       );
                     })()}
                   </td>
@@ -374,14 +374,14 @@ export default async function AdminUsagePage({
                     const ms = durationMs(row.started_at, row.completed_at);
                     return (
                       <td
-                        className={`whitespace-nowrap px-3 py-3.5 text-sm font-mono ${durationTone(ms)}`}
+                        className={`whitespace-nowrap px-3 py-4 text-base font-mono ${durationTone(ms)}`}
                       >
                         {formatDuration(ms)}
                       </td>
                     );
                   })()}
                   <td
-                    className={`whitespace-nowrap px-3 py-3.5 text-right font-mono text-sm ${costTone(cost)}`}
+                    className={`whitespace-nowrap px-3 py-4 text-right font-mono text-base ${costTone(cost)}`}
                   >
                     ${cost.toFixed(4)}
                   </td>
@@ -437,19 +437,19 @@ function Stat({
   labelTone?: StatTone;
 }) {
   return (
-    <div className="panel p-5">
+    <div className="panel p-6">
       <p
-        className={`text-xs font-bold uppercase tracking-[0.14em] ${STAT_LABEL_CLASS[labelTone]}`}
+        className={`text-sm font-bold uppercase tracking-[0.16em] ${STAT_LABEL_CLASS[labelTone]}`}
       >
         {label}
       </p>
       <p
-        className={`mt-2 text-3xl font-semibold ${STAT_VALUE_CLASS[tone]}`}
+        className={`mt-3 text-4xl font-semibold ${STAT_VALUE_CLASS[tone]}`}
       >
         {value}
       </p>
       {sub && (
-        <p className="mt-1.5 font-mono text-xs text-muted-foreground">
+        <p className="mt-2 font-mono text-sm text-muted-foreground">
           {sub}
         </p>
       )}
@@ -484,20 +484,20 @@ function ProviderSpend({
   return (
     <div>
       <div className="flex items-baseline justify-between">
-        <span className="text-sm font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        <span className="text-base font-semibold uppercase tracking-[0.08em] text-muted-foreground">
           {label}
         </span>
-        <span className={`font-mono text-base font-semibold ${valueColour}`}>
+        <span className={`font-mono text-lg font-semibold ${valueColour}`}>
           ${cost.toFixed(2)}
         </span>
       </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-dark4">
+      <div className="mt-2.5 h-2.5 overflow-hidden rounded-full bg-dark4">
         <div
           className={`h-full rounded-full ${barColour}`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className="mt-1.5 font-mono text-xs text-muted-foreground">
+      <p className="mt-2 font-mono text-sm text-muted-foreground">
         {pct.toFixed(0)}% of 7-day spend
       </p>
     </div>

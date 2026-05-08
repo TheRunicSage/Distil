@@ -1164,6 +1164,38 @@ What was not changed: helpers' canonical defaults (still SPACING / SIZES, so cov
 
   Rollback: single `git revert` of the audit commit reverts everything atomically. If only one surface is wrong, the per-file edits are clean enough to walk back individually.
 
+[14] Audit pass 2 — second scale-up notch (2026-05-08, follow-up to the same-day audit pass `0f9d2d2`). User-reported via screenshot of `/dashboard`: even after the first audit pass, grey/secondary text (chain row dates, body subtitle, status pills) still reads as too small for one teammate. User asked to "increase size for everything by 1 notch so the grey text is automatically bigger and clearer". DPs A/A/A: continue the manual primitive-by-primitive approach (not a second html bump — that's the failure mode that necessitated the first audit pass), scope to the entire (app) shell in lockstep (not piecemeal), bump headings up too (consistent "everything one notch up" matches the user's literal ask).
+
+  Bumps applied as a single pass on top of `0f9d2d2`:
+
+  | Surface | Bumped |
+  |---|---|
+  | `app/globals.css` design-system primitives | `.eyebrow` / `.eyebrow-muted` text-sm → text-base; `.text-meta` text-[14.5px] → text-base; `.heading-display` text-5xl → text-6xl; `.heading-section` text-3xl → text-4xl; `.surface-row` px-5 py-3.5 → px-6 py-4; `.btn-primary` / `.btn-secondary` / `.btn-disabled-shell` text-base → text-lg + px-6 py-3 → px-7 py-3.5; `.btn-ghost` text-base → text-lg + px-4 py-2 → px-5 py-2.5; `.btn-icon` size-10 → size-11; `.btn-link-orange` text-base → text-lg; `.status-pill` text-[11px] → text-xs + px-2.5 → px-3 |
+  | `app/(app)/layout.tsx` (topbar) | h-[68px] → h-[72px]; px-7 → px-8; wordmark text-3xl → text-4xl; corner badge text-xs → text-sm; main py-14 → py-16; max-w-[760px] → max-w-[800px] |
+  | `components/app/TopbarNav.tsx` | New-app icon size 16 → 18; History link text-base → text-lg + px-4 py-2 → px-5 py-2.5; Settings icon size 18 → 20 + size-10 → size-11 |
+  | `components/app/AdminNav.tsx` | text-base → text-lg + px-4 py-2 → px-5 py-2.5 |
+  | `components/app/ChainCard.tsx` | row gap-4 px-5 py-4 → gap-5 px-6 py-5; title text-base → text-lg; date text-sm → text-base + mt-1 → mt-1.5; status pill bumps via class; download spacer h-9 w-9 → h-10 w-10; details summary text-sm → text-base + px-5 py-2.5 → px-6 py-3; per-attempt list text-sm → text-base + px-5 pb-3.5 → px-6 pb-4 |
+  | `app/(app)/dashboard/page.tsx` | mt-4 → mt-5; subtitle text-base → text-lg; section header gaps mb-5 → mb-6; chain list space-y-2.5 → space-y-3 |
+  | `app/(app)/history/page.tsx` | header mt-4 → mt-5; copy text-base → text-lg + mt-3 → mt-4 |
+  | `app/(app)/upload/page.tsx` | mt-4 → mt-5; copy text-base → text-lg; current-on-file pill text-xs/text-base/text-sm → text-sm/text-lg/text-base + p-6 → p-7; section mt-6 → mt-7 + ProTip mt-7 → mt-8 |
+  | `app/(app)/application/new/page.tsx` | mt-4 → mt-5; copy text-base → text-lg |
+  | `components/application/NewApplicationForm.tsx` | space-y-6 → space-y-7; strength tag text-xs → text-sm; textarea p-6 → p-7 + text-base → text-lg + mt-4 → mt-5; strength bar h-1.5 → h-2 + mt-4 → mt-5; strength caption text-sm → text-base + min-h-[1.5rem] → min-h-[1.75rem]; debounced text text-sm → text-base; error text-base → text-lg |
+  | `app/(app)/application/[id]/page.tsx` | back-link text-sm → text-base; h1 text-xl → text-2xl + mt-3 → mt-4; retry-of text-sm → text-base; insufficient_input + error sections text-xs/text-base → text-sm/text-lg + p-7/p-8 → p-8/p-9 + icon 14/26 → 16/30; abandoned text-base → text-lg + p-7 → p-8; Fit pills text-xs → text-sm + px-3.5 → px-4 + gap-2.5 → gap-3; reasoning text-base → text-lg; warnings list text-base → text-lg + space-y-2 → space-y-2.5 + dot mt-1.5 → mt-2; What-we-did checklist text-base → text-lg + icon 18 → 20 + space-y-3 → space-y-3.5; sign-off serif text-3xl/sm:text-4xl → text-4xl/sm:text-5xl + below text-lg/sm:text-xl → text-xl/sm:text-2xl + caption text-sm → text-base; expiry text-xs → text-sm |
+  | `app/(app)/settings/page.tsx` | dl text-base → text-lg + space-y-2.5 → space-y-3 + mt-5 → mt-6; trailing copy text-sm → text-base; standards list text-base → text-lg + dot h-2 w-2 → h-2.5 w-2.5 + space-y-3.5 → space-y-4; danger-zone heading text-xs → text-sm |
+  | `app/(app)/admin/layout.tsx` | space-y-7 → space-y-8; pb-5 → pb-6; gap-5 → gap-6; "Admin" label text-xs → text-sm + tracking 0.14 → 0.16; back link text-sm → text-base |
+  | `app/(app)/admin/usage/page.tsx` | h1 text-3xl → text-4xl; subtitle text-base → text-lg; section padding p-7 → p-8; status nav text-sm → text-base + px-4 py-1.5 → px-5 py-2; table text-base → text-lg + thead text-sm → text-base; row body text-sm → text-base + py-3.5 → py-4; pills text-[11px] → text-xs + px-2.5 → px-3; Stat helper text-xs/text-3xl/p-5 → text-sm/text-4xl/p-6; ProviderSpend text-sm/text-base/text-xs → text-base/text-lg/text-sm |
+  | `app/(app)/admin/logs/page.tsx` | h1 text-3xl → text-4xl + subtitle text-base → text-lg + space-y-7 → space-y-8; row summary text-sm → text-base + px-5 py-3 → px-6 py-3.5 + gap-3 → gap-4; pills text-[11px] → text-xs + px-2.5 → px-3; details body text-sm → text-base + px-5 py-4 → px-6 py-5; footer gap-3 → gap-4 |
+  | `app/(app)/admin/telemetry/page.tsx` | h1 text-3xl → text-4xl + subtitle text-base → text-lg + space-y-9 → space-y-10; section panels p-7 → p-8 + h2 text-xs → text-sm + tracking 0.14 → 0.16; table text-base → text-lg + thead text-sm → text-base; all `text-sm` cells → `text-base`; pills text-[11px]/px-2 → text-xs/px-2.5; bars h-1.5 → h-2; Stat helper p-5/text-xs/text-3xl → p-6/text-sm/text-4xl |
+  | `app/(app)/admin/users/page.tsx` | h1 text-3xl → text-4xl + subtitle text-base → text-lg + space-y-9 → space-y-10; table text-base → text-lg + thead text-sm → text-base; row text-sm → text-base + py-3.5 → py-4; user pills text-[11px] → text-xs + px-2.5 → px-3; Recent deletions panel p-7/text-xs/text-sm → p-8/text-sm/text-base + py-2.5 → py-3; Stat helper p-5/text-xs/text-3xl → p-6/text-sm/text-4xl |
+
+  `surface-card` p-8 stayed put — already roomy at 32px; widening further would push card content noticeably less wide on the 800px (app) max-width without buying back legibility. The padding bump deferred until we see if a third audit pass is needed.
+
+  Excluded for the same reasons as `0f9d2d2`: `components/application/CvPreview.tsx`, `components/application/CoverLetterPreview.tsx`, `components/application/PagedPreview.tsx` (preview must mirror DOCX, fixed-pixel pagination contract). DOCX renderer (`lib/docx/*`). (auth)/login. Public landing / FAQ.
+
+  Test path: dashboard / history / settings / admin pages compared side-by-side with the `0f9d2d2` deploy. Confirmation that PagedPreview pagination still produces correct page count + controls visibility for both 1-page cover letter and multi-page CV (the previews are excluded so this should be unaffected).
+
+  Rollback: single `git revert`. If only one surface is wrong, per-file edits walk back cleanly.
+
 ---
 
 ## Known Gaps to Watch

@@ -45,10 +45,10 @@ export default async function AdminUsersPage() {
   });
 
   return (
-    <div className="space-y-9">
+    <div className="space-y-10">
       <div>
-        <h1 className="text-3xl font-semibold text-text">Users</h1>
-        <p className="mt-2 text-base text-muted-foreground">
+        <h1 className="text-4xl font-semibold text-text">Users</h1>
+        <p className="mt-3 text-lg text-muted-foreground">
           Every email registered with the app. {sorted.length} total.
         </p>
       </div>
@@ -65,15 +65,15 @@ export default async function AdminUsersPage() {
       </section>
 
       <section className="panel overflow-x-auto">
-        <table className="w-full table-auto text-base">
-          <thead className="bg-dark2 text-left text-sm font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        <table className="w-full table-auto text-lg">
+          <thead className="bg-dark2 text-left text-base font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             <tr>
-              <th className="whitespace-nowrap px-3 py-3">User</th>
-              <th className="whitespace-nowrap px-3 py-3">Email</th>
-              <th className="whitespace-nowrap px-3 py-3">Created</th>
-              <th className="hidden whitespace-nowrap px-3 py-3 lg:table-cell">Last sign-in</th>
-              <th className="hidden whitespace-nowrap px-3 py-3 sm:table-cell">Confirmed</th>
-              <th className="whitespace-nowrap px-3 py-3 text-right">Role</th>
+              <th className="whitespace-nowrap px-3 py-3.5">User</th>
+              <th className="whitespace-nowrap px-3 py-3.5">Email</th>
+              <th className="whitespace-nowrap px-3 py-3.5">Created</th>
+              <th className="hidden whitespace-nowrap px-3 py-3.5 lg:table-cell">Last sign-in</th>
+              <th className="hidden whitespace-nowrap px-3 py-3.5 sm:table-cell">Confirmed</th>
+              <th className="whitespace-nowrap px-3 py-3.5 text-right">Role</th>
             </tr>
           </thead>
           <tbody>
@@ -94,31 +94,31 @@ export default async function AdminUsersPage() {
                   key={u.id}
                   className="border-t border-border text-text/90"
                 >
-                  <td className="whitespace-nowrap px-3 py-3.5">
+                  <td className="whitespace-nowrap px-3 py-4">
                     <span
-                      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-[11px] font-semibold ${userPillTone(u.id)}`}
+                      className={`inline-flex items-center rounded-full border px-3 py-0.5 font-mono text-xs font-semibold ${userPillTone(u.id)}`}
                       title={`user ${u.id}`}
                     >
                       {userPillLabel(u.id)}
                     </span>
                   </td>
-                  <td className="px-3 py-3.5 text-sm">
+                  <td className="px-3 py-4 text-base">
                     {u.email ?? <span className="text-muted-foreground">—</span>}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-3.5 text-sm text-muted-foreground">
+                  <td className="whitespace-nowrap px-3 py-4 text-base text-muted-foreground">
                     {formatDate(u.created_at)}
                   </td>
-                  <td className="hidden whitespace-nowrap px-3 py-3.5 text-sm text-muted-foreground lg:table-cell">
+                  <td className="hidden whitespace-nowrap px-3 py-4 text-base text-muted-foreground lg:table-cell">
                     {formatDate(u.last_sign_in_at ?? null)}
                   </td>
-                  <td className="hidden px-3 py-3.5 text-sm sm:table-cell">
+                  <td className="hidden px-3 py-4 text-base sm:table-cell">
                     {u.email_confirmed_at ? (
                       <span className="text-success">Yes</span>
                     ) : (
                       <span className="text-muted-foreground">No</span>
                     )}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-3.5 text-right text-sm">
+                  <td className="whitespace-nowrap px-3 py-4 text-right text-base">
                     {profile?.is_admin ? (
                       <span className="text-orange">Admin</span>
                     ) : (
@@ -133,19 +133,19 @@ export default async function AdminUsersPage() {
       </section>
 
       {deletions.length > 0 && (
-        <section className="panel p-7">
-          <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-orange">
+        <section className="panel p-8">
+          <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-orange">
             Recent deletions
           </h2>
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-4 text-base text-muted-foreground">
             Email addresses are stored hashed (sha256) for privacy; this list
             shows the timeline only.
           </p>
-          <ul className="mt-5 divide-y divide-border text-sm">
+          <ul className="mt-6 divide-y divide-border text-base">
             {deletions.map((d) => (
               <li
                 key={d.id}
-                className="flex items-center justify-between py-2.5"
+                className="flex items-center justify-between py-3"
               >
                 <span className="font-mono text-text/80">
                   {d.id.slice(0, 8)}
@@ -166,11 +166,11 @@ export default async function AdminUsersPage() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="panel p-5">
-      <p className="text-xs font-bold uppercase tracking-[0.14em] text-orange">
+    <div className="panel p-6">
+      <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange">
         {label}
       </p>
-      <p className="mt-2 text-3xl font-semibold text-text">{value}</p>
+      <p className="mt-3 text-4xl font-semibold text-text">{value}</p>
     </div>
   );
 }

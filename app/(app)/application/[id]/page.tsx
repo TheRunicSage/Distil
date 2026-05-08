@@ -94,16 +94,16 @@ export default async function ApplicationPage({ params }: RouteCtx) {
       <header>
         <Link
           href="/dashboard"
-          className="text-sm text-muted-foreground hover:text-text"
+          className="text-base text-muted-foreground hover:text-text"
         >
           ← Back to Dashboard
         </Link>
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <h1 className="text-xl text-text">Application</h1>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl text-text">Application</h1>
           <CopyId value={id} />
           <span className={`status-pill ${tone}`}>{label}</span>
           {app.parent_application_id && (
-            <span className="text-sm text-muted-foreground">
+            <span className="text-base text-muted-foreground">
               retry of {app.parent_application_id.slice(0, 8)}
             </span>
           )}
@@ -129,16 +129,16 @@ export default async function ApplicationPage({ params }: RouteCtx) {
 
       {app.status === "insufficient_input" && (
         <section className="space-y-6">
-          <div className="rounded-lg border border-warn/25 bg-warn/10 p-7">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-warn">
+          <div className="rounded-lg border border-warn/25 bg-warn/10 p-8">
+            <p className="text-sm font-bold uppercase tracking-[0.14em] text-warn">
               We need more to work with
             </p>
-            <p className="mt-3 text-base text-text">
+            <p className="mt-4 text-lg text-text">
               {app.insufficient_input_reason ??
                 "The inputs didn't give us enough to write a quality application."}
             </p>
           </div>
-          <div className="rounded-lg border border-border bg-dark3 p-7">
+          <div className="rounded-lg border border-border bg-dark3 p-8">
             <RetryAbandonControls
               applicationId={id}
               attemptNumber={app.attempt_number}
@@ -150,27 +150,27 @@ export default async function ApplicationPage({ params }: RouteCtx) {
       )}
 
       {(app.status === "error" || app.status === "cancelled") && (
-        <section className="rounded-2xl border border-danger/30 bg-danger/10 p-8">
+        <section className="rounded-2xl border border-danger/30 bg-danger/10 p-9">
           <div className="flex items-start gap-4">
             <div
               aria-hidden
-              className="flex size-14 shrink-0 items-center justify-center rounded-xl border border-danger/40 bg-danger/15 text-danger"
+              className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-danger/40 bg-danger/15 text-danger"
             >
-              <AlarmClockOffIcon size={26} />
+              <AlarmClockOffIcon size={30} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-danger">
+              <p className="text-sm font-bold uppercase tracking-[0.14em] text-danger">
                 {app.status === "cancelled"
                   ? "Run cancelled before it started"
                   : "Generation didn’t finish"}
               </p>
-              <p className="mt-3 text-base leading-relaxed text-text">
+              <p className="mt-4 text-lg leading-relaxed text-text">
                 {app.status === "cancelled"
                   ? "The system never picked this run up — usually because the worker was offline at submit time. Retry now and it’ll go straight through."
                   : (app.error_message ??
                     "We couldn’t finish this run. Retry now or start fresh from the new-application screen.")}
               </p>
-              <div className="mt-6 flex flex-wrap items-center gap-3">
+              <div className="mt-7 flex flex-wrap items-center gap-3">
                 <RetryFailedButton
                   applicationId={id}
                   canRetry={app.attempt_number < 3}
@@ -185,7 +185,7 @@ export default async function ApplicationPage({ params }: RouteCtx) {
       )}
 
       {app.status === "abandoned" && (
-        <section className="rounded-lg border border-border bg-dark3 p-7 text-base text-muted-foreground">
+        <section className="rounded-lg border border-border bg-dark3 p-8 text-lg text-muted-foreground">
           This application was abandoned. The metadata stays for a year for
           your records.
         </section>
@@ -216,31 +216,31 @@ function SuccessView({
     <div className="space-y-8">
       <section className="surface-card">
         <p className="eyebrow">Fit</p>
-        <div className="mt-5 flex flex-wrap items-center gap-2.5">
+        <div className="mt-6 flex flex-wrap items-center gap-3">
           <span
-            className={`inline-flex items-center rounded-full border px-3.5 py-1 text-xs font-bold uppercase tracking-[0.08em] ${fitTone}`}
+            className={`inline-flex items-center rounded-full border px-4 py-1 text-sm font-bold uppercase tracking-[0.08em] ${fitTone}`}
           >
             {fit.score}
           </span>
           {salary && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/15 px-3.5 py-1 text-xs font-medium text-success">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/15 px-4 py-1 text-sm font-medium text-success">
               {salary.range}
-              <span className="text-[11px] uppercase tracking-[0.08em] text-success/70">
+              <span className="text-xs uppercase tracking-[0.08em] text-success/70">
                 · {salary.confidence}
               </span>
             </span>
           )}
         </div>
-        <p className="mt-4 text-base leading-relaxed text-text">
+        <p className="mt-5 text-lg leading-relaxed text-text">
           {fit.reasoning}
         </p>
         {fit.warnings.length > 0 && (
           <>
-            <p className="mt-6 eyebrow-muted">Considerations</p>
-            <ul className="mt-3 space-y-2 text-base text-text/80">
+            <p className="mt-7 eyebrow-muted">Considerations</p>
+            <ul className="mt-4 space-y-2.5 text-lg text-text/80">
               {fit.warnings.map((w, i) => (
-                <li key={i} className="flex gap-2.5">
-                  <span aria-hidden className="mt-1.5 size-1.5 shrink-0 rounded-full bg-warn" />
+                <li key={i} className="flex gap-3">
+                  <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-warn" />
                   <span>{w}</span>
                 </li>
               ))}
@@ -251,11 +251,11 @@ function SuccessView({
 
       <section className="surface-card border-orange/30 bg-[var(--color-orange-subtle)]">
         <p className="eyebrow">What we did</p>
-        <ul className="mt-5 space-y-3">
+        <ul className="mt-6 space-y-3.5">
           {success.what_we_did_checklist.map((item, i) => (
-            <li key={i} className="flex items-start gap-3 text-base text-text">
+            <li key={i} className="flex items-start gap-3 text-lg text-text">
               <CheckCircleIcon
-                size={18}
+                size={20}
                 aria-hidden
                 className="mt-0.5 shrink-0 text-success"
               />
@@ -320,19 +320,19 @@ function SuccessView({
           NZ register of the cover letter (Kia ora / Nga mihi) — explicit
           "good luck" because the user expects to see it as a closing line. */}
       <section className="pt-6 text-center">
-        <p className="font-serif text-3xl font-light leading-snug text-text sm:text-4xl">
+        <p className="font-serif text-4xl font-light leading-snug text-text sm:text-5xl">
           {firstName
             ? `Good luck with your application, ${firstName}.`
             : "Good luck with your application."}
         </p>
-        <p className="mt-3 font-serif text-lg italic text-orange sm:text-xl">
+        <p className="mt-4 font-serif text-xl italic text-orange sm:text-2xl">
           Kia kaha — you've got this.
         </p>
-        <p className="mt-3 text-sm text-muted-foreground">
+        <p className="mt-4 text-base text-muted-foreground">
           Send it through and back yourself.
         </p>
         {filesExpireAt && (
-          <p className="mt-6 text-xs text-muted-foreground/70">
+          <p className="mt-7 text-sm text-muted-foreground/70">
             Files available until{" "}
             {new Date(filesExpireAt).toLocaleDateString("en-NZ", {
               timeZone: "Pacific/Auckland",

@@ -36,8 +36,8 @@ export function AdminNav() {
             aria-current={active ? "page" : undefined}
             className={
               active
-                ? "rounded-md border border-orange/60 bg-[var(--color-orange-subtle)] px-4 py-2 text-base font-semibold text-orange shadow-[0_0_0_1px_var(--color-orange-subtle)]"
-                : "rounded-md border border-transparent px-4 py-2 text-base text-muted-foreground transition-colors hover:bg-dark4 hover:text-text"
+                ? "rounded-md border border-orange/60 bg-[var(--color-orange-subtle)] px-5 py-2.5 text-lg font-semibold text-orange shadow-[0_0_0_1px_var(--color-orange-subtle)]"
+                : "rounded-md border border-transparent px-5 py-2.5 text-lg text-muted-foreground transition-colors hover:bg-dark4 hover:text-text"
             }
           >
             {item.label}
