@@ -103,10 +103,10 @@ export default async function AdminTelemetryPage() {
     .sort((a, b) => b[1] - a[1]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-9">
       <div>
-        <h1 className="text-2xl font-semibold text-text">Telemetry</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className="text-3xl font-semibold text-text">Telemetry</h1>
+        <p className="mt-2 text-base text-muted-foreground">
           7-day event counts. Trailing window from{" "}
           {new Date(since).toLocaleDateString("en-NZ", {
             timeZone: "Pacific/Auckland",
@@ -125,23 +125,23 @@ export default async function AdminTelemetryPage() {
         <Stat label="Errors" value={String(outcomes.error)} accent="danger" />
       </section>
 
-      <section className="panel p-6">
+      <section className="panel p-7">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+          <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-orange">
             LLM spend by provider (7 days)
           </h2>
-          <span className="font-mono text-[10px] text-muted-foreground">
+          <span className="font-mono text-sm text-muted-foreground">
             active: {activeProvider === "deepseek" ? "DeepSeek" : "Anthropic"}
           </span>
         </div>
         {providerStats.length === 0 ? (
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-4 text-base text-muted-foreground">
             No LLM calls in the window.
           </p>
         ) : (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full table-auto text-sm">
-              <thead className="text-left text-xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full table-auto text-base">
+              <thead className="text-left text-sm font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 <tr className="border-b border-border">
                   <th className="whitespace-nowrap py-2 pr-3">Model</th>
                   <th className="whitespace-nowrap py-2 px-3 text-right">Calls</th>
@@ -180,27 +180,27 @@ export default async function AdminTelemetryPage() {
                     >
                       <td className="whitespace-nowrap py-3 pr-3">
                         <span
-                          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${m.tone}`}
+                          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${m.tone}`}
                         >
                           {m.label}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap py-3 px-3 text-right font-mono text-xs">
+                      <td className="whitespace-nowrap py-3 px-3 text-right font-mono text-sm">
                         {p.calls}
                       </td>
-                      <td className="whitespace-nowrap py-3 px-3 text-right font-mono text-xs font-semibold">
+                      <td className="whitespace-nowrap py-3 px-3 text-right font-mono text-sm font-semibold">
                         ${p.total_cost.toFixed(2)}
                       </td>
-                      <td className="whitespace-nowrap py-3 px-3 text-right font-mono text-xs">
+                      <td className="whitespace-nowrap py-3 px-3 text-right font-mono text-sm">
                         ${avg.toFixed(4)}
                       </td>
-                      <td className="hidden whitespace-nowrap py-3 px-3 text-right font-mono text-xs md:table-cell">
+                      <td className="hidden whitespace-nowrap py-3 px-3 text-right font-mono text-sm md:table-cell">
                         {cachePct.toFixed(0)}%
                       </td>
-                      <td className="hidden whitespace-nowrap py-3 px-3 text-right font-mono text-xs sm:table-cell">
+                      <td className="hidden whitespace-nowrap py-3 px-3 text-right font-mono text-sm sm:table-cell">
                         {p.total_searches}
                       </td>
-                      <td className="hidden whitespace-nowrap py-3 px-3 text-right font-mono text-xs lg:table-cell">
+                      <td className="hidden whitespace-nowrap py-3 px-3 text-right font-mono text-sm lg:table-cell">
                         {p.total_output.toLocaleString()}
                       </td>
                       <td className="whitespace-nowrap py-3 pl-3 text-right">
@@ -211,7 +211,7 @@ export default async function AdminTelemetryPage() {
                               style={{ width: `${sharePct}%` }}
                             />
                           </div>
-                          <span className="font-mono text-xs text-muted-foreground">
+                          <span className="font-mono text-sm text-muted-foreground">
                             {sharePct.toFixed(0)}%
                           </span>
                         </div>
@@ -225,18 +225,18 @@ export default async function AdminTelemetryPage() {
                   <td className="py-3 pr-3 text-xs font-semibold uppercase tracking-[0.05em] text-muted-foreground">
                     Total
                   </td>
-                  <td className="py-3 px-3 text-right font-mono text-xs">
+                  <td className="py-3 px-3 text-right font-mono text-sm">
                     {providerStats.reduce((s, p) => s + p.calls, 0)}
                   </td>
-                  <td className="py-3 px-3 text-right font-mono text-xs font-semibold">
+                  <td className="py-3 px-3 text-right font-mono text-sm font-semibold">
                     ${grandTotal.toFixed(2)}
                   </td>
                   <td className="py-3 px-3" />
                   <td className="hidden md:table-cell" />
-                  <td className="hidden whitespace-nowrap py-3 px-3 text-right font-mono text-xs sm:table-cell">
+                  <td className="hidden whitespace-nowrap py-3 px-3 text-right font-mono text-sm sm:table-cell">
                     {providerStats.reduce((s, p) => s + p.total_searches, 0)}
                   </td>
-                  <td className="hidden whitespace-nowrap py-3 px-3 text-right font-mono text-xs lg:table-cell">
+                  <td className="hidden whitespace-nowrap py-3 px-3 text-right font-mono text-sm lg:table-cell">
                     {providerStats
                       .reduce((s, p) => s + p.total_output, 0)
                       .toLocaleString()}
@@ -249,8 +249,8 @@ export default async function AdminTelemetryPage() {
         )}
       </section>
 
-      <section className="panel p-6">
-        <h2 className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+      <section className="panel p-7">
+        <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-orange">
           Submission funnel
         </h2>
         <ul className="mt-4 space-y-3">
@@ -260,8 +260,8 @@ export default async function AdminTelemetryPage() {
             return (
               <li key={name}>
                 <div className="flex items-baseline justify-between text-sm">
-                  <span className="font-mono text-xs text-text">{name}</span>
-                  <span className="font-mono text-xs text-muted-foreground">
+                  <span className="font-mono text-sm text-text">{name}</span>
+                  <span className="font-mono text-sm text-muted-foreground">
                     {count}
                   </span>
                 </div>
@@ -277,16 +277,16 @@ export default async function AdminTelemetryPage() {
         </ul>
       </section>
 
-      <section className="panel p-6">
-        <h2 className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+      <section className="panel p-7">
+        <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-orange">
           Other events
         </h2>
         {otherEvents.length === 0 ? (
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-4 text-base text-muted-foreground">
             Nothing else recorded in the window.
           </p>
         ) : (
-          <ul className="mt-4 space-y-3">
+          <ul className="mt-5 space-y-3">
             {(() => {
               const otherMax = Math.max(1, ...otherEvents.map(([, c]) => c));
               return otherEvents.map(([name, count]) => {
@@ -294,10 +294,10 @@ export default async function AdminTelemetryPage() {
                 return (
                   <li key={name}>
                     <div className="flex items-baseline justify-between text-sm">
-                      <span className="font-mono text-xs text-text">
+                      <span className="font-mono text-sm text-text">
                         {name}
                       </span>
-                      <span className="font-mono text-xs text-muted-foreground">
+                      <span className="font-mono text-sm text-muted-foreground">
                         {count}
                       </span>
                     </div>
@@ -334,11 +334,11 @@ function Stat({
         ? "text-warn"
         : "text-danger";
   return (
-    <div className="panel p-4">
-      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+    <div className="panel p-5">
+      <p className="text-xs font-bold uppercase tracking-[0.14em] text-orange">
         {label}
       </p>
-      <p className={`mt-1 text-2xl font-semibold ${accentClass}`}>{value}</p>
+      <p className={`mt-2 text-3xl font-semibold ${accentClass}`}>{value}</p>
     </div>
   );
 }

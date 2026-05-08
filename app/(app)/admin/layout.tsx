@@ -32,17 +32,17 @@ export default async function AdminLayout({
 
   return (
     <div className="relative left-1/2 right-1/2 -mx-[50vw] w-screen px-6">
-      <div className="mx-auto max-w-[1280px] space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">
-          <div className="flex flex-wrap items-center gap-4">
-            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
+      <div className="mx-auto max-w-[1280px] space-y-7">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-5">
+          <div className="flex flex-wrap items-center gap-5">
+            <span className="text-xs font-bold uppercase tracking-[0.14em] text-orange">
               Admin
             </span>
             <AdminNav />
           </div>
           <Link
             href="/settings"
-            className="text-xs text-muted-foreground hover:text-text"
+            className="text-sm text-muted-foreground hover:text-text"
           >
             ← Back to Settings
           </Link>

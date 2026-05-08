@@ -26,7 +26,7 @@ function isActive(pathname: string, href: string): boolean {
 export function AdminNav() {
   const pathname = usePathname() ?? "";
   return (
-    <nav className="flex flex-wrap items-center gap-1.5">
+    <nav className="flex flex-wrap items-center gap-2">
       {NAV.map((item) => {
         const active = isActive(pathname, item.href);
         return (
@@ -36,8 +36,8 @@ export function AdminNav() {
             aria-current={active ? "page" : undefined}
             className={
               active
-                ? "rounded-md border border-orange/60 bg-[var(--color-orange-subtle)] px-3 py-1.5 text-sm font-semibold text-orange shadow-[0_0_0_1px_var(--color-orange-subtle)]"
-                : "rounded-md border border-transparent px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-dark4 hover:text-text"
+                ? "rounded-md border border-orange/60 bg-[var(--color-orange-subtle)] px-4 py-2 text-base font-semibold text-orange shadow-[0_0_0_1px_var(--color-orange-subtle)]"
+                : "rounded-md border border-transparent px-4 py-2 text-base text-muted-foreground transition-colors hover:bg-dark4 hover:text-text"
             }
           >
             {item.label}

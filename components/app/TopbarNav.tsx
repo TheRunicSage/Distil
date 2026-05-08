@@ -36,12 +36,12 @@ export function TopbarNav({ hasCv }: Props) {
     <>
       {hasCv ? (
         <Link href="/application/new" className="btn-primary">
-          <PlusIcon size={14} aria-hidden />
+          <PlusIcon size={16} aria-hidden />
           New application
         </Link>
       ) : (
         <Link href="/upload" className="btn-primary">
-          <UploadIcon size={14} aria-hidden />
+          <UploadIcon size={16} aria-hidden />
           Upload CV
         </Link>
       )}
@@ -50,7 +50,7 @@ export function TopbarNav({ hasCv }: Props) {
         aria-current={historyActive ? "page" : undefined}
         className={
           historyActive
-            ? "inline-flex items-center gap-2 rounded-md bg-[var(--color-orange-subtle)] px-3 py-1.5 text-sm font-semibold text-orange transition-colors"
+            ? "inline-flex items-center gap-2 rounded-md bg-[var(--color-orange-subtle)] px-4 py-2 text-base font-semibold text-orange transition-colors"
             : "btn-ghost"
         }
       >
@@ -64,11 +64,11 @@ export function TopbarNav({ hasCv }: Props) {
         title="Settings"
         className={
           settingsActive
-            ? "inline-flex size-9 items-center justify-center rounded-md bg-[var(--color-orange-subtle)] text-orange focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40"
+            ? "inline-flex size-10 items-center justify-center rounded-md bg-[var(--color-orange-subtle)] text-orange focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40"
             : "btn-icon"
         }
       >
-        <SettingsIcon size={16} aria-hidden />
+        <SettingsIcon size={18} aria-hidden />
       </Link>
     </>
   );

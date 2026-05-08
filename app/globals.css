@@ -286,18 +286,17 @@
   body {
     height: 100%;
   }
-  /* Base font-size lift 16px → 17px (2026-05-08). The 2026-05-03
-     primitive-by-primitive nudges (eyebrow 11→12, text-meta 12→12.5)
-     weren't enough — a teammate still found the muted greys
-     illegible. Bumping the html root scales every rem-sized utility
-     (Tailwind text-sm / text-base / text-lg, default body, etc.)
-     proportionally rather than chasing each component class
-     individually. The fixed-px primitives below also nudge up 1px
-     so the relative rhythm against the new rem baseline stays
-     coherent. See CLAUDE.md Decision Log [14] (2026-05-08). */
-  html {
-    font-size: 17px;
-  }
+  /* html base font-size stays at the browser default (16px). An
+     earlier 16→17px bump broke the PagedPreview's page-break math
+     (which compares against a hard-coded 1123px A4 height) — a
+     +6.25% rem cascade pushed text-rendering offsets past the
+     pagination thresholds in unpredictable ways. Replaced 2026-05-08
+     with a manual audit-pass approach: design system primitives and
+     per-page surfaces are bumped one Tailwind step at a time so we
+     control which surfaces scale (the (app) shell) and which stay
+     pinned (the CV / cover letter previews, which mirror the DOCX
+     and must not drift from their fixed-pixel pagination contract).
+     See CLAUDE.md Decision Log [14] (2026-05-08, audit-pass entry). */
   body {
     @apply bg-background text-foreground font-sans;
     -webkit-font-smoothing: antialiased;
@@ -340,44 +339,53 @@
 
 @layer components {
   /* Type primitives.
-     2026-05-03 readability pass: eyebrow 11→12, text-meta 12→12.5.
-     2026-05-08 readability pass (Decision Log [14] follow-up): the
-     May 3 nudges weren't enough — a teammate still found the muted
-     text illegible. Two coupled changes:
-     - html font-size 16px → 17px (see @layer base above) scales all
-       rem-sized text proportionally.
-     - Fixed-px primitives below nudge up 1px so the relative rhythm
-       against the new rem baseline stays coherent: eyebrow 12→13,
-       text-meta 12.5→13.5.
-     Heading scales pick up the rem bump automatically. */
+     History:
+       2026-05-03 readability pass: eyebrow 11→12, text-meta 12→12.5.
+       2026-05-08 (rolled back) html 16→17 + eyebrow 12→13 + text-meta 12.5→13.5.
+       2026-05-08 audit pass: revert the html bump (broke the preview's
+       1123px page-break math), keep the muted-foreground contrast lift,
+       and instead scale each primitive one step explicitly so we
+       control which surfaces grow.
+     Eyebrow primitives: 12 → 14 (one ~14% step), tracking widened
+       slightly to keep the airy uppercase rhythm.
+     Text-meta: 12.5 → 14.5 (~16%). Half-pixel keeps the same
+       perceived "secondary" feel against body text.
+     Headings: text-4xl → text-5xl (heading-display); text-2xl → text-3xl
+       (heading-section). Both scale the page hero rhythm so cards
+       and panels read with the same visual weight as before
+       relative to body text. */
   .eyebrow {
-    @apply text-[13px] font-semibold uppercase tracking-[0.20em] text-orange;
+    @apply text-sm font-semibold uppercase tracking-[0.20em] text-orange;
   }
   .eyebrow-muted {
-    @apply text-[13px] font-semibold uppercase tracking-[0.20em] text-muted-foreground;
+    @apply text-sm font-semibold uppercase tracking-[0.20em] text-muted-foreground;
   }
   .heading-display {
-    @apply font-serif text-4xl font-light leading-[1.15] tracking-tight text-text;
+    @apply font-serif text-5xl font-light leading-[1.15] tracking-tight text-text;
   }
   .heading-section {
-    @apply font-serif text-2xl font-normal leading-tight tracking-tight text-text;
+    @apply font-serif text-3xl font-normal leading-tight tracking-tight text-text;
   }
   .text-meta {
-    @apply text-[13.5px] leading-[1.5] text-muted-foreground;
+    @apply text-[14.5px] leading-[1.5] text-muted-foreground;
   }
 
   /* Surface primitives. Tailwind v4's @apply only resolves utilities,
      not other component classes — so .surface-card-interactive
      repeats the .surface-card properties rather than composing via
      @apply. */
+  /* Surface primitives. Padding bumped p-7 → p-8 (28→32px) and
+     surface-row vertical bumped py-3 → py-3.5 as part of the
+     2026-05-08 audit pass. Pairs with the larger eyebrow/text-meta
+     above so cards keep the same internal proportions. */
   .surface-card {
-    @apply rounded-2xl border border-border bg-dark2/60 p-7 backdrop-blur-sm;
+    @apply rounded-2xl border border-border bg-dark2/60 p-8 backdrop-blur-sm;
   }
   .surface-card-interactive {
-    @apply rounded-2xl border border-border bg-dark2/60 p-7 backdrop-blur-sm transition-colors hover:border-orange/40;
+    @apply rounded-2xl border border-border bg-dark2/60 p-8 backdrop-blur-sm transition-colors hover:border-orange/40;
   }
   .surface-row {
-    @apply flex items-center justify-between rounded-xl border border-border bg-dark2/60 px-4 py-3 backdrop-blur-sm transition-colors hover:border-orange/40 hover:bg-dark3/80;
+    @apply flex items-center justify-between rounded-xl border border-border bg-dark2/60 px-5 py-3.5 backdrop-blur-sm transition-colors hover:border-orange/40 hover:bg-dark3/80;
   }
   /* .panel — container without baked-in padding. Used for admin
      tables and stat cards where the consumer wants to control its
@@ -387,29 +395,40 @@
     @apply rounded-2xl border border-border bg-dark2/60 backdrop-blur-sm;
   }
 
-  /* Button primitives */
+  /* Button primitives. 2026-05-08 audit pass:
+     - btn-primary / btn-secondary: text-sm → text-base, padding
+       px-5 py-2.5 → px-6 py-3.
+     - btn-ghost: text-sm → text-base, padding px-3 py-1.5 → px-4 py-2.
+     - btn-icon: size-9 → size-10 (36→40px), keeps standard touch target.
+     - btn-link-orange: text-sm → text-base for consistency with the
+       primary/secondary buttons it sits next to.
+     - btn-disabled-shell: matches btn-secondary's new dimensions.
+     - status-pill: text-[10px] → text-[11px]; px-2 → px-2.5; tracking
+       widened a hair. The pill is the smallest meaningful label in
+       admin tables; bumping it without growing the row height too
+       much. */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-orange px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-light disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-orange px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-orange-light disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-dark3/60 px-5 py-2.5 text-sm font-medium text-text transition-colors hover:border-orange/40 hover:bg-dark3 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-dark3/60 px-6 py-3 text-base font-medium text-text transition-colors hover:border-orange/40 hover:bg-dark3 disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-ghost {
-    @apply inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-dark3 hover:text-text;
+    @apply inline-flex items-center gap-2 rounded-md px-4 py-2 text-base text-muted-foreground transition-colors hover:bg-dark3 hover:text-text;
   }
   .btn-icon {
-    @apply inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-dark3 hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40;
+    @apply inline-flex size-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-dark3 hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40;
   }
   .btn-link-orange {
-    @apply text-sm text-orange transition-colors hover:text-orange-light;
+    @apply text-base text-orange transition-colors hover:text-orange-light;
   }
   .btn-disabled-shell {
-    @apply inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-border bg-dark4 px-5 py-2.5 text-sm font-medium text-muted-foreground;
+    @apply inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-border bg-dark4 px-6 py-3 text-base font-medium text-muted-foreground;
   }
 
-  /* Status pill (used for application.status badges) */
+  /* Status pill (used for application.status badges). */
   .status-pill {
-    @apply inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.05em];
+    @apply inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em];
   }
 }
 

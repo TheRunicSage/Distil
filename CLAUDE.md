@@ -1127,6 +1127,43 @@ What was not changed: helpers' canonical defaults (still SPACING / SIZES, so cov
 
   Companion commit (047c1f7) shipped the same day: master CV download via new `GET /api/master-cv/download` route + Settings button, plus a fix for `RetryAbandonControls.callRoute` discarding the new application id from the retry response (handler now navigates to `/application/<newId>` instead of bouncing to `/dashboard`).
 
+[14] Audit-pass scale-up across the (app) shell (2026-05-08, follow-up to the html-16→17 rollback). User-reported the html font-size bump from `87d1d73` broke the PagedPreview's pagination — the rendered CV/cover-letter previews showed as "1 long page" instead of paginated A4 frames — and asked for a coordinated audit pass scaling all elements together "by 1 scale, ~20%".
+
+  Root cause of the preview regression: [`components/application/PagedPreview.tsx`](components/application/PagedPreview.tsx) uses `A4_PAGE_HEIGHT_PX = 1123` (a hardcoded pixel constant calculated for 96 DPI / 16px html base) for its page-break math. The +6.25% rem cascade pushed text-rendering offsets past the pagination thresholds in unpredictable ways, producing edge cases where `pageOffsets = [0]` and the frame degraded to natural content height.
+
+  Two coupled changes ship together:
+
+  - **html font-size reverted 17px → 16px (browser default).** Removed entirely from `@layer base` rather than tuned. Restores the PagedPreview's pagination contract.
+  - **Manual audit pass across the (app) shell.** Each surface bumped one Tailwind step explicitly so we control which surfaces scale (the (app) shell) and which stay pinned (CV/cover letter previews, which mirror the DOCX and must not drift from their fixed-pixel pagination contract). Files touched:
+
+    | Surface | Bumped |
+    |---|---|
+    | `app/globals.css` design-system primitives | `.eyebrow` / `.eyebrow-muted` 13px → text-sm (14px); `.text-meta` 13.5px → 14.5px; `.heading-display` text-4xl → text-5xl; `.heading-section` text-2xl → text-3xl; `.surface-card` / `.surface-card-interactive` p-7 → p-8; `.surface-row` py-3 → py-3.5; `.btn-primary` / `.btn-secondary` / `.btn-disabled-shell` text-sm → text-base + px-5 py-2.5 → px-6 py-3; `.btn-ghost` text-sm → text-base + px-3 py-1.5 → px-4 py-2; `.btn-icon` size-9 → size-10; `.btn-link-orange` text-sm → text-base; `.status-pill` text-[10px] → text-[11px] + px-2 → px-2.5 |
+    | `app/(app)/layout.tsx` (topbar) | h-[60px] → h-[68px]; px-6 → px-7; wordmark text-2xl → text-3xl; corner badge text-[10px] → text-xs; main py-12 → py-14; max-w-[720px] → max-w-[760px] |
+    | `components/app/TopbarNav.tsx` | New-application icon size 14 → 16; History link text-sm → text-base + px-3 py-1.5 → px-4 py-2; Settings icon size 16 → 18 + size-9 → size-10 |
+    | `components/app/AdminNav.tsx` | text-sm → text-base + px-3 py-1.5 → px-4 py-2 + gap-1.5 → gap-2 |
+    | `app/(app)/dashboard/page.tsx` | mt-3/mt-2 → mt-4; copy text-sm → text-base; section header gaps mb-4 → mb-5; chain list space-y-2 → space-y-2.5 |
+    | `app/(app)/history/page.tsx` | header mt-3 → mt-4; copy text-sm → text-base + mt-2 → mt-3 |
+    | `app/(app)/upload/page.tsx` | text-[11px]/text-4xl/text-sm → eyebrow + heading-display + text-base; current-on-file pill text-[11px]/text-sm/text-xs → text-xs/text-base/text-sm + p-5 → p-6; bespoke section → surface-card + heading-section |
+    | `app/(app)/application/new/page.tsx` | mt-3 → mt-4; copy text-sm → text-base |
+    | `components/application/NewApplicationForm.tsx` | strength tag text-[11px] → text-xs; textarea p-5 → p-6 + text-sm → text-base + mt-3 → mt-4; strength bar h-1 → h-1.5 + mt-3 → mt-4; strength caption text-xs → text-sm + min-h-[1.25rem] → min-h-[1.5rem]; spinner h-3.5 w-3.5 → h-4 w-4; debounced text text-xs → text-sm |
+    | `app/(app)/application/[id]/page.tsx` | back-link text-xs → text-sm; h1 text-lg → text-xl + mt-2 → mt-3; status pill rolled into `.status-pill`; retry-of text text-xs → text-sm; insufficient_input + error sections text-[10px]/text-sm → text-xs/text-base + p-6/p-7 → p-7/p-8; abandoned text-sm → text-base + p-6 → p-7; Fit pills text-[11px] → text-xs + px-3 → px-3.5 + gap-2 → gap-2.5; reasoning text-sm → text-base; warnings list text-sm → text-base + space-y-1.5 → space-y-2 + dot size-1.5 → mt-1.5; What-we-did checklist text-sm → text-base + icon 16 → 18 + space-y-2.5 → space-y-3; sign-off serif text-2xl/sm:text-3xl → text-3xl/sm:text-4xl + below text-base/sm:text-lg → text-lg/sm:text-xl + caption text-xs → text-sm; expiry text-[11px] → text-xs |
+    | `app/(app)/settings/page.tsx` | dl text-sm → text-base + space-y-2 → space-y-2.5 + mt-4 → mt-5; trailing copy text-xs → text-sm; standards list text-sm → text-base + dot h-1.5 w-1.5 → h-2 w-2 + space-y-3 → space-y-3.5; FAQ link text-sm dropped (uses btn-link-orange text-base now); session/danger-zone same |
+    | `app/(app)/admin/layout.tsx` | space-y-6 → space-y-7; pb-4 → pb-5; gap-4 → gap-5; "Admin" label text-[10px] → text-xs + tracking 0.12 → 0.14; back link text-xs → text-sm |
+    | `app/(app)/admin/usage/page.tsx` | h1 text-2xl → text-3xl; subtitle text-sm → text-base; section padding p-6 → p-7; status nav text-xs → text-sm + px-3 py-1 → px-4 py-1.5 + gap-1.5 → gap-2; table text-sm → text-base + thead text-xs → text-sm; row body text-xs → text-sm + py-3 → py-3.5; pills text-[10px] → text-[11px] + px-2 → px-2.5; Stat helper text-[10px]/text-2xl/p-4 → text-xs/text-3xl/p-5; ProviderSpend text-xs/text-sm/text-[10px] → text-sm/text-base/text-xs |
+    | `app/(app)/admin/logs/page.tsx` | h1 text-2xl → text-3xl + subtitle text-sm → text-base + space-y-6 → space-y-7; row summary text-xs → text-sm + px-4 py-2.5 → px-5 py-3; pills text-[10px] → text-[11px] + px-2 → px-2.5; details body text-xs → text-sm + px-4 py-3 → px-5 py-4; gap-3 → gap-4 |
+    | `app/(app)/admin/telemetry/page.tsx` | h1 text-2xl → text-3xl + subtitle text-sm → text-base + space-y-8 → space-y-9; section panels p-6 → p-7 + h2 text-[10px] → text-xs + tracking 0.12 → 0.14; table text-sm → text-base + thead text-xs → text-sm; all `text-xs` → `text-sm` and all `text-[10px]` semibold pills → `text-[11px]`; Stat helper text-[10px]/text-2xl/p-4 → text-xs/text-3xl/p-5 |
+    | `app/(app)/admin/users/page.tsx` | h1 text-2xl → text-3xl + subtitle text-sm → text-base + space-y-8 → space-y-9; table text-sm → text-base + thead text-xs → text-sm; row text-xs → text-sm + py-3 → py-3.5; user pills text-[10px] → text-[11px] + px-2 → px-2.5; Recent deletions panel p-6/text-[10px]/text-xs → p-7/text-xs/text-sm; Stat helper p-4/text-[10px]/text-2xl → p-5/text-xs/text-3xl |
+    | `components/app/ChainCard.tsx` | row gap-4 px-4 py-3 → gap-4 px-5 py-4; title text-sm → text-base; date text-xs → text-sm + mt-0.5 → mt-1; status pill text-[10px] → text-[11px] + px-2 → px-2.5; download spacer h-8 w-8 → h-9 w-9; details summary text-xs → text-sm + px-4 py-2 → px-5 py-2.5; per-attempt list text-xs → text-sm + px-4 pb-3 → px-5 pb-3.5 + px-2 py-1.5 → px-2.5 py-2 |
+
+  Excluded on purpose: `components/application/CvPreview.tsx`, `components/application/CoverLetterPreview.tsx`, `components/application/PagedPreview.tsx` (the preview must mirror the DOCX dimensions and pagination — bumping it would drift from the docx contract). DOCX renderer (`lib/docx/*`). Auth pages ((auth)/login). Public FAQ. Generated documents.
+
+  Muted-foreground contrast lifts from the rolled-back commit kept (colour-only, don't affect layout): dark `--muted-foreground` rgba(0.82), dark `--color-text-muted` `#cfceda`, light `--color-text-muted` `#3f3d36`.
+
+  Test path: every (app) page rendered side-by-side with previous deploy. Visual regression check on admin tables at narrow viewports (768px). Confirmation that PagedPreview pagination produces correct page count + controls visibility for both 1-page cover letter and multi-page CV.
+
+  Rollback: single `git revert` of the audit commit reverts everything atomically. If only one surface is wrong, the per-file edits are clean enough to walk back individually.
+
 ---
 
 ## Known Gaps to Watch

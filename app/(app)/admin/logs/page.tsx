@@ -42,17 +42,17 @@ export default async function AdminLogsPage() {
   const errors = data ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <div>
-        <h1 className="text-2xl font-semibold text-text">Errors</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className="text-3xl font-semibold text-text">Errors</h1>
+        <p className="mt-2 text-base text-muted-foreground">
           Last 20 error rows from request_logs. Click a row for the full
           message.
         </p>
       </div>
 
       {errors.length === 0 ? (
-        <div className="panel p-12 text-center text-muted-foreground">
+        <div className="panel p-14 text-center text-muted-foreground">
           Nothing failed recently.
         </div>
       ) : (
@@ -67,14 +67,14 @@ export default async function AdminLogsPage() {
                 className="border-t border-border first:border-t-0"
               >
                 <details className="group">
-                  <summary className="grid cursor-pointer grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center gap-3 px-4 py-2.5 text-xs transition-colors hover:bg-dark4">
+                  <summary className="grid cursor-pointer grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-dark4">
                     <span
-                      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.05em] ${tone}`}
+                      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em] ${tone}`}
                     >
                       {row.source.replace("_", " ")}
                     </span>
                     <span
-                      className={`hidden items-center rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold sm:inline-flex ${userPillTone(row.user_id)}`}
+                      className={`hidden items-center rounded-full border px-2.5 py-0.5 font-mono text-[11px] font-semibold sm:inline-flex ${userPillTone(row.user_id)}`}
                       title={row.user_id ? `user ${row.user_id}` : "no user"}
                     >
                       {userPillLabel(row.user_id)}
@@ -87,20 +87,20 @@ export default async function AdminLogsPage() {
                         {truncate(row.error_message, 90)}
                       </span>
                     </span>
-                    <span className="font-mono text-xs text-danger">
+                    <span className="font-mono text-sm text-danger">
                       {row.error_code ?? "internal_error"}
                     </span>
-                    <span className="whitespace-nowrap text-xs text-muted-foreground">
+                    <span className="whitespace-nowrap text-sm text-muted-foreground">
                       {formatTime(row.created_at)}
                     </span>
                   </summary>
-                  <div className="border-t border-border bg-dark2/40 px-4 py-3">
+                  <div className="border-t border-border bg-dark2/40 px-5 py-4">
                     {row.error_message && (
-                      <pre className="whitespace-pre-wrap break-words font-mono text-xs text-text/90">
+                      <pre className="whitespace-pre-wrap break-words font-mono text-sm text-text/90">
                         {row.error_message}
                       </pre>
                     )}
-                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                    <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                       <span>{row.duration_ms}ms</span>
                       {row.application_id && (
                         <span className="font-mono">
@@ -109,7 +109,7 @@ export default async function AdminLogsPage() {
                       )}
                       {row.user_id && (
                         <span
-                          className={`inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold ${userPillTone(row.user_id)}`}
+                          className={`inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-[11px] font-semibold ${userPillTone(row.user_id)}`}
                           title={`user ${row.user_id}`}
                         >
                           {userPillLabel(row.user_id)}
