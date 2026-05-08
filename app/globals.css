@@ -35,12 +35,14 @@
      surfaces. Still well below the body-text level — this is a
      dim-but-readable token, not a body token. */
   --color-dim: rgba(240, 239, 232, 0.36);
-  /* Lifted 2026-05-03 from #9a9aa8 → #b6b5c4: secondary labels
-     ("date · status meta", "files expire on", admin table headers,
-     short ID chips) were sitting around AA-borderline on dark2.
-     New value lands ~10% lighter while staying clearly distinct
-     from --color-text so hierarchy is preserved. */
-  --color-text-muted: #b6b5c4;
+  /* Lift history: #9a9aa8 → #b6b5c4 (2026-05-03) → #cfceda (2026-05-08).
+     The May 3 lift wasn't enough — a teammate still couldn't read
+     secondary labels comfortably on dark2 surfaces. New value
+     lands closer to body text while staying clearly distinct as
+     "secondary" so the visual hierarchy survives. Used for date /
+     status meta, "files expire on" lines, admin table headers,
+     short ID chips. */
+  --color-text-muted: #cfceda;
 
   /* ---- Light theme tokens (preview cards + email body only) ---- */
   --color-l-bg: #fbfaf6;
@@ -223,13 +225,13 @@
   --color-dark3: #ffffff;
   --color-dark4: #ffffff;
   --color-text: #15140e;
-  /* Lifted 2026-05-03 from #6c6a60 → #5a5851: on the warm-white
-     light surface the muted token was reading washed-out. We go
-     the OPPOSITE direction from the dark-mode change because
-     muted-on-light wants more contrast (darker), while muted-on-
-     dark wants more contrast (lighter). Same readability outcome,
-     opposite direction in lightness space. */
-  --color-text-muted: #5a5851;
+  /* Lift history: #6c6a60 → #5a5851 (2026-05-03) → #3f3d36 (2026-05-08).
+     On the warm-white light surface the muted token was reading
+     washed-out. We go the OPPOSITE direction from the dark-mode
+     change — muted-on-light wants more contrast (darker), while
+     muted-on-dark wants more contrast (lighter). Same readability
+     outcome, opposite direction in lightness space. */
+  --color-text-muted: #3f3d36;
   /* Flat warm-grey (not rgba) so bg-dim/15 produces a visible 15%
      warm-grey wash instead of vanishing into the surface. */
   --color-dim: #b8b6ad;
@@ -247,7 +249,12 @@
   --secondary: var(--color-dark4);
   --secondary-foreground: var(--color-text);
   --muted: var(--color-dark3);
-  --muted-foreground: rgba(238, 237, 230, 0.66);
+  /* 0.50 → 0.66 (2026-05-03) → 0.82 (2026-05-08). The May 3 nudge
+     wasn't enough; teammate still found muted-foreground illegible.
+     Body text reads at 1.0 alpha, this lands close enough to be
+     readable while staying distinct as "secondary" — preserves
+     visual hierarchy without crushing it. */
+  --muted-foreground: rgba(238, 237, 230, 0.82);
   --accent: var(--color-dark4);
   --accent-foreground: var(--color-text);
   --destructive: var(--color-danger);
@@ -278,6 +285,18 @@
   html,
   body {
     height: 100%;
+  }
+  /* Base font-size lift 16px → 17px (2026-05-08). The 2026-05-03
+     primitive-by-primitive nudges (eyebrow 11→12, text-meta 12→12.5)
+     weren't enough — a teammate still found the muted greys
+     illegible. Bumping the html root scales every rem-sized utility
+     (Tailwind text-sm / text-base / text-lg, default body, etc.)
+     proportionally rather than chasing each component class
+     individually. The fixed-px primitives below also nudge up 1px
+     so the relative rhythm against the new rem baseline stays
+     coherent. See CLAUDE.md Decision Log [14] (2026-05-08). */
+  html {
+    font-size: 17px;
   }
   body {
     @apply bg-background text-foreground font-sans;
@@ -321,23 +340,21 @@
 
 @layer components {
   /* Type primitives.
-     2026-05-03 readability pass (Decision Log [14] follow-up):
-     - .eyebrow + .eyebrow-muted nudged 11px → 12px and tracking
-       widened 0.18em → 0.20em. Eyebrow micro-labels were sitting
-       at the lower edge of legible at small viewports; the widened
-       tracking keeps the airy uppercase rhythm intact.
-     - .text-meta nudged from text-xs (12px) → text-[12.5px]
-       (12.5px) plus a slight line-height bump. ~50 callsites use
-       .text-meta for date / id / "files expire" lines that were
-       compressing too tight against neighbouring rows. Half-pixel
-       size lift + ~5% line-height lift reads as deliberate breathing
-       rather than just bigger.
-     - Heading scales unchanged — they read fine. */
+     2026-05-03 readability pass: eyebrow 11→12, text-meta 12→12.5.
+     2026-05-08 readability pass (Decision Log [14] follow-up): the
+     May 3 nudges weren't enough — a teammate still found the muted
+     text illegible. Two coupled changes:
+     - html font-size 16px → 17px (see @layer base above) scales all
+       rem-sized text proportionally.
+     - Fixed-px primitives below nudge up 1px so the relative rhythm
+       against the new rem baseline stays coherent: eyebrow 12→13,
+       text-meta 12.5→13.5.
+     Heading scales pick up the rem bump automatically. */
   .eyebrow {
-    @apply text-[12px] font-semibold uppercase tracking-[0.20em] text-orange;
+    @apply text-[13px] font-semibold uppercase tracking-[0.20em] text-orange;
   }
   .eyebrow-muted {
-    @apply text-[12px] font-semibold uppercase tracking-[0.20em] text-muted-foreground;
+    @apply text-[13px] font-semibold uppercase tracking-[0.20em] text-muted-foreground;
   }
   .heading-display {
     @apply font-serif text-4xl font-light leading-[1.15] tracking-tight text-text;
@@ -346,7 +363,7 @@
     @apply font-serif text-2xl font-normal leading-tight tracking-tight text-text;
   }
   .text-meta {
-    @apply text-[12.5px] leading-[1.5] text-muted-foreground;
+    @apply text-[13.5px] leading-[1.5] text-muted-foreground;
   }
 
   /* Surface primitives. Tailwind v4's @apply only resolves utilities,

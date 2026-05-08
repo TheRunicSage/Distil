@@ -1094,6 +1094,20 @@ What was not changed: helpers' canonical defaults (still SPACING / SIZES, so cov
 
   Rollback: single `git revert`. If only the prompt is wrong but the code edits are fine, a follow-up commit to §8 / §3 in isolation is sufficient.
 
+[14] Typography + muted-text legibility bump (2026-05-08, follow-up to 2026-05-03 readability pass). User-reported: "the grey font is still illegible to a person in our team". The May 3 pass had nudged primitives one-by-one (eyebrow 11→12, text-meta 12→12.5, dark `--muted-foreground` 0.50→0.66, dark `--color-text-muted` #9a9aa8→#b6b5c4, light `--color-text-muted` #6c6a60→#5a5851). Each was a half-pixel or 0.16 alpha step, accumulating but never decisively crossing the legibility threshold for one teammate.
+
+  Two coupled levers ship together this round:
+
+  - **Base font scale lifted html 16px → 17px.** Single line in [`@layer base`](app/globals.css). Affects every rem-sized utility (Tailwind `text-sm` / `text-base` / `text-lg`, default body, headings) by +6.25%. One DP recommendation Option A picked over B (18px) and C (per-utility overrides): A is universal, surgical, easy to dial up to B if A still doesn't land for the affected user. The May 3 strategy of nudging individual primitives by half-pixels was the long-way-round version of the same intent — a base-rem bump cascades correctly.
+  - **Fixed-px primitives nudged +1px to keep the relative rhythm coherent against the new rem baseline.** `.eyebrow` / `.eyebrow-muted` 12 → 13, `.text-meta` 12.5 → 13.5. Heading classes (`.heading-display` text-4xl, `.heading-section` text-2xl) pick up the html bump automatically since they use Tailwind text-* utilities.
+  - **Muted-text contrast lifted past the May 3 nudges.** Dark mode `--muted-foreground` rgba(0.66) → rgba(0.82); dark mode `--color-text-muted` #b6b5c4 → #cfceda; light mode `--color-text-muted` #5a5851 → #3f3d36 (opposite-direction-of-contrast: muted-on-light wants darker, muted-on-dark wants lighter, both for more separation from background). Body text still reads at 1.0 alpha so the visual hierarchy survives — these tokens are now noticeably more readable but still distinct as "secondary".
+
+  What was *not* changed: ambient layers, brand orange, semantic accents (success / warn / danger / info / cyan / rose / innovation), heading text classes, the dark/light surface palette (`--color-dark` / `dark2` / `dark3` / `dark4`), the cover letter and CV docx renderers (the user clarified item 4 was the website UI, not generated documents — the docx font-size profiles in `lib/docx/styles.ts` are untouched).
+
+  Rollback: single `git revert`. If only the html bump regresses some layout (admin tables at narrow viewports are the most likely candidate), the per-primitive +1px and contrast bumps can stand alone.
+
+  Companion commit (047c1f7) shipped the same day: master CV download via new `GET /api/master-cv/download` route + Settings button, plus a fix for `RetryAbandonControls.callRoute` discarding the new application id from the retry response (handler now navigates to `/application/<newId>` instead of bouncing to `/dashboard`).
+
 ---
 
 ## Known Gaps to Watch
