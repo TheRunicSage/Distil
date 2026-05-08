@@ -116,17 +116,25 @@ const BASE_URL = "https://api.deepseek.com";
 // is lib/anthropic/tool-schema.ts:webSearchTool.max_uses, separate.
 const MAX_WEB_SEARCH = 5;
 // Iteration cap = MAX_WEB_SEARCH (5) + 1 final submit_application.
-// Search iterations on Flash typically run ~5s each
-// (CHAT_COMPLETION_TIMEOUT_MS, 45s); the final submit emission gets
+// Search iterations on Flash typically run ~5-15s each (per-iter
+// CHAT_COMPLETION_TIMEOUT_MS, 60s); the final submit emission gets
 // FINAL_ITERATION_TIMEOUT_MS (60s) since it produces ~6500 output
-// tokens. Worst case 5 × 45s + 60s = 285s, fits under the 300s
-// Hobby ceiling. Hitting the cap raises llm_invalid_output rather
-// than letting the loop balloon further.
+// tokens. Worst case 5 × 60s + 60s = 360s on paper, but
+// TOTAL_LOOP_BUDGET_MS (270s) is the real ceiling and hard-stops the
+// loop earlier; the per-iter cap exists to catch a single tail-
+// latency spike, not to bound the whole loop. Hitting either cap
+// raises llm_failed rather than letting the loop balloon further.
 const MAX_ITERATIONS = 6;
 // Per-iteration timeout for SEARCH iterations (anything that isn't
-// the final submit_application emission). 45s is generous-but-
-// bounded for Flash's typical search-iteration latency of ~3-5s,
-// while leaving budget for slower outliers.
+// the final submit_application emission). 45s → 60s on 2026-05-08
+// after a single tail-latency spike on iter 3 took the full 45s and
+// killed an otherwise-healthy generation. Successful neighbours
+// (50-55s total wall-clock) showed typical search iterations at
+// ~5-15s each, so 45s wasn't too tight on the median — it was too
+// tight on the tail. 60s absorbs API queue jitter (the realistic
+// failure mode here) without changing search budget or total wall
+// clock; the 270s TOTAL_LOOP_BUDGET_MS still catches a string of
+// genuinely-slow iterations stacking up.
 //
 // We DO NOT rely on the OpenAI SDK's `{ timeout: ... }` option
 // alone — observed in production 2026-05-03: a call-llm step
@@ -138,7 +146,7 @@ const MAX_ITERATIONS = 6;
 // Both are kept (`{ timeout }` as the SDK's best-effort attempt,
 // the race as the airtight backstop) so the inner controller can
 // also try to abort the in-flight fetch.
-const CHAT_COMPLETION_TIMEOUT_MS = 45_000;
+const CHAT_COMPLETION_TIMEOUT_MS = 60_000;
 // Per-iteration timeout for the FINAL submit_application emission.
 // This iteration generates the entire structured payload (~6500
 // output tokens) so it needs more headroom than search iterations.

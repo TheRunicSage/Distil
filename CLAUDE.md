@@ -1050,6 +1050,26 @@ What was not changed: helpers' canonical defaults (still SPACING / SIZES, so cov
 
   Test plan: re-submit the failing master CV + JD against a new generation, query `cv_content.professional_experience` and confirm no two entries share `(role_title.trim().toLowerCase(), company.trim().toLowerCase())`. Spot-check that legitimate same-company promotions (different titles) are preserved as separate roles when the master CV has them. Re-audit if the failure shape returns despite the rule + self-check.
 
+[8] DeepSeek per-iteration timeout 45s → 60s for tail-latency absorption (2026-05-08). Real failure: `llm_failed` with message `DeepSeek chat completion exceeded 45000ms (iteration 3)`. Looking at the four-row pattern in `request_logs`:
+
+  | Time (UTC) | Duration | Outcome |
+  |---|---|---|
+  | 03:17 | 55s | success |
+  | 05:13 | 50s | success |
+  | 06:31 | 53s | success |
+  | 07:19 | 58s | failed — iter 3 > 45s |
+
+  Successful neighbours sat at 50-55s total wall-clock, meaning typical search iterations finished in ~5-15s. The failure was a single tail-latency spike on one iteration (iters 0-2 took ~13s combined; iter 3 alone consumed the full 45s before the Promise.race killed it). Almost certainly DeepSeek API queue jitter — not a runaway model, not a structural over-budget situation.
+
+  Three DPs surfaced before edit:
+  - **DP-1 absorption strategy → Option A (raise timeout 45s → 60s).** Single-line tuning, addresses observed failure with margin, no architectural change. Option B (90s) declined as overshoot; Option C (retry-once-on-timeout in same iter) declined as premature complexity — if a second failure shape lands (e.g. all iterations consistently slow rather than one tail spike), Option C becomes the right answer with data to size it.
+  - **DP-2 collateral changes → Option A (just the timeout, nothing else).** `MAX_ITERATIONS=6`, `MAX_WEB_SEARCH=5`, `TOTAL_LOOP_BUDGET_MS=270_000` untouched. The system-prompt §3 Phase 2 + Phase 4 search budgets are quality-bearing and shouldn't be cut to absorb infra jitter; the 270s wall clock still catches a string of genuinely-slow iterations stacking up. Worst case on paper rises 5×45+60=285s → 5×60+60=360s, but the 270s total wall clock is the real ceiling and is unchanged.
+  - **DP-3 documentation → Option A (update inline comments + Decision Log).** Third tuning pass on these constants; the next session needs the trail to know whether to keep tuning or restructure (the Option C retry-once is the next move if this fails to hold).
+
+  What was *not* changed: `MAX_WEB_SEARCH`, `MAX_ITERATIONS`, `TOTAL_LOOP_BUDGET_MS`, `FINAL_ITERATION_TIMEOUT_MS`, the Promise.race architecture, the SDK `{ timeout }` belt-and-braces, the abort controller. Just the search-iter constant + comment block.
+
+  Test path: next real generation exercises this. If it succeeds, fix held; if it fails with `iter N > 60_000ms`, retry-once-on-timeout (Option C above) becomes the next move. Rollback is a single `git revert`.
+
 ---
 
 ## Known Gaps to Watch
