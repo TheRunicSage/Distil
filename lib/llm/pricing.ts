@@ -110,7 +110,15 @@ type CapPair = { precheck: number; full: number };
 export const COST_CAPS_BY_MODEL: Record<ModelName, CapPair> = {
   "claude-sonnet-4-6": { precheck: 0.5, full: 1.0 },
   "deepseek-v4-pro": { precheck: 0.3, full: 0.2 },
-  "deepseek-v4-flash": { precheck: 0.05, full: 0.03 },
+  // 2026-05-08: Flash post-cap raised 0.03 → 0.06. Three real rows
+  // tripped the warning at $0.035-0.044 — all successful generations,
+  // none anomalous. Root cause: 5 Tavily searches × $0.008 = $0.040
+  // is the structural Tavily floor under the current 5-call web-
+  // search budget, already above 0.03 before any LLM token cost.
+  // 0.06 covers the worst-case 5-search Flash run ($0.040 Tavily +
+  // ~$0.015 LLM ceiling = $0.055) with a small buffer; anything
+  // above genuinely means runaway.
+  "deepseek-v4-flash": { precheck: 0.05, full: 0.06 },
 };
 
 // Default Anthropic caps kept exported under the historic names so

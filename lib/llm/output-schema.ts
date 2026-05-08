@@ -49,6 +49,28 @@
 // caps where the prompt and schema agree the upper bound is content
 // quality (e.g. paragraphs.max(5), what_we_did_checklist.max(8)).
 //
+// 2026-05-08 strictness audit (professional_experience empty-role pass).
+// Real failures 2026-05-07: model emitted professional_experience[3]
+// as an orphan role — first failure had only bullets empty (min(1)
+// trip), second failure had all required fields empty (role_title,
+// company, location, start_date, end_date, bullets all empty
+// strings). Same shape as the technical_skills empty-group fix
+// from 2026-05-05. Two-layer preprocess applied:
+//   - Per-role: bullets filtered to drop non-string and
+//     empty/whitespace-only entries before min(1).max(8) bounds run.
+//   - Per-array: roles with empty role_title, empty company, or
+//     zero usable bullets are stripped before the outer
+//     min(1).max(12) bounds run.
+// Pattern is now confirmed across three array types in the schema
+// (cover_letter_content.paragraphs, cv_content.technical_skills,
+// cv_content.professional_experience). At scale, the model
+// occasionally appends a trailing empty array element. The other
+// untouched array fields (key_projects.bullets, key_projects.
+// technologies, education.details, leadership_and_interests) will
+// likely surface the same shape eventually; deferred per the
+// targeted-fix-per-surfaced-failure discipline. Re-audit if any
+// shows up in request_logs.metadata.zod_issues.
+//
 // 2026-05-05 strictness audit (technical_skills empty-group pass).
 // Real failure: model emitted a technical_skills group at index 5
 // with an empty skills array, tripping the inner array's min(1)
@@ -224,6 +246,14 @@ const TechnicalSkillsGroupSchema = z.object({
   ),
 });
 
+// ProfessionalExperienceItemSchema: bullets array is preprocess-
+// filtered to drop non-string and empty/whitespace-only entries
+// before the min(1).max(8) bounds run (mirrors the technical_skills
+// pattern from 2026-05-05). The min(1) is still enforced post-
+// filter — a role the model emits with no actual bullet content
+// is genuinely empty and gets caught by the outer
+// professional_experience preprocess (which strips orphan roles
+// before applying the array's min/max bounds).
 const ProfessionalExperienceItemSchema = z.object({
   role_title: z.string().min(1).max(200),
   company: z.string().min(1).max(200),
@@ -237,7 +267,15 @@ const ProfessionalExperienceItemSchema = z.object({
   // tier; min(1) keeps a single bullet as the minimum (collapsed
   // roles emit a one-line summary bullet) without rejecting the
   // whole CV when the prompt and schema disagree.
-  bullets: z.array(z.string().min(1).max(600)).min(1).max(8),
+  bullets: z.preprocess(
+    (val) =>
+      Array.isArray(val)
+        ? val.filter(
+            (b) => typeof b === "string" && b.trim().length > 0,
+          )
+        : val,
+    z.array(z.string().min(1).max(600)).min(1).max(8),
+  ),
 });
 
 const KeyProjectSchema = z.object({
@@ -296,10 +334,43 @@ const CvContentSchema = z.object({
         : val,
     z.array(TechnicalSkillsGroupSchema).min(1).max(8),
   ),
-  professional_experience: z
-    .array(ProfessionalExperienceItemSchema)
-    .min(1)
-    .max(12),
+  // professional_experience: preprocess strips orphan roles before
+  // the array's min/max bounds run. Pairs with the per-role bullets
+  // preprocess above. Real failure 2026-05-07: model emitted
+  // professional_experience[3] with all required fields empty
+  // (role_title, company, location, dates, bullets) plus a paired
+  // failure where only bullets was empty. A role is "orphan" if
+  // role_title or company filters to empty after trim, or if the
+  // bullets array filters to zero usable entries — any one of those
+  // means the role has no usable content. Outer min(1) still
+  // catches the truly-empty case (no roles at all).
+  professional_experience: z.preprocess(
+    (val) =>
+      Array.isArray(val)
+        ? val.filter((r) => {
+            if (typeof r !== "object" || r === null) return false;
+            const role = r as {
+              role_title?: unknown;
+              company?: unknown;
+              bullets?: unknown;
+            };
+            const roleTitle =
+              typeof role.role_title === "string"
+                ? role.role_title.trim()
+                : "";
+            const company =
+              typeof role.company === "string" ? role.company.trim() : "";
+            if (roleTitle.length === 0 || company.length === 0) return false;
+            const bullets = Array.isArray(role.bullets)
+              ? role.bullets.filter(
+                  (b) => typeof b === "string" && b.trim().length > 0,
+                )
+              : [];
+            return bullets.length > 0;
+          })
+        : val,
+    z.array(ProfessionalExperienceItemSchema).min(1).max(12),
+  ),
   key_projects: z.array(KeyProjectSchema).min(0).max(5),
   education: z.array(EducationItemSchema).min(1).max(6),
   leadership_and_interests: z.array(LeadershipInterestItemSchema).max(8),
