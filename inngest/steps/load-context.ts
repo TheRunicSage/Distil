@@ -13,11 +13,16 @@ export type GenerationContext = {
   master_cv_text: string;
   job_description: string;
   user_notes: string | null;
-  region: string;
   attempt_number: number;
   system_prompt_version: string;
 };
 
+// Note: applications.region is still selected by the API row reads
+// (admin pages, retry route, application detail page) for backwards-
+// compat with legacy data, but the LLM pipeline no longer reads it.
+// The system prompt §1.5 detects target_country itself from JD
+// signals and stores the result in research_summary.target_country.
+// See CLAUDE.md Decision Log [18] (2026-05-08).
 export async function loadContext(
   applicationId: string,
 ): Promise<GenerationContext> {
@@ -25,7 +30,7 @@ export async function loadContext(
   const { data: app, error: appErr } = await supabase
     .from("applications")
     .select(
-      "id, user_id, master_cv_id, job_description, user_notes, region, attempt_number, system_prompt_version",
+      "id, user_id, master_cv_id, job_description, user_notes, attempt_number, system_prompt_version",
     )
     .eq("id", applicationId)
     .maybeSingle();
@@ -45,7 +50,6 @@ export async function loadContext(
     master_cv_text: cv.parsed_text,
     job_description: app.job_description,
     user_notes: app.user_notes,
-    region: app.region,
     attempt_number: app.attempt_number,
     system_prompt_version: app.system_prompt_version,
   };

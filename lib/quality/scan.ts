@@ -1,12 +1,22 @@
 // Output quality scanner. Pure function: takes the validated LLM output
-// (success branch only) plus the region, returns an array of warnings.
-// Caller writes the warnings to request_logs.metadata. Never throws,
-// never blocks the run. Decision Log [7] Option B (pure return) and
-// Option C (banned phrases inline with drift comment).
+// (success branch only), returns an array of warnings. Caller writes
+// the warnings to request_logs.metadata. Never throws, never blocks
+// the run. Decision Log [7] Option B (pure return) and Option C
+// (banned phrases inline with drift comment).
 //
 // IMPORTANT: the BANNED_PHRASES list below mirrors prompts/system-prompt-v2.md
 // §2.2. When you edit the prompt, edit this list too — they cannot share a
 // module because the prompt is markdown loaded by the LLM at runtime.
+//
+// 2026-05-08: dropped the `region` parameter and the
+// `missing_kia_ora_salutation` warning. The system prompt §8 was
+// rewritten to be region-agnostic — the model now detects the
+// target country itself in Phase 1.5 and applies that country's
+// salutation conventions. A "should have used Kia ora" check made
+// sense when every generation was NZ; now that a generation may
+// legitimately target AU, UK, US, or anywhere else, the model is
+// the right authority on which salutation to use. See CLAUDE.md
+// Decision Log [18] (2026-05-08) for the full rewrite rationale.
 
 import type { ApplicationOutputSuccess } from "@/lib/llm/output-schema";
 
@@ -14,7 +24,6 @@ export type QualityWarningKind =
   | "em_dash_present"
   | "en_dash_present"
   | "banned_phrase"
-  | "missing_kia_ora_salutation"
   | "ats_keyword_coverage_low"
   | "profile_sentence_count_off";
 
@@ -71,7 +80,6 @@ const PROFILE_SENTENCE_BOUNDS: Record<string, [number, number]> = {
 
 export function runQualityScan(
   output: ApplicationOutputSuccess,
-  region: string,
 ): QualityWarning[] {
   const warnings: QualityWarning[] = [];
 
@@ -90,18 +98,6 @@ export function runQualityScan(
   for (const phrase of BANNED_PHRASES) {
     if (lowered.includes(phrase)) {
       warnings.push({ kind: "banned_phrase", detail: phrase });
-    }
-  }
-
-  if (region === "NZ") {
-    const salutation = output.cover_letter_content.salutation
-      .trim()
-      .toLowerCase();
-    if (!salutation.startsWith("kia ora")) {
-      warnings.push({
-        kind: "missing_kia_ora_salutation",
-        detail: `salutation was "${output.cover_letter_content.salutation}"`,
-      });
     }
   }
 

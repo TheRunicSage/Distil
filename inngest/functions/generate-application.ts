@@ -170,7 +170,6 @@ export const generateApplication = inngest.createFunction(
     const userMessage = buildUserMessage({
       masterCvText: ctx.master_cv_text,
       jobDescription: ctx.job_description,
-      region: ctx.region,
       attemptNumber: ctx.attempt_number,
       userNotes: ctx.user_notes,
     });
@@ -357,7 +356,7 @@ export const generateApplication = inngest.createFunction(
       "quality-scan",
       { ...stepCtx, metadata: {} },
       () => {
-        const warnings = runQualityScan(dated, dated ? "NZ" : "NZ");
+        const warnings = runQualityScan(dated);
         // Stash warnings in this step's own metadata via the closure.
         // We re-call withInngestStep below for the fact-of-warning row.
         return warnings;

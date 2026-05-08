@@ -173,6 +173,18 @@ const ResearchSummarySchema = z.object({
   // string with "" as the unset sentinel.
   company_reference_used: nullableMaxString(800),
   company_reference_note: nullableMaxString(800),
+  // target_country: detected by the model in Phase 1.5 from JD
+  // signals (location, currency, work-rights phrasing, local
+  // legislation cues). Stored as the full English country name
+  // (e.g. "New Zealand", "Australia", "United Kingdom"). Uses
+  // nullableMaxString to mirror the company_reference_* fields
+  // pattern (2026-05-03 audit): if the model omits or emits
+  // null on edge cases, coerce to "" rather than failing the
+  // whole generation. Downstream code sees "" as the "country
+  // not detected" sentinel; quality-scan / admin views treat
+  // that gracefully. Added 2026-05-08 alongside the §8 region-
+  // detection rewrite — see CLAUDE.md Decision Log [18].
+  target_country: nullableMaxString(80),
 });
 
 const JdAnalysisSchema = z.object({
