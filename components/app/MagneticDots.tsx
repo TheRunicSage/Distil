@@ -32,14 +32,20 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-const CELL_PX = 80;
+// Density: CELL_PX 80 → 56 (2026-05-09) ≈ 2× more dots in the same area.
+// Held the per-frame cost flat by skipping inert dots — see the cull
+// fast-path inside the tick loop. DOT_CAP raised in proportion so the
+// new density actually paints on wide screens.
+const CELL_PX = 56;
 const DOT_R = 1.7;
 const RANGE_PX = 200; // softly wide; smoothstep keeps the outer ring gentle
+const RANGE_CULL_PX = RANGE_PX + 60; // beyond this + already-at-rest, skip
+const REST_EPSILON = 0.05; // |state - rest| within this counts as settled
 const MAX_PUSH_PX = 8; // very subtle displacement — felt, not seen
 const MAX_GROW = 1.18; // tiny lift on the dots near the cursor
 const LERP_FACTOR = 0.11; // slow, graceful return; never springy
 const HALO_SIZE_PX = 280; // wider so the centre isn't bright; reads as a haze
-const DOT_CAP = 400;
+const DOT_CAP = 800;
 
 // Theme-conditioned opacities. Dark canvas needs lower numbers since
 // orange-on-dark already pops; the cream light canvas needs higher
@@ -205,27 +211,51 @@ export function MagneticDots() {
         const dot = dots[i];
         if (!el || !dot) continue;
 
+        // Cheap distance check first so the cull fast-path can short-circuit
+        // before we allocate a state object or compute a smoothstep factor.
+        let dist = Infinity;
+        if (active) {
+          const dx = mx - dot.cx;
+          const dy = my - dot.cy;
+          dist = Math.hypot(dx, dy);
+        }
+
+        // Cull fast-path: dots well outside cursor influence whose state is
+        // already at rest skip the lerp + DOM write entirely. Density was
+        // doubled in 2026-05-09 by halving CELL_PX; this branch keeps the
+        // per-frame cost flat because most dots in any given frame are at
+        // rest and outside RANGE_CULL_PX. Approaching cursor reactivates
+        // them automatically once dist falls below the cull threshold.
+        const existing = states[i];
+        if (
+          dist > RANGE_CULL_PX &&
+          existing &&
+          Math.abs(existing.ox) < REST_EPSILON &&
+          Math.abs(existing.oy) < REST_EPSILON &&
+          Math.abs(existing.opacity - p.rest) < REST_EPSILON &&
+          Math.abs(existing.scale - 1) < REST_EPSILON
+        ) {
+          continue;
+        }
+
         let targetOx = 0;
         let targetOy = 0;
         let targetOp = p.rest;
         let targetScale = 1;
 
-        if (active) {
+        if (active && dist <= RANGE_PX) {
+          const t = 1 - dist / RANGE_PX;
+          const factor = smoothstep(t);
           const dx = mx - dot.cx;
           const dy = my - dot.cy;
-          const dist = Math.hypot(dx, dy);
-          if (dist <= RANGE_PX) {
-            const t = 1 - dist / RANGE_PX;
-            const factor = smoothstep(t);
-            const len = dist || 1;
-            targetOx = -(dx / len) * MAX_PUSH_PX * factor;
-            targetOy = -(dy / len) * MAX_PUSH_PX * factor;
-            targetOp = p.rest + (p.active - p.rest) * factor;
-            targetScale = 1 + (MAX_GROW - 1) * factor;
-          }
+          const len = dist || 1;
+          targetOx = -(dx / len) * MAX_PUSH_PX * factor;
+          targetOy = -(dy / len) * MAX_PUSH_PX * factor;
+          targetOp = p.rest + (p.active - p.rest) * factor;
+          targetScale = 1 + (MAX_GROW - 1) * factor;
         }
 
-        let s = states[i];
+        let s = existing;
         if (!s) {
           s = { ox: 0, oy: 0, opacity: p.rest, scale: 1 };
           states[i] = s;

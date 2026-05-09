@@ -1281,6 +1281,17 @@ Test path (deferred to user, post-merge): visual diff on `/dashboard`, `/setting
 
 Rollback: single `git revert`. If the affected teammate finds the smaller buttons regressive, the next move is Option B from DP-1 → cherry-pick which buttons stay larger (e.g. CTAs only) rather than re-bumping every primitive.
 
+[14] Login back-to-home + denser MagneticDots without more compute (2026-05-09). Two unrelated tweaks shipped together since they're both small.
+
+* **Login back-to-home (`app/(auth)/login/page.tsx`).** /login had no return path to / for visitors who'd reached it from a campaign / external link. Added a minimal sticky header at the top of the page (h-[60px], no nav cluster) with a single `Distil` wordmark linked to `/`. Mirrors Stripe / Vercel / Linear convention: brand mark at top-left of auth surfaces. Centered "Distil" hero inside the form is unchanged — it's the form's visual anchor; the corner wordmark is the navigational affordance. Two "Distil" tokens on screen is intentional — different roles (one is the page hero, one is the home link).
+* **MagneticDots density (`components/app/MagneticDots.tsx`).** User asked for denser pattern without more compute. Doubled density: `CELL_PX` 80 → 56 (~2× more dots in the same area), `DOT_CAP` 400 → 800. Held per-frame cost flat by adding a cull fast-path inside the RAF tick: any dot with `dist > RANGE_CULL_PX (= RANGE_PX + 60)` AND state already within `REST_EPSILON (0.05)` of rest skips the four lerps and the two DOM writes entirely (`continue`s). Cursor approach inside `RANGE_CULL_PX` reactivates the dot automatically. In any given frame the active set is the dots within ~260px of the cursor + dots still settling — typically <15% of the rendered population — so per-frame DOM writes drop from ~400 to ~50-100, well below the pre-change baseline. The cull also moved the distance computation up (cheap to compute, lets the branch short-circuit before state allocation or smoothstep).
+
+What was *not* changed: dot radius (still 1.7px — keeps the "fine grain" character), RANGE_PX, MAX_PUSH_PX, LERP_FACTOR, halo, theme-conditioned profiles, the matchMedia gates (touch / reduced-motion / <1024px viewport still skip the loop entirely). Login form contents, ambient blobs, theme toggle.
+
+Test path: visual diff on / and /login at desktop — denser dot field, same animation feel; FPS should be unchanged or slightly better. /login's top-left wordmark navigates to / on click + keyboard activation.
+
+Rollback: single `git revert`. The cull fast-path is independent of the density bump — if the cull misbehaves, the constants can be reverted alone (CELL_PX → 80, DOT_CAP → 400) without touching the cull branch.
+
 ---
 
 ## Known Gaps to Watch
