@@ -54,7 +54,7 @@ export function TopbarNav({ hasCv }: Props) {
         aria-current={historyActive ? "page" : undefined}
         className={
           historyActive
-            ? "inline-flex items-center gap-2 rounded-md bg-[var(--color-orange-subtle)] px-3 py-2 text-base font-semibold text-orange transition-colors sm:px-5 sm:py-2.5 sm:text-lg"
+            ? "inline-flex items-center gap-2 rounded-md bg-[var(--color-orange-subtle)] px-4 py-2 text-base font-semibold text-orange transition-colors"
             : "btn-ghost"
         }
       >
@@ -68,11 +68,11 @@ export function TopbarNav({ hasCv }: Props) {
         title="Settings"
         className={
           settingsActive
-            ? "inline-flex size-11 items-center justify-center rounded-md bg-[var(--color-orange-subtle)] text-orange focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40"
+            ? "inline-flex size-10 items-center justify-center rounded-md bg-[var(--color-orange-subtle)] text-orange focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40"
             : "btn-icon"
         }
       >
-        <SettingsIcon size={20} aria-hidden />
+        <SettingsIcon size={18} aria-hidden />
       </Link>
     </>
   );

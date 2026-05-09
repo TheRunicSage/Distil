@@ -71,9 +71,9 @@ export function ThemeToggle() {
       className="btn-icon"
     >
       {theme === "dark" ? (
-        <SunIcon size={20} aria-hidden />
+        <SunIcon size={18} aria-hidden />
       ) : (
-        <MoonIcon size={20} aria-hidden />
+        <MoonIcon size={18} aria-hidden />
       )}
     </button>
   );

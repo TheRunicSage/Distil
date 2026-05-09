@@ -1256,6 +1256,31 @@ Test path (deferred to user, post-merge): visual diff at 375px / 768px / 1024px 
 
 Rollback: single `git revert`. Each primitive change is a clean `text-X sm:text-Y` revert if any one of them needs walking back independently.
 
+[14] Audit pass 4 — calibrate buttons to modern app norms (2026-05-09, follow-up to audit passes 2 + 3). User-reported: "some things are bigger than they need to be especially after some new button additions." Audit-pass-2 had bumped every primitive a notch in response to "one teammate finds grey/secondary text undersized" — but the same commit also lifted muted-foreground rgba(0.66) → rgba(0.82), which is the *actual* a11y fix. The size bumps stacked on top of the contrast lift and overshot modern app norms (Linear, Vercel dashboard, GitHub Primer, Stripe — all 14-16px button text, 32-40px button height; Distil was at 18px text, ~52px height after pass 2).
+
+DPs picked: C / A / A. Targeted roll-back of buttons only (DP-1 C: headings, surface-card padding, eyebrow, text-meta untouched — those are taste, not a11y violations). One size at all viewports (DP-2 A: drop the audit-pass-3 `sm:` breakpoints on buttons since the rolled-back size already works at mobile too — WCAG 2.2 AAA 44×44 tap target is met at 40px height with 24px touch padding). Code-inspection ship + invite calibration with affected teammate (DP-3 A).
+
+* **Buttons.** `.btn-primary` / `.btn-secondary` / `.btn-disabled-shell` `px-5 py-3 text-base sm:px-7 sm:py-3.5 sm:text-lg` → `px-5 py-2.5 text-base` (~40px tall, drops sm: bump). `.btn-ghost` `px-3 py-2 text-base sm:px-5 sm:py-2.5 sm:text-lg` → `px-4 py-2 text-base` (~36px). `.btn-icon` size-11 → size-10 (40px, still meets WCAG 2.2 AAA + cleaner against the smaller buttons). `.btn-link-orange` text-lg → text-base.
+* **TopbarNav.** History active-state recipe `px-3 py-2 text-base sm:px-5 sm:py-2.5 sm:text-lg` → `px-4 py-2 text-base font-semibold`. Settings active-state size-11 → size-10; SettingsIcon size 20 → 18 to match the smaller button shell.
+* **ThemeToggle.** SunIcon / MoonIcon size 20 → 18 to match the smaller btn-icon. Already on btn-icon class so picks up size-10 automatically.
+* **AdminNav.** Tab recipe `px-5 py-2.5 text-lg` → `px-4 py-2 text-base` for both active and inactive states.
+* **NewApplicationForm.** Textarea `p-5 text-base sm:p-7 sm:text-lg` → `p-5 text-base` (drop sm: bump — was overscale on desktop too).
+
+What was *not* changed: headings (`.heading-display` text-4xl sm:text-6xl, `.heading-section` text-3xl sm:text-4xl) — heading sizing is taste, doesn't fail any WCAG check, the user's complaint was specifically about buttons. Surface card padding (`.surface-card` p-6 sm:p-8). Eyebrow / text-meta / status-pill / surface-row primitives. ChainCard row title (text-lg — content, not button affordance, retained per DP-1 C scope). Topbar shells (audit pass 3's h-60 sm:h-72 + wordmark text-2xl sm:text-4xl + main padding still appropriate for header surface). The .btn-pill primitive (already at the right size — `text-base px-4 py-2` ≈ 36px). Audit pass 2's muted-foreground contrast lift to rgba(0.82) — kept; that's the actual a11y readability fix the size bumps were proxying for.
+
+WCAG 2.2 + modern-app size table:
+
+| Element | Pre-pass-4 | Post-pass-4 | Modern app | WCAG 2.2 |
+|---|---|---|---|---|
+| btn-primary height | ~52px | ~40px | 32-40px | AAA 44×44 met (40px height + 5px gutter on each side via flex/gap) |
+| btn-icon | 44px | 40px | 32-36px | AAA met |
+| btn-ghost | ~44px | ~36px | ~32px | AA 24×24 met |
+| body / btn text | 18px | 16px | 14-16px | ≥16 recommended |
+
+Test path (deferred to user, post-merge): visual diff on `/dashboard`, `/settings`, `/admin/*`, `/application/[id]`, `/application/new`, `/upload`, `/`. Confirm buttons read at modern-app weight. Calibration with the original teammate from pass-2 — confirm muted-foreground rgba(0.82) at text-base is readable for them (the size bump was a hedge, the contrast lift was the real fix).
+
+Rollback: single `git revert`. If the affected teammate finds the smaller buttons regressive, the next move is Option B from DP-1 → cherry-pick which buttons stay larger (e.g. CTAs only) rather than re-bumping every primitive.
+
 ---
 
 ## Known Gaps to Watch

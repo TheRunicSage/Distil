@@ -414,19 +414,19 @@
      - btn-link-orange: text-base → text-lg.
      - status-pill: text-[11px] → text-xs (12px); px-2.5 → px-3. */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-orange px-5 py-3 text-base font-semibold text-white transition-colors hover:bg-orange-light disabled:pointer-events-none disabled:opacity-50 sm:px-7 sm:py-3.5 sm:text-lg;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-orange px-5 py-2.5 text-base font-semibold text-white transition-colors hover:bg-orange-light disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-dark3/60 px-5 py-3 text-base font-medium text-text transition-colors hover:border-orange/40 hover:bg-dark3 disabled:pointer-events-none disabled:opacity-50 sm:px-7 sm:py-3.5 sm:text-lg;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-dark3/60 px-5 py-2.5 text-base font-medium text-text transition-colors hover:border-orange/40 hover:bg-dark3 disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-ghost {
-    @apply inline-flex items-center gap-2 rounded-md px-3 py-2 text-base text-muted-foreground transition-colors hover:bg-dark3 hover:text-text sm:px-5 sm:py-2.5 sm:text-lg;
+    @apply inline-flex items-center gap-2 rounded-md px-4 py-2 text-base text-muted-foreground transition-colors hover:bg-dark3 hover:text-text;
   }
   .btn-icon {
-    @apply inline-flex size-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-dark3 hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40;
+    @apply inline-flex size-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-dark3 hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40;
   }
   .btn-link-orange {
-    @apply text-lg text-orange transition-colors hover:text-orange-light;
+    @apply text-base text-orange transition-colors hover:text-orange-light;
   }
   /* btn-pill — small navigable chip for secondary nav (back-links and
      "view all" affordances). Reads as clickable without the heft of
@@ -437,7 +437,7 @@
     @apply inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-base text-muted-foreground transition-colors hover:border-orange/40 hover:bg-dark3 hover:text-text;
   }
   .btn-disabled-shell {
-    @apply inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-border bg-dark4 px-5 py-3 text-base font-medium text-muted-foreground sm:px-7 sm:py-3.5 sm:text-lg;
+    @apply inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-border bg-dark4 px-5 py-2.5 text-base font-medium text-muted-foreground;
   }
 
   /* Status pill (used for application.status badges). */
