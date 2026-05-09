@@ -13,7 +13,14 @@
 
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AlarmClockOffIcon, ArrowLeftIcon, CheckCircleIcon } from "lucide-react";
+import {
+  AlarmClockOffIcon,
+  ArrowLeftIcon,
+  BanIcon,
+  CheckCircleIcon,
+  PauseIcon,
+  PencilIcon,
+} from "lucide-react";
 import { CopyId } from "@/components/app/CopyId";
 import { ApplicationLiveView } from "@/components/application/ApplicationLiveView";
 import { CoverLetterPreview } from "@/components/application/CoverLetterPreview";
@@ -21,7 +28,13 @@ import { CvPreview } from "@/components/application/CvPreview";
 import { PreviewPanel } from "@/components/application/PreviewPanel";
 import { RetryAbandonControls } from "@/components/application/RetryAbandonControls";
 import { RetryFailedButton } from "@/components/application/RetryFailedButton";
+import { createServiceClient } from "@/lib/supabase/service";
 import { createClient } from "@/lib/supabase/server";
+import {
+  ERROR_CODES,
+  type ErrorCode,
+  type RecoveryKind,
+} from "@/lib/errors/codes";
 import type {
   ApplicationOutput,
   ApplicationOutputSuccess,
@@ -85,6 +98,48 @@ export default async function ApplicationPage({ params }: RouteCtx) {
     "bg-dim/15 text-muted-foreground border-border";
   const label = STATUS_LABEL[app.status] ?? app.status;
 
+  // For error states, look up the latest error_code from request_logs and
+  // map it to a recovery descriptor. Drives which branch the error
+  // section renders below — input-fixable errors get the inline retry
+  // form; transient (system) errors get a soft "we've been notified"
+  // retry; non_recoverable / system_paused get explanatory dead-ends.
+  // Service-role client because request_logs is admin-RLS gated.
+  let recovery: {
+    kind: RecoveryKind;
+    headline: string;
+    hint: string | null;
+  } | null = null;
+  if (app.status === "error") {
+    const service = createServiceClient();
+    const { data: latestErr } = await service
+      .from("request_logs")
+      .select("error_code")
+      .eq("application_id", id)
+      .not("error_code", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const code = (latestErr?.error_code as ErrorCode | null) ?? null;
+    const entry = code ? ERROR_CODES[code] : null;
+    if (entry && entry.recovery_kind !== "no_recovery") {
+      recovery = {
+        kind: entry.recovery_kind,
+        headline: entry.recovery_headline,
+        hint: entry.recovery_hint,
+      };
+    } else {
+      // No coded error reached request_logs OR the code's recovery_kind
+      // is no_recovery (auth / submit-time validation that shouldn't
+      // land here). Fall back to transient — the soft "we've been
+      // notified" retry is the right shape for unknown failures.
+      recovery = {
+        kind: "transient",
+        headline: ERROR_CODES.internal_error.recovery_headline,
+        hint: ERROR_CODES.internal_error.recovery_hint,
+      };
+    }
+  }
+
   return (
     <div className="space-y-8">
       <header>
@@ -143,7 +198,7 @@ export default async function ApplicationPage({ params }: RouteCtx) {
         </section>
       )}
 
-      {(app.status === "error" || app.status === "cancelled") && (
+      {app.status === "cancelled" && (
         <section className="rounded-2xl border border-danger/30 bg-danger/10 p-9">
           <div className="flex items-start gap-4">
             <div
@@ -154,15 +209,12 @@ export default async function ApplicationPage({ params }: RouteCtx) {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold uppercase tracking-[0.14em] text-danger">
-                {app.status === "cancelled"
-                  ? "Run cancelled before it started"
-                  : "Generation didn’t finish"}
+                Run cancelled before it started
               </p>
               <p className="mt-4 text-lg leading-relaxed text-text">
-                {app.status === "cancelled"
-                  ? "The system never picked this run up — usually because the worker was offline at submit time. Retry now and it’ll go straight through."
-                  : (app.error_message ??
-                    "We couldn’t finish this run. Retry now or start fresh from the new-application screen.")}
+                The system never picked this run up — usually because the
+                worker was offline at submit time. Retry now and it&apos;ll
+                go straight through.
               </p>
               <div className="mt-7 flex flex-wrap items-center gap-3">
                 <RetryFailedButton
@@ -176,6 +228,17 @@ export default async function ApplicationPage({ params }: RouteCtx) {
             </div>
           </div>
         </section>
+      )}
+
+      {app.status === "error" && recovery && (
+        <ErrorRecoverySection
+          applicationId={id}
+          recovery={recovery}
+          attemptNumber={app.attempt_number}
+          parentJd={app.job_description}
+          parentNotes={app.user_notes}
+          rawErrorMessage={app.error_message}
+        />
       )}
 
       {app.status === "abandoned" && (
@@ -323,5 +386,154 @@ function SuccessView({
         )}
       </section>
     </div>
+  );
+}
+
+// ErrorRecoverySection — guided UX for the four recovery shapes:
+//   - input_fixable: warn-tone banner + headline/hint, then the same
+//     RetryAbandonControls form Screen 9 uses (JD editor + notes + use-
+//     new-cv toggle + Retry/Abandon).
+//   - transient: danger-tone banner + soft "we've been notified" hint
+//     + same RetryFailedButton.
+//   - non_recoverable: muted banner with no retry — only "back to
+//     dashboard" + "new application".
+//   - system_paused: info-tone banner with "back to dashboard" + "new
+//     application" so the user can re-submit when the kill switch
+//     flips back.
+// Each branch shares a common 16px-icon banner shell; only the body
+// rendering differs per kind.
+function ErrorRecoverySection({
+  applicationId,
+  recovery,
+  attemptNumber,
+  parentJd,
+  parentNotes,
+  rawErrorMessage,
+}: {
+  applicationId: string;
+  recovery: { kind: RecoveryKind; headline: string; hint: string | null };
+  attemptNumber: number;
+  parentJd: string;
+  parentNotes: string | null;
+  rawErrorMessage: string | null;
+}) {
+  const palette =
+    recovery.kind === "input_fixable"
+      ? {
+          frame: "border-warn/30 bg-warn/10",
+          iconShell: "border-warn/40 bg-warn/15 text-warn",
+          eyebrow: "text-warn",
+          eyebrowText: "Let's try again",
+          Icon: PencilIcon,
+        }
+      : recovery.kind === "system_paused"
+        ? {
+            frame: "border-info/30 bg-info/10",
+            iconShell: "border-info/40 bg-info/15 text-info",
+            eyebrow: "text-info",
+            eyebrowText: "Briefly paused",
+            Icon: PauseIcon,
+          }
+        : recovery.kind === "non_recoverable"
+          ? {
+              frame: "border-border bg-dark3/60",
+              iconShell:
+                "border-border bg-dark2 text-muted-foreground",
+              eyebrow: "text-muted-foreground",
+              eyebrowText: "Heads up",
+              Icon: BanIcon,
+            }
+          : {
+              // transient — system error, soft "we've been notified" copy
+              frame: "border-danger/30 bg-danger/10",
+              iconShell: "border-danger/40 bg-danger/15 text-danger",
+              eyebrow: "text-danger",
+              eyebrowText: "Something went wrong",
+              Icon: AlarmClockOffIcon,
+            };
+
+  return (
+    <section className={`rounded-2xl border p-9 ${palette.frame}`}>
+      <div className="flex items-start gap-4">
+        <div
+          aria-hidden
+          className={`flex size-16 shrink-0 items-center justify-center rounded-xl border ${palette.iconShell}`}
+        >
+          <palette.Icon size={30} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p
+            className={`text-sm font-bold uppercase tracking-[0.14em] ${palette.eyebrow}`}
+          >
+            {palette.eyebrowText}
+          </p>
+          <h2 className="mt-3 text-2xl text-text">{recovery.headline}</h2>
+          {recovery.hint && (
+            <p className="mt-4 text-lg leading-relaxed text-text/90">
+              {recovery.hint}
+            </p>
+          )}
+
+          {recovery.kind === "input_fixable" && (
+            <div className="mt-7 rounded-lg border border-border bg-dark3 p-7">
+              <RetryAbandonControls
+                applicationId={applicationId}
+                attemptNumber={attemptNumber}
+                parentJd={parentJd}
+                parentNotes={parentNotes}
+              />
+            </div>
+          )}
+
+          {recovery.kind === "transient" && (
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <RetryFailedButton
+                applicationId={applicationId}
+                canRetry={attemptNumber < 3}
+              />
+              <Link href="/application/new" className="btn-secondary">
+                New application
+              </Link>
+            </div>
+          )}
+
+          {recovery.kind === "system_paused" && (
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <Link href="/dashboard" className="btn-secondary">
+                Back to dashboard
+              </Link>
+              <Link href="/application/new" className="btn-ghost">
+                Try a new submission
+              </Link>
+            </div>
+          )}
+
+          {recovery.kind === "non_recoverable" && (
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <Link href="/dashboard" className="btn-secondary">
+                Back to dashboard
+              </Link>
+              <Link href="/application/new" className="btn-primary">
+                New application
+              </Link>
+            </div>
+          )}
+
+          {/* Raw underlying message kept inside a small disclosure for
+              the curious user — useful for support, never the primary
+              communication. Hidden by default. */}
+          {rawErrorMessage && (
+            <details className="mt-6 text-sm text-muted-foreground">
+              <summary className="cursor-pointer hover:text-text">
+                Technical details
+              </summary>
+              <p className="mt-2 font-mono text-xs leading-relaxed">
+                {rawErrorMessage}
+              </p>
+            </details>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }

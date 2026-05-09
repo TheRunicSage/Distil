@@ -1328,6 +1328,32 @@ Test path: any /application/[id] in success state — confirm both previews now 
 
 Rollback: single `git revert`. Both changes are surface-only — no schema, no API, no pipeline.
 
+[14] Guided error recovery on /application/[id] — input-fixable vs system-side branches (2026-05-09). User asked to build "user journey when the app returns invalid llm output or any kind of error that is related to either their cv/job description that needs to change. Then connect it with retry on the spot. I want them to be guided." Plus: "when its our system side error then give user a soft message saying things like 'Seems like something is wrong... admin/we has/have been informed and are looking into this'."
+
+DPs: C / A / A. Categorize every error code with `recovery_kind` + headline + hint (DP-1 C); read the latest error_code from request_logs at page render rather than persist on the row (DP-2 A — no schema change); reuse the existing `RetryAbandonControls` Screen-9 form for input_fixable cases (DP-3 A — same component already does inline JD edit + use-new-cv toggle + retry/abandon).
+
+* **`lib/errors/codes.ts`.** Each `ERROR_CODES` entry now carries three new fields: `recovery_kind` ("input_fixable" | "transient" | "non_recoverable" | "system_paused" | "no_recovery"), `recovery_headline` (friendly H1), and `recovery_hint` (one-sentence "what to try", null for codes with no actionable user step). New exported `RecoveryKind` type. Tags by code:
+  - **input_fixable** — `jd_too_short`, `generation_too_large`, `llm_invalid_output`, `master_cv_parse_failed`. User can fix the JD or re-upload the CV.
+  - **transient** — `internal_error`, `database_error`, `rendering_failed`, `llm_failed`, `storage_failed`, `service_unavailable`. System-side; hint copy explicitly says "Our team has been alerted automatically and we're looking into it" (Sentry alerts wired per Decision Log [15]).
+  - **non_recoverable** — `retry_limit_reached`, `daily_cost_ceiling_reached`, `files_expired`. Dead-end, no retry.
+  - **system_paused** — `generation_disabled`. Try-later messaging.
+  - **no_recovery** — sentinel for codes that pre-empt creation (auth, submit-time validation, email_send_failed) and never land on the application detail page.
+
+* **`app/(app)/application/[id]/page.tsx`.** When `app.status === "error"`, the page now queries `request_logs` for the latest `error_code` on this application via service-role (the table is admin-RLS gated; one extra select on the rare error path). Maps the code → recovery descriptor; falls back to `transient` if no code is logged or the code is `no_recovery`. Renders one of four branches via the new `ErrorRecoverySection` component (defined inline at the bottom of the page):
+  - **input_fixable**: warn-tone banner with PencilIcon, headline + hint, then `RetryAbandonControls` (Screen 9's form — JD editor pre-filled, notes textarea, "Use new master CV" checkbox, Retry/Abandon buttons). Same retry route as before; user can fix the JD inline and resubmit on the spot.
+  - **transient**: danger-tone banner with AlarmClockOffIcon, headline + soft "team has been alerted, retry usually does the trick" hint, then `RetryFailedButton` + "New application" link.
+  - **system_paused**: info-tone banner with PauseIcon, "we're checking on it" hint, "Back to dashboard" + "Try a new submission" links.
+  - **non_recoverable**: muted-tone banner with BanIcon, contextual hint (cap reached / files expired / daily limit), "Back to dashboard" + "New application" links (the latter starts a fresh attempt-1 chain rather than retrying this one, which is the only viable path forward).
+  - All four branches surface the raw `error_message` inside a `<details>` "Technical details" disclosure at the bottom — collapsed by default, useful for support, never primary communication.
+
+* **`cancelled` status branch** kept separate (its own section), unchanged copy: that path is system-side but specifically about Inngest never picking the run up — current "retry now and it'll go straight through" copy is already the right shape.
+
+What was *not* changed: `applications` table schema (no error_code column added — the page reads from `request_logs` on demand); the retry route (already accepts JD/notes/use_new_cv from any non-success terminal state); `RetryAbandonControls` (reused as-is — its existing copy works for both Screen 9 and the input_fixable error case); insufficient_input branch; success / abandoned branches; cancelled branch; the system prompt; the LLM provider layer; the DOCX renderer; the schema validation. Sentry wiring (already in place per Decision Log [15]) — the new "team has been alerted" copy is honest, not aspirational.
+
+Test path: trigger `llm_invalid_output` (today's three identical failures will retry cleanly now that the schema preprocess strips orphan education entries — but if a future model glitch produces another flavour of llm_invalid_output, the input_fixable branch shows the JD editor with the friendly "sometimes the AI gets confused" hint). Trigger transient by simulating a failed Inngest send (already-failing path on the retry route in the catch block) — should render the danger-tone soft-message branch with the soft "we've been alerted" copy. Trigger `daily_cost_ceiling_reached` by tripping the daily limit — should render the muted non_recoverable branch with no retry button.
+
+Rollback: single `git revert`. The codes-table additions are additive (new optional-shape fields); the page changes are scoped to the error branch. The new `ErrorRecoverySection` component is inline so removal is a single-block delete.
+
 ---
 
 ## Known Gaps to Watch
