@@ -35,14 +35,18 @@ export function TopbarNav({ hasCv }: Props) {
   return (
     <>
       {hasCv ? (
-        <Link href="/application/new" className="btn-primary">
+        <Link
+          href="/application/new"
+          className="btn-primary"
+          aria-label="New application"
+        >
           <PlusIcon size={18} aria-hidden />
-          New application
+          <span className="hidden sm:inline">New application</span>
         </Link>
       ) : (
-        <Link href="/upload" className="btn-primary">
+        <Link href="/upload" className="btn-primary" aria-label="Upload CV">
           <UploadIcon size={18} aria-hidden />
-          Upload CV
+          <span className="hidden sm:inline">Upload CV</span>
         </Link>
       )}
       <Link
@@ -50,7 +54,7 @@ export function TopbarNav({ hasCv }: Props) {
         aria-current={historyActive ? "page" : undefined}
         className={
           historyActive
-            ? "inline-flex items-center gap-2 rounded-md bg-[var(--color-orange-subtle)] px-5 py-2.5 text-lg font-semibold text-orange transition-colors"
+            ? "inline-flex items-center gap-2 rounded-md bg-[var(--color-orange-subtle)] px-3 py-2 text-base font-semibold text-orange transition-colors sm:px-5 sm:py-2.5 sm:text-lg"
             : "btn-ghost"
         }
       >

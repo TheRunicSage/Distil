@@ -122,7 +122,7 @@ export function NewApplicationForm() {
           required
           rows={16}
           placeholder="Paste the full posting here — title, company, responsibilities, requirements, the whole thing."
-          className="mt-5 block w-full resize-y rounded-2xl border border-border bg-dark2/60 p-7 text-lg leading-relaxed text-text backdrop-blur-sm placeholder:text-muted-foreground focus:border-orange/60 focus:outline-none focus:ring-2 focus:ring-orange/20"
+          className="mt-5 block w-full resize-y rounded-2xl border border-border bg-dark2/60 p-5 text-base leading-relaxed text-text backdrop-blur-sm placeholder:text-muted-foreground focus:border-orange/60 focus:outline-none focus:ring-2 focus:ring-orange/20 sm:p-7 sm:text-lg"
         />
         <div className="mt-5 h-2 w-full overflow-hidden rounded-full bg-dark3">
           <div

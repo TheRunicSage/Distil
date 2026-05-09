@@ -358,11 +358,16 @@
   .eyebrow-muted {
     @apply text-base font-semibold uppercase tracking-[0.20em] text-muted-foreground;
   }
+  /* Headings: mobile-first base + sm: bump to the audit-pass-2 desktop
+     value. text-6xl (60px) overflowed and wrapped awkwardly at 375px;
+     text-4xl mobile + text-6xl desktop reads as one piece of typography
+     at both ends. Same shape for heading-section. Audit pass 3
+     (2026-05-09). */
   .heading-display {
-    @apply font-serif text-6xl font-light leading-[1.15] tracking-tight text-text;
+    @apply font-serif text-4xl font-light leading-[1.15] tracking-tight text-text sm:text-6xl;
   }
   .heading-section {
-    @apply font-serif text-4xl font-normal leading-tight tracking-tight text-text;
+    @apply font-serif text-3xl font-normal leading-tight tracking-tight text-text sm:text-4xl;
   }
   .text-meta {
     @apply text-base leading-[1.5] text-muted-foreground;
@@ -376,13 +381,13 @@
      so the bigger row content has matching breathing room. surface-card
      p-8 stays — already roomy at 32px. */
   .surface-card {
-    @apply rounded-2xl border border-border bg-dark2/60 p-8 backdrop-blur-sm;
+    @apply rounded-2xl border border-border bg-dark2/60 p-6 backdrop-blur-sm sm:p-8;
   }
   .surface-card-interactive {
-    @apply rounded-2xl border border-border bg-dark2/60 p-8 backdrop-blur-sm transition-colors hover:border-orange/40;
+    @apply rounded-2xl border border-border bg-dark2/60 p-6 backdrop-blur-sm transition-colors hover:border-orange/40 sm:p-8;
   }
   .surface-row {
-    @apply flex items-center justify-between rounded-xl border border-border bg-dark2/60 px-6 py-4 backdrop-blur-sm transition-colors hover:border-orange/40 hover:bg-dark3/80;
+    @apply flex items-center justify-between rounded-xl border border-border bg-dark2/60 px-5 py-3.5 backdrop-blur-sm transition-colors hover:border-orange/40 hover:bg-dark3/80 sm:px-6 sm:py-4;
   }
   /* .panel — container without baked-in padding. Used for admin
      tables and stat cards where the consumer wants to control its
@@ -400,13 +405,13 @@
      - btn-link-orange: text-base → text-lg.
      - status-pill: text-[11px] → text-xs (12px); px-2.5 → px-3. */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-orange px-7 py-3.5 text-lg font-semibold text-white transition-colors hover:bg-orange-light disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-orange px-5 py-3 text-base font-semibold text-white transition-colors hover:bg-orange-light disabled:pointer-events-none disabled:opacity-50 sm:px-7 sm:py-3.5 sm:text-lg;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-dark3/60 px-7 py-3.5 text-lg font-medium text-text transition-colors hover:border-orange/40 hover:bg-dark3 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-dark3/60 px-5 py-3 text-base font-medium text-text transition-colors hover:border-orange/40 hover:bg-dark3 disabled:pointer-events-none disabled:opacity-50 sm:px-7 sm:py-3.5 sm:text-lg;
   }
   .btn-ghost {
-    @apply inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-lg text-muted-foreground transition-colors hover:bg-dark3 hover:text-text;
+    @apply inline-flex items-center gap-2 rounded-md px-3 py-2 text-base text-muted-foreground transition-colors hover:bg-dark3 hover:text-text sm:px-5 sm:py-2.5 sm:text-lg;
   }
   .btn-icon {
     @apply inline-flex size-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-dark3 hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40;
@@ -423,7 +428,7 @@
     @apply inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-base text-muted-foreground transition-colors hover:border-orange/40 hover:bg-dark3 hover:text-text;
   }
   .btn-disabled-shell {
-    @apply inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-border bg-dark4 px-7 py-3.5 text-lg font-medium text-muted-foreground;
+    @apply inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-border bg-dark4 px-5 py-3 text-base font-medium text-muted-foreground sm:px-7 sm:py-3.5 sm:text-lg;
   }
 
   /* Status pill (used for application.status badges). */

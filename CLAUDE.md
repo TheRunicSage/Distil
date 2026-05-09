@@ -1232,6 +1232,30 @@ Test path: visual diff on `/`, `/dashboard` (Recent panel), `/application/<id>`,
 
 Rollback: single `git revert`. The new `.btn-pill` primitive is additive — if it doesn't earn its keep at a future audit, the four call sites can revert to bespoke recipes and the primitive can be dropped from globals.css.
 
+[14] Audit pass 3 — mobile responsiveness for the (app) shell + design-system primitives (2026-05-09, follow-up to audit passes 1 + 2). The audit-pass-1/2 commits bumped primitives universally for desktop legibility with no `sm:` breakpoints — mobile (<640px) inherited the bumped scale, producing topbar overflow at 375px (4 controls + text-4xl wordmark wouldn't fit), heading-display text-6xl wrapping awkwardly, and btn-primary text-lg labels overflowing inside flex-wrap rows.
+
+DPs picked: Option A on all three. Approach: mobile-first base + `sm:` bump in the primitives layer, not per-surface overrides. Topbar: shrink shell + drop primary CTA labels below sm:, keep all 4 controls visible. Verification: code-inspection scan over callsites (FAQ, login, admin pages, every (app) page using these primitives), live browser verification deferred to user.
+
+* **Headings.** `.heading-display` text-6xl → `text-4xl sm:text-6xl`. `.heading-section` text-4xl → `text-3xl sm:text-4xl`.
+* **Surfaces.** `.surface-card` / `.surface-card-interactive` p-8 → `p-6 sm:p-8`. `.surface-row` `px-6 py-4` → `px-5 py-3.5 sm:px-6 sm:py-4`.
+* **Buttons.** `.btn-primary`, `.btn-secondary`, `.btn-disabled-shell` `px-7 py-3.5 text-lg` → `px-5 py-3 text-base sm:px-7 sm:py-3.5 sm:text-lg`. `.btn-ghost` `px-5 py-2.5 text-lg` → `px-3 py-2 text-base sm:px-5 sm:py-2.5 sm:text-lg`. The other primitives (`.btn-icon` size-11, `.btn-link-orange` text-lg, `.btn-pill` text-base, `.eyebrow` / `.eyebrow-muted` / `.text-meta` / `.status-pill`) stay untouched — already mobile-comfortable.
+* **(app) topbar (`app/(app)/layout.tsx`).** `h-[72px] px-8` → `h-[60px] px-4 sm:h-[72px] sm:px-8`. Wordmark `text-4xl` → `text-2xl sm:text-4xl`. Right-cluster gap `gap-2.5` → `gap-1.5 sm:gap-2.5`. Main padding `px-6 py-16` → `px-4 py-10 sm:px-6 sm:py-16`.
+* **Landing topbar (`components/landing/LandingTopbar.tsx`).** Same shell shape: `h-[60px] px-4 sm:h-[72px] sm:px-6`, wordmark `text-2xl sm:text-4xl`, right-cluster `gap-1.5 sm:gap-2.5`. Three controls (Sign in / ThemeToggle / Get started); the btn-primary primitive change makes "Get started" fit comfortably below sm:.
+* **TopbarNav primary CTA (`components/app/TopbarNav.tsx`).** "+ New application" / "Upload CV" labels wrapped in `<span className="hidden sm:inline">`; PlusIcon / UploadIcon stay visible. `aria-label` added to the Link so the icon-only state still announces. Settings button was already icon-only at all viewports — primary CTA now matches that pattern below sm:. History link active-state recipe got the same `text-base sm:text-lg` + `px-3 sm:px-5` mobile-first treatment so the active variant stays in lockstep with `.btn-ghost`.
+* **NewApplicationForm textarea (`components/application/NewApplicationForm.tsx`).** `p-7 text-lg` → `p-5 text-base sm:p-7 sm:text-lg`. Submit button picks up the new btn-primary mobile size automatically.
+
+What was *not* changed: ThemeToggle (already btn-icon, fine at 44px in both modes); .btn-icon size-11 (44px, already meets tap-target); .btn-pill (text-base px-4 py-2 ≈ 36px — chip pattern, smaller-than-tap-target is conventional for nav chips); admin tables (already overflow-x-auto + hidden sm:table-cell); login page (already mobile-friendly with max-w-md + h-12 + text-sm); preview islands (CV / cover letter / PreviewPanel / PreviewZoomModal — fixed-pixel pagination contract); DOCX renderer; output schema; system prompt; auth layout; PageL preview height max-h-[900px] (acceptable on mobile, scrolls naturally).
+
+Inspection scan completed pre-commit:
+- `heading-display` callsites: dashboard, settings, upload, history, application/new, faq — all picked up the breakpoint without one-off overrides.
+- `heading-section` callsites: dashboard, upload, faq, WhatYouGetSection — same.
+- Login page uses bespoke `text-5xl` Distil heading + `h-12` inputs — not affected.
+- Admin pages use bespoke `text-4xl` page headers (not heading-display) — not affected by the primitive change. They already use `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4` for stat grids and `overflow-x-auto` for tables.
+
+Test path (deferred to user, post-merge): visual diff at 375px / 768px / 1024px on landing, /dashboard, /history, /upload, /application/new, /application/<id>, /settings, /admin/* (admin login required). Confirm topbar fits without overflow at 375px on both shells; confirm heading-display + btn-primary read as one piece with their desktop variants at the sm: boundary; confirm NewApplicationForm textarea is usable at 375px.
+
+Rollback: single `git revert`. Each primitive change is a clean `text-X sm:text-Y` revert if any one of them needs walking back independently.
+
 ---
 
 ## Known Gaps to Watch
