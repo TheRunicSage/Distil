@@ -1292,6 +1292,18 @@ Test path: visual diff on / and /login at desktop — denser dot field, same ani
 
 Rollback: single `git revert`. The cull fast-path is independent of the density bump — if the cull misbehaves, the constants can be reverted alone (CELL_PX → 80, DOT_CAP → 400) without touching the cull branch.
 
+[14] MagneticDots density bump 2 + light-mode visibility (2026-05-09, follow-up). User: "make the magnetic dot pattern even more dense, also for light mode can you make the dots/ui more pink. Its mostly just white." — picked DP-1 A (denser) + a modified DP-2 ("Proceed with orange only. NO PINK. Proceed with B but dont change color at all. Just make it more visible.").
+
+* **Density.** `CELL_PX` 56 → 44 (~1.6× more dots). `DOT_CAP` 800 → 1300. Cull fast-path inside the RAF tick (added in the previous commit) keeps the per-frame active set bounded to dots within `RANGE_CULL_PX` of the cursor + still-settling dots, so the per-frame DOM-write cost stays roughly flat despite ~3.2× the total dot count vs. the pre-bump-1 baseline. Dot radius (1.7px), RANGE_PX, lerp factors, halo size all unchanged — the field reads tighter without becoming a noise pattern.
+* **Light-mode visibility (orange only — no pink).** `LIGHT_PROFILE` rest 0.32 → 0.46, active 0.55 → 0.72, haloPeak 0.22 → 0.34. Brand orange (`#e2613b`) at the previous alpha was washing out against the cream canvas (`#f5f3ed`) — the page read as "mostly white". Bumped opacities so the dot grid + cursor halo carry presence. Dark mode `DARK_PROFILE` untouched.
+* **Light-mode ambient blob.** New `:root:not(.dark) .ambient-blob-orange` override in `globals.css` swaps the radial gradient from the desaturated `var(--color-orange-glow)` (rgba 226,97,59,0.18) to a stacked-stop gradient peaking at rgba 0.42 inside, falling through 0.18 at 35%, transparent at 70%. Blur tightened 80px → 60px so the corner glow has crisper edges in light mode without losing softness. Dark mode `.ambient-blob-orange` rule (the canonical block above) is unchanged.
+
+What was *not* changed: brand orange itself (`--color-orange` still `#e2613b` in both modes — no pink, no rose, no palette work); ambient-blob-violet; halo blend mode (still `multiply` in light mode — preserves the warmth on the off-white canvas); the cull fast-path; dot radius; dark-mode profile values; canvas tint (`--color-dark` light value still `#f5f3ed`); buttons / surfaces / typography.
+
+Test path: visual diff on / and /login at light mode + dark mode. Confirm denser dots actually paint (Chrome DevTools "Rendering" → enable Paint flashing should show no extra paint thrash from the density bump). Confirm the orange ambient corner is visible in light mode — should read as a clear "warm corner glow" rather than a barely-there wash.
+
+Rollback: single `git revert`. The density change (`CELL_PX` + `DOT_CAP`) is independent of the visibility change (`LIGHT_PROFILE` opacities + ambient-blob override) so either can be walked back alone if one regresses.
+
 ---
 
 ## Known Gaps to Watch

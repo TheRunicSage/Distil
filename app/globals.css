@@ -598,6 +598,21 @@
   animation: ambient-float 22s ease-in-out infinite;
 }
 
+/* Light-mode ambient blob visibility (2026-05-09). Brand orange at
+   rgba(226,97,59,0.18) on the cream canvas (#f5f3ed) was producing a
+   barely-perceptible peach wash — page read as "mostly white". Same
+   brand orange in light mode, just stronger alpha + tighter blur so
+   the corner glow actually carries presence. Dark mode unchanged. */
+:root:not(.dark) .ambient-blob-orange {
+  background: radial-gradient(
+    circle,
+    rgba(226, 97, 59, 0.42) 0%,
+    rgba(226, 97, 59, 0.18) 35%,
+    transparent 70%
+  );
+  filter: blur(60px);
+}
+
 /* ============================================================
    View Transitions — circular reveal for theme toggle.
    ThemeToggle dispatches document.startViewTransition(), captures

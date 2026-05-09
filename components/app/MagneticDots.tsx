@@ -32,11 +32,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-// Density: CELL_PX 80 → 56 (2026-05-09) ≈ 2× more dots in the same area.
-// Held the per-frame cost flat by skipping inert dots — see the cull
-// fast-path inside the tick loop. DOT_CAP raised in proportion so the
-// new density actually paints on wide screens.
-const CELL_PX = 56;
+// Density bumps:
+//   2026-05-09: CELL_PX 80 → 56 (~2× density), DOT_CAP 400 → 800.
+//   2026-05-09 (later): CELL_PX 56 → 44 (~1.6× more), DOT_CAP 800 → 1300.
+// Held per-frame cost flat across both bumps by skipping inert dots —
+// see the cull fast-path inside the tick loop. The cull bounds active
+// iterations to dots within RANGE_CULL_PX of the cursor + dots still
+// settling, regardless of total dot count.
+const CELL_PX = 44;
 const DOT_R = 1.7;
 const RANGE_PX = 200; // softly wide; smoothstep keeps the outer ring gentle
 const RANGE_CULL_PX = RANGE_PX + 60; // beyond this + already-at-rest, skip
@@ -45,7 +48,7 @@ const MAX_PUSH_PX = 8; // very subtle displacement — felt, not seen
 const MAX_GROW = 1.18; // tiny lift on the dots near the cursor
 const LERP_FACTOR = 0.11; // slow, graceful return; never springy
 const HALO_SIZE_PX = 280; // wider so the centre isn't bright; reads as a haze
-const DOT_CAP = 800;
+const DOT_CAP = 1300;
 
 // Theme-conditioned opacities. Dark canvas needs lower numbers since
 // orange-on-dark already pops; the cream light canvas needs higher
@@ -66,10 +69,14 @@ const DARK_PROFILE: ThemeProfile = {
   haloBlend: "screen",
 };
 
+// Light-mode visibility lift (2026-05-09): orange-on-cream at 0.32
+// rest alpha was washing out — page read as "mostly white". Bumped
+// rest / active / haloPeak so the dot field actually carries presence
+// against the off-white canvas. Same brand orange, just more visible.
 const LIGHT_PROFILE: ThemeProfile = {
-  rest: 0.32,
-  active: 0.55,
-  haloPeak: 0.22,
+  rest: 0.46,
+  active: 0.72,
+  haloPeak: 0.34,
   haloBlend: "multiply",
 };
 
