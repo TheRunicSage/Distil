@@ -37,8 +37,15 @@ export function CoverLetterPreview({ content }: Props) {
       <div className="h-1.5 bg-orange" aria-hidden />
       <div className="p-14">
         <header data-page-section>
-          <p className="font-semibold">{content.header.full_name}</p>
-          <p className="border-b-2 border-orange/40 pb-2 text-xs text-l-mid">
+          {/* Name heading mirrors CvPreview's h1 — text-2xl font-bold —
+              so the two previews share the same name-treatment scale.
+              The DOCX renderer's nameHeading() already emits this name
+              at 15pt for both documents (Decision Log [9] 2026-05-01);
+              the preview is just catching up to the DOCX. */}
+          <h1 className="text-2xl font-bold leading-tight">
+            {content.header.full_name}
+          </h1>
+          <p className="mt-2 border-b-2 border-orange/40 pb-2 text-xs text-l-mid">
             {pipe([
               content.header.phone,
               content.header.email,
