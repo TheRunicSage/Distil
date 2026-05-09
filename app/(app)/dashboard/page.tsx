@@ -11,6 +11,7 @@
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ArrowRightIcon } from "lucide-react";
 import { ChainCard } from "@/components/app/ChainCard";
 import {
   groupIntoChains,
@@ -152,8 +153,9 @@ export default async function DashboardPage() {
         <section>
           <div className="mb-6 flex items-baseline justify-between">
             <h2 className="eyebrow-muted">Recent</h2>
-            <Link href="/history" className="text-meta hover:text-text">
-              View all →
+            <Link href="/history" className="btn-pill">
+              View all
+              <ArrowRightIcon size={14} aria-hidden />
             </Link>
           </div>
           <ul className="space-y-3">

@@ -5,7 +5,7 @@
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { DownloadIcon } from "lucide-react";
+import { ChevronRightIcon, DownloadIcon } from "lucide-react";
 import { signOut } from "@/app/(auth)/login/actions";
 import { DeleteAccountForm } from "@/components/settings/DeleteAccountForm";
 import { createClient } from "@/lib/supabase/server";
@@ -132,25 +132,57 @@ export default async function SettingsPage() {
       </section>
 
       {profile?.is_admin && (
-        <section className="surface-card">
-          <p className="eyebrow">Admin tools</p>
-          <p className="mt-6 text-lg text-muted-foreground">
-            Internal observability for the admin user.
-          </p>
-          <ul className="mt-6 space-y-3 text-lg">
+        <section>
+          <div className="mb-6">
+            <p className="eyebrow">Admin tools</p>
+            <p className="mt-3 text-lg text-muted-foreground">
+              Internal observability for the admin user.
+            </p>
+          </div>
+          <ul className="space-y-3">
             <li>
-              <Link href="/admin/usage" className="btn-link-orange">
-                Usage — last 50 applications →
+              <Link href="/admin/usage" className="surface-row">
+                <div className="flex flex-col gap-1">
+                  <span className="text-lg font-medium text-text">Usage</span>
+                  <span className="text-base text-muted-foreground">
+                    Last 50 applications
+                  </span>
+                </div>
+                <ChevronRightIcon
+                  size={18}
+                  className="shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
               </Link>
             </li>
             <li>
-              <Link href="/admin/logs" className="btn-link-orange">
-                Logs — recent errors →
+              <Link href="/admin/logs" className="surface-row">
+                <div className="flex flex-col gap-1">
+                  <span className="text-lg font-medium text-text">Errors</span>
+                  <span className="text-base text-muted-foreground">
+                    Recent errors
+                  </span>
+                </div>
+                <ChevronRightIcon
+                  size={18}
+                  className="shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
               </Link>
             </li>
             <li>
-              <Link href="/admin/telemetry" className="btn-link-orange">
-                Telemetry — 7-day cost total →
+              <Link href="/admin/telemetry" className="surface-row">
+                <div className="flex flex-col gap-1">
+                  <span className="text-lg font-medium text-text">Telemetry</span>
+                  <span className="text-base text-muted-foreground">
+                    7-day cost total
+                  </span>
+                </div>
+                <ChevronRightIcon
+                  size={18}
+                  className="shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
               </Link>
             </li>
           </ul>

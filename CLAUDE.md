@@ -1212,6 +1212,26 @@ Test path: a real success page side-by-side with the previous deploy. Confirm CV
 
 Rollback: single `git revert`. PagedPreview is still importable so a partial rollback (drop the new components, swap the imports back) is also viable.
 
+[14] Affordance pass — landing topbar parity, `.btn-pill` primitive, surface-row admin tools (2026-05-09, follow-up to audit passes 1 + 2). Five user-reported low-affordance surfaces; one commit; one new primitive.
+
+* **Landing topbar (`components/landing/LandingTopbar.tsx`).** Audit pass 2 bumped the (app) shell primitives but left the public landing topbar on its pre-audit shell — `h-[60px]` with audit-pass-2 buttons inside, so right-cluster controls rendered at three different heights (~44px ghost / ~32px theme toggle / ~52px primary CTA spilling past the 60px shell). Lifted to (app) parity: `h-[60px]` → `h-[72px]`, wordmark `text-2xl` → `text-4xl`, Curiosum.ai badge `text-[10px]` → `text-sm`, right-cluster `gap-2` → `gap-2.5`, ArrowRightIcon `size={14}` → `size={16}`. Sign in (btn-ghost) + ThemeToggle + Get started (btn-primary) now share the same vertical rhythm. DP-1 picked Option A; rejected B (one-off classes — drift waiting to happen) and C (icon-only Sign in — regresses the most important secondary action on a public surface).
+
+* **ThemeToggle (`components/app/ThemeToggle.tsx`).** Local `btn-icon size-8` override forced the toggle to 32px while `.btn-icon` is now `size-11` (44px) post-audit. The override was actively fighting the audit pass on every (app) page that hosts the toggle, not just on landing. Dropped the `size-8`; `SunIcon` / `MoonIcon` `size={15}` → `size={20}` to match `SettingsIcon` in `TopbarNav.tsx`. Net: theme toggle is now the same dimension as the Settings icon button on every page.
+
+* **`.btn-pill` primitive (new, in `app/globals.css` under `@layer components`).** Defined as `inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-base text-muted-foreground transition-colors hover:border-orange/40 hover:bg-dark3 hover:text-text`. Reads as a small navigable chip — heavier than a `text-meta` link, lighter than `btn-ghost`, shares the surface-row hover treatment so it sits in the same visual family as the (app) shell's row patterns. DPs 2/3/4 all picked Option C: unify "View all" and both back-links under a single new primitive rather than reach for `btn-ghost` (too heavy at text-lg) or `btn-link-orange` (commits to the same affordance class that DP-5 was moving away from).
+
+* **`View all →` on `/dashboard` Recent panel (`app/(app)/dashboard/page.tsx`).** Was `text-meta hover:text-text` — read as a date stamp. Now `btn-pill` with explicit `<ArrowRightIcon size={14}>`.
+
+* **`← Back to Dashboard` on `/application/[id]` (`app/(app)/application/[id]/page.tsx`) and `← Back to Settings` on `/admin/*` (`app/(app)/admin/layout.tsx`).** Both were `text-base text-muted-foreground hover:text-text` — weak affordance. Now `btn-pill` with explicit `<ArrowLeftIcon size={14}>` from lucide. Inline arrow character (`←`) replaced with the icon component for consistency with other lucide-backed nav icons.
+
+* **Admin tools list on `/settings` (`app/(app)/settings/page.tsx`).** Was three `<li>` with `btn-link-orange` (text-lg orange copies, no row affordance) inside a `surface-card` wrapper. DP-5 picked Option B with B' refinement: drop the outer `surface-card` wrapper (avoids panel-inside-panel, matches the dashboard's "In progress" / "Recent" framing where the eyebrow + section header alone are enough), replace the link copies with three `surface-row` entries, each with title + sub-description + `<ChevronRightIcon size={18}>`. Same affordance class the user already knows reads as clickable from `/dashboard` chains and `/history`.
+
+What was *not* changed: history / login / FAQ / upload / new application surfaces (no reported affordance issues there); the four lucide arrow inline characters elsewhere in the codebase (kept where they're inside primary buttons, not nav-link affordances); CvPreview / CoverLetterPreview / PreviewPanel / PreviewZoomModal / PagedPreview / DOCX renderer / output schema / system prompt; the Inngest pipeline; the audit-pass-2 (app) shell sizing (this commit fixes the lone surface — landing — that audit pass missed, and adds a primitive on top, rather than touching primitives the audit pass already tuned).
+
+Test path: visual diff on `/`, `/dashboard` (Recent panel), `/application/<id>`, `/admin/*` header band, `/settings` Admin tools list. Confirm landing topbar right-cluster reads as three controls at one rhythm. Confirm `.btn-pill` reads as clickable but doesn't compete with eyebrow headers. Confirm admin tools list reads as a stack of clickable rows.
+
+Rollback: single `git revert`. The new `.btn-pill` primitive is additive — if it doesn't earn its keep at a future audit, the four call sites can revert to bespoke recipes and the primitive can be dropped from globals.css.
+
 ---
 
 ## Known Gaps to Watch

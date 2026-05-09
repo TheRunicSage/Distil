@@ -13,7 +13,7 @@
 
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AlarmClockOffIcon, CheckCircleIcon } from "lucide-react";
+import { AlarmClockOffIcon, ArrowLeftIcon, CheckCircleIcon } from "lucide-react";
 import { CopyId } from "@/components/app/CopyId";
 import { ApplicationLiveView } from "@/components/application/ApplicationLiveView";
 import { CoverLetterPreview } from "@/components/application/CoverLetterPreview";
@@ -88,11 +88,9 @@ export default async function ApplicationPage({ params }: RouteCtx) {
   return (
     <div className="space-y-8">
       <header>
-        <Link
-          href="/dashboard"
-          className="text-base text-muted-foreground hover:text-text"
-        >
-          ← Back to Dashboard
+        <Link href="/dashboard" className="btn-pill">
+          <ArrowLeftIcon size={14} aria-hidden />
+          Back to Dashboard
         </Link>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl text-text">Application</h1>

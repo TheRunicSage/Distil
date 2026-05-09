@@ -9,26 +9,26 @@ import { ThemeToggle } from "@/components/app/ThemeToggle";
 
 export function LandingTopbar() {
   return (
-    <header className="sticky top-0 z-30 flex h-[60px] shrink-0 items-center justify-between border-b border-border/50 bg-dark/70 px-6 backdrop-blur-md">
+    <header className="sticky top-0 z-30 flex h-[72px] shrink-0 items-center justify-between border-b border-border/50 bg-dark/70 px-6 backdrop-blur-md">
       <Link
         href="/"
         className="flex items-baseline gap-3 outline-none focus-visible:opacity-80"
       >
-        <span className="font-serif text-2xl font-light tracking-tight text-text">
+        <span className="font-serif text-4xl font-light tracking-tight text-text">
           Distil
         </span>
-        <span className="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-orange sm:inline">
+        <span className="hidden text-sm font-semibold uppercase tracking-[0.18em] text-orange sm:inline">
           Curiosum.ai
         </span>
       </Link>
-      <nav className="flex items-center gap-2">
+      <nav className="flex items-center gap-2.5">
         <Link href="/login" className="btn-ghost">
           Sign in
         </Link>
         <ThemeToggle />
         <Link href="/login" className="btn-primary">
           Get started
-          <ArrowRightIcon size={14} aria-hidden />
+          <ArrowRightIcon size={16} aria-hidden />
         </Link>
       </nav>
     </header>

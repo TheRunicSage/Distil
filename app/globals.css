@@ -414,6 +414,14 @@
   .btn-link-orange {
     @apply text-lg text-orange transition-colors hover:text-orange-light;
   }
+  /* btn-pill — small navigable chip for secondary nav (back-links and
+     "view all" affordances). Reads as clickable without the heft of
+     btn-ghost or the full button shell of btn-secondary. Uses the
+     same border + hover treatment as surface-row so it shares a visual
+     family with the (app) shell's row patterns. */
+  .btn-pill {
+    @apply inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-base text-muted-foreground transition-colors hover:border-orange/40 hover:bg-dark3 hover:text-text;
+  }
   .btn-disabled-shell {
     @apply inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-border bg-dark4 px-7 py-3.5 text-lg font-medium text-muted-foreground;
   }

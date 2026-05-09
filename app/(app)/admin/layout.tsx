@@ -10,6 +10,7 @@
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ArrowLeftIcon } from "lucide-react";
 import { AdminNav } from "@/components/app/AdminNav";
 import { ApiError } from "@/lib/errors/api-error";
 import { requireAdmin } from "@/lib/auth/require-admin";
@@ -40,11 +41,9 @@ export default async function AdminLayout({
             </span>
             <AdminNav />
           </div>
-          <Link
-            href="/settings"
-            className="text-base text-muted-foreground hover:text-text"
-          >
-            ← Back to Settings
+          <Link href="/settings" className="btn-pill">
+            <ArrowLeftIcon size={14} aria-hidden />
+            Back to Settings
           </Link>
         </div>
         {children}
