@@ -1304,6 +1304,18 @@ Test path: visual diff on / and /login at light mode + dark mode. Confirm denser
 
 Rollback: single `git revert`. The density change (`CELL_PX` + `DOT_CAP`) is independent of the visibility change (`LIGHT_PROFILE` opacities + ambient-blob override) so either can be walked back alone if one regresses.
 
+[7] Strictness audit 5: cv_content.education orphan-entry preprocess (2026-05-09). Same locked-in pattern from four prior audits (paragraphs 2026-05-01, research_summary nullables 2026-05-03, technical_skills 2026-05-05, professional_experience 2026-05-07): model occasionally pads an array with a trailing orphan entry, schema's strict per-string min(1) on the orphan tanks the whole paid generation. Surfaced today via three back-to-back failures (4e2fd751, faebc6e6, 4f246db7 — including a successful retry-attempt-3 also failing) all with identical zod_issues paths: `cv_content.education[1].institution`, `.location`, `.dates` all empty strings tripping `too_small` (≥1 char).
+
+Fix in `lib/llm/output-schema.ts`: `cv_content.education` wrapped in a `z.preprocess` that filters entries where `qualification` OR `institution` is empty after trim (those are the identifying fields). Outer `.min(1).max(6)` bounds still run after the strip, so the truly-empty case (no education at all) still fails as before. Mirrors the `professional_experience` preprocess shape exactly. Per-item `EducationItemSchema` strict per-string min(1) checks left untouched — once the orphan is stripped, the remaining entries must carry real content.
+
+DP-1 picked Option A (targeted scope, matches discipline). Not Option B (pre-emptive details preprocess — no failure evidence) or C (prompt §10 self-check — schema-only is sufficient when the failure is purely structural padding rather than a semantic gap to teach the model around).
+
+What was *not* changed: `EducationItemSchema` per-string min(1) checks (still strict, only stripped orphan now); `education[].details` (deferred per discipline, no failure evidence on inner detail strings yet); other still-strict fields (`key_projects.bullets`, `key_projects.technologies`, `leadership_and_interests`); the system prompt; any other schema field. The schema's top-of-file comment block gains a 2026-05-09 entry mirroring the prior four.
+
+Test path: re-submit any of the failing JD + master CV combinations. Confirm `validate-output` step in `request_logs` lands as `[ok]` and the generation reaches `success`. If the same JD now produces a complete CV with one valid education entry (the model's intent — second was always orphan padding), the fix held.
+
+Rollback: single `git revert`. Schema change is internal — no migration, no prompt rewrite, no API surface change.
+
 ---
 
 ## Known Gaps to Watch

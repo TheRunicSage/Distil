@@ -49,6 +49,26 @@
 // caps where the prompt and schema agree the upper bound is content
 // quality (e.g. paragraphs.max(5), what_we_did_checklist.max(8)).
 //
+// 2026-05-09 strictness audit (education orphan-entry pass).
+// Real failures 2026-05-09: three paid generations (4e2fd751,
+// faebc6e6, 4f246db7) dropped to llm_invalid_output with identical
+// Zod paths — model emitted education[1] with empty institution,
+// location, and dates strings, tripping the per-string min(1)
+// validators on EducationItemSchema. Same shape as the previous
+// four audits (paragraphs, technical_skills, professional_
+// experience, research_summary nullables): model occasionally
+// pads an array with a trailing orphan entry. Per the established
+// discipline (targeted-fix-per-surfaced-failure):
+//   - Per-array: education entries with empty qualification or
+//     institution are stripped before the outer min(1).max(6)
+//     bounds run. Mirrors the professional_experience preprocess
+//     ("role_title or company empty → drop").
+// Per-item education.details NOT preprocessed — no failure
+// evidence on inner detail strings yet, deferred per the
+// discipline. Re-audit if it surfaces in request_logs.metadata.
+// zod_issues. Same for key_projects.bullets, key_projects.
+// technologies, leadership_and_interests.
+//
 // 2026-05-08 strictness audit (professional_experience empty-role pass).
 // Real failures 2026-05-07: model emitted professional_experience[3]
 // as an orphan role — first failure had only bullets empty (min(1)
@@ -384,7 +404,37 @@ const CvContentSchema = z.object({
     z.array(ProfessionalExperienceItemSchema).min(1).max(12),
   ),
   key_projects: z.array(KeyProjectSchema).min(0).max(5),
-  education: z.array(EducationItemSchema).min(1).max(6),
+  // education: preprocess strips orphan entries before the array's
+  // min/max bounds run. Real failure 2026-05-09: model emitted
+  // education[1] with empty institution / location / dates,
+  // tripping the per-string min(1) on EducationItemSchema. An
+  // entry is "orphan" if qualification OR institution filters to
+  // empty after trim — either of those is the identifying field
+  // and missing it means there's no usable education content.
+  // Outer min(1) still catches the truly-empty case (no education
+  // at all). Mirrors the professional_experience preprocess.
+  education: z.preprocess(
+    (val) =>
+      Array.isArray(val)
+        ? val.filter((e) => {
+            if (typeof e !== "object" || e === null) return false;
+            const item = e as {
+              qualification?: unknown;
+              institution?: unknown;
+            };
+            const qualification =
+              typeof item.qualification === "string"
+                ? item.qualification.trim()
+                : "";
+            const institution =
+              typeof item.institution === "string"
+                ? item.institution.trim()
+                : "";
+            return qualification.length > 0 && institution.length > 0;
+          })
+        : val,
+    z.array(EducationItemSchema).min(1).max(6),
+  ),
   leadership_and_interests: z.array(LeadershipInterestItemSchema).max(8),
   referees: z.string().min(1).max(200),
 });
