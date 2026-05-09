@@ -406,27 +406,39 @@ export function ApplicationLiveView({
 
 function StageIndicator({ stageIdx }: { stageIdx: number }) {
   // 4-col grid puts each stage in an equal-width column. The rail is
-  // absolutely positioned behind, between the centres of the first and
-  // last circles (12.5% to 87.5% of the container — the midpoints of
-  // quarters 1 and 4). The active fill on the rail tweens with width.
-  const fillPct =
-    stageIdx <= 0
-      ? 0
-      : stageIdx >= STAGES.length - 1
-        ? 100
-        : (stageIdx / (STAGES.length - 1)) * 100;
-
+  // rendered as THREE separate segments — one between each adjacent
+  // pair of circles — so the line "connects" circles instead of
+  // running through them. Each segment is positioned via
+  // calc(X% + 18px) so the 18px gap from circle edges holds at any
+  // viewport width regardless of the 30px circle's percent share.
+  // Active fill grows via transform: scaleX from left, segment by
+  // segment as stages advance.
   return (
     <div className="relative">
-      <div
-        aria-hidden
-        className="absolute left-[12.5%] right-[12.5%] top-[14px] h-[2px] rounded-full bg-border"
-      />
-      <div
-        aria-hidden
-        className="absolute left-[12.5%] top-[14px] h-[2px] rounded-full bg-orange transition-[width] duration-700 ease-out"
-        style={{ width: `calc((87.5% - 12.5%) * ${fillPct / 100})` }}
-      />
+      {[0, 1, 2].map((segIdx) => {
+        const leftCenterPct = 12.5 + 25 * segIdx;
+        const rightCenterPct = 12.5 + 25 * (segIdx + 1);
+        const filled = stageIdx > segIdx;
+        const positionStyle = {
+          left: `calc(${leftCenterPct}% + 18px)`,
+          right: `calc(${100 - rightCenterPct}% + 18px)`,
+        } as const;
+        return (
+          <span aria-hidden key={segIdx}>
+            <span
+              className="pointer-events-none absolute top-[14px] block h-[2px] rounded-full bg-border"
+              style={positionStyle}
+            />
+            <span
+              className="pointer-events-none absolute top-[14px] block h-[2px] origin-left rounded-full bg-orange transition-transform duration-700 ease-out"
+              style={{
+                ...positionStyle,
+                transform: filled ? "scaleX(1)" : "scaleX(0)",
+              }}
+            />
+          </span>
+        );
+      })}
       <ol className="relative grid grid-cols-4">
         {STAGES.map((stage, i) => {
           const done = stageIdx > i;

@@ -1316,6 +1316,18 @@ Test path: re-submit any of the failing JD + master CV combinations. Confirm `va
 
 Rollback: single `git revert`. Schema change is internal — no migration, no prompt rewrite, no API surface change.
 
+[14] Stage rail polished + cover letter preview brand-mirrored to CV (2026-05-09). Two unrelated polish items shipped together since they're both small.
+
+* **Stage rail (`components/application/ApplicationLiveView.tsx`).** Single rail at `top: 14px` running 12.5%–87.5% across the row was passing through circles 2 and 3. The active circle's `bg-orange-subtle` (8% alpha) wasn't opaque enough to mask the line, so it visibly ran through the centre. Replaced with three independent rail segments — one between each adjacent circle pair — positioned via `calc(${centerPct}% + 18px)` so the 18px gap from circle edges holds at any viewport width regardless of the 30px circle's percent share. Each segment has a base track (border colour) plus an active fill (orange) that animates via `transform: scaleX(0→1)` with `transform-origin: left` when its preceding stage completes. Net: circles now read as connected by individual line segments rather than a single continuous bar passing through them. DP-1 picked Option A; B (raise active-circle bg opacity) rejected because the panel sits on a radial-gradient ambient glow that would never match a static fill cleanly.
+
+* **CoverLetterPreview brand mirror (`components/application/CoverLetterPreview.tsx`).** CV preview had carried the orange brand band (full-width 6px stripe at the top of the paper) + orange-tinted contact-rule (border-b-2 border-orange/40 under the contact pipe-line) + `overflow-hidden` on the article since 2026-05-08 (Decision Log [14] entry "Drop PagedPreview from SuccessView"); cover letter preview never picked them up. User screenshot showed the visual asymmetry — CV looked branded, cover letter looked plain. Mirrored all three: article gains `overflow-hidden`, drops the outer `p-14`; new orange band div as first child; remaining content wrapped in `<div className="p-14">` so the band is full-bleed against the paper edge. Sender contact pipe-line gains the same `border-b-2 border-orange/40 pb-2` treatment as the CV's contact line. min-h `1123px` (the A4 page-fill rule) stays on the article so the cover letter still fills one A4 page regardless of content length. DP-2 picked Option A (full mirror); B (just band) and C (just contact rule) rejected as half-mirrors that read as incomplete.
+
+What was *not* changed: cover letter content / paragraph layout / signoff structure, CV preview (already had the brand treatment), DOCX renderers (the canonical artefacts — see Decision Log [9] / [18] entries; DOCX cover letter ALREADY carried the brand band via `contactLine(text, withRule=true)` in 2026-05-01, so the preview is just catching up to what the DOCX has shown for over a week), the discriminated-union schema, the system prompt, the Inngest pipeline.
+
+Test path: any /application/[id] in success state — confirm both previews now share the orange band signature and contact-rule treatment side-by-side. Any /application/[id] in running state — confirm rail segments connect circles cleanly without crossing through them, fill cascades segment-by-segment as stage events arrive.
+
+Rollback: single `git revert`. Both changes are surface-only — no schema, no API, no pipeline.
+
 ---
 
 ## Known Gaps to Watch
