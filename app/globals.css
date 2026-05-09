@@ -286,6 +286,15 @@
   body {
     height: 100%;
   }
+  /* Clip horizontal overflow at the html level too, not just body.
+     `body { overflow-x: clip }` does not contain `position: fixed`
+     children — the ambient blobs (`right: -20%`, `width: 70vw`),
+     MagneticDots SVG (`width: 100vw`), and any future fixed visual
+     can extend past the viewport's right edge and produce a strip
+     of empty space on mobile. Clipping at html catches it. */
+  html {
+    overflow-x: clip;
+  }
   /* html base font-size stays at the browser default (16px). An
      earlier 16→17px bump broke the PagedPreview's page-break math
      (which compares against a hard-coded 1123px A4 height) — a

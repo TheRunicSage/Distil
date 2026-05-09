@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Outfit } from "next/font/google";
 import "./globals.css";
 import { CustomCursor } from "@/components/app/CustomCursor";
@@ -23,6 +23,15 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "Distil",
   description: "Your CV, stripped to its sharpest form. ATS ready, recruiter approved.",
+};
+
+// Explicit viewport so mobile renders at device width with no zoom-out.
+// Without this Next.js falls back to its default (`width=device-width`,
+// no initial-scale), which iOS Safari has historically rendered
+// inconsistently — the more deterministic shape includes initial-scale.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 // Inline script that runs before paint to apply the saved theme
