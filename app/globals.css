@@ -12,46 +12,62 @@
    ============================================================ */
 
 @theme {
-  /* ---- Core brand (warmer burnt-orange to match the Distil reference) ---- */
+  /* ---- Core brand (Distil burnt-orange) ----
+     2026-05-10 refresh: brand orange unchanged. orange-deep + orange-tint
+     added per the design refresh tokens; orange-dim alpha tightened
+     0.15 → 0.08 to match the refresh palette. See REFRESH.md. */
   --color-orange: #e2613b;
   --color-orange-light: #f07050;
-  --color-orange-dim: rgba(226, 97, 59, 0.15);
+  --color-orange-deep: #c44a26; /* depth shadow / pressed state */
+  --color-orange-dim: rgba(226, 97, 59, 0.08);
   --color-orange-subtle: rgba(226, 97, 59, 0.08);
+  --color-orange-tint: rgba(226, 97, 59, 0.04); /* super-subtle wash */
   --color-orange-glow: rgba(226, 97, 59, 0.18);
 
-  /* ---- Dark theme surface elevation tokens ----
-     Lightened 2026-05-01 (-1 level on the elevation scale) so the
-     dark theme reads more legibly in normal lighting. Pure black
-     backgrounds were producing crushed body copy. The :root
-     redefinitions further down map the same token names to a
-     light-mode palette when html does not carry .dark.            */
-  --color-dark: #11111a;
-  --color-dark2: #1a1a24;
-  --color-dark3: #25252f;
-  --color-dark4: #2f2f3a;
-  --color-text: #f0efe8;
-  /* Lifted 2026-05-03 from rgba(0.28) → rgba(0.36): subtle accents
-     and dividers were dropping below comfortable contrast on dark2
-     surfaces. Still well below the body-text level — this is a
-     dim-but-readable token, not a body token. */
-  --color-dim: rgba(240, 239, 232, 0.36);
-  /* Lift history: #9a9aa8 → #b6b5c4 (2026-05-03) → #cfceda (2026-05-08).
-     The May 3 lift wasn't enough — a teammate still couldn't read
-     secondary labels comfortably on dark2 surfaces. New value
-     lands closer to body text while staying clearly distinct as
-     "secondary" so the visual hierarchy survives. Used for date /
-     status meta, "files expire on" lines, admin table headers,
-     short ID chips. */
-  --color-text-muted: #cfceda;
+  /* ---- Dark theme surface elevation ----
+     2026-05-10 refresh: 5-level elevation (page → 2 → 3 → 4 → elev).
+     Values shifted slightly cooler to match the refresh palette
+     (#0f0f15 page vs previous #11111a — a touch deeper). The 5th rung
+     `dark-elev` is for popover / floating UI (UserMenu dropdown, etc.).
+     The `:root:not(.dark)` redefinitions further down map the same
+     token names to a light-mode palette when html lacks .dark.       */
+  --color-dark: #0f0f15;
+  --color-dark2: #16161e;
+  --color-dark3: #1d1d27;
+  --color-dark4: #262631;
+  --color-dark-elev: #2f2f3a; /* popover / floating surfaces */
 
-  /* ---- Light theme tokens (preview cards + email body only) ---- */
+  /* ---- Text scale (gains a 3rd tier 2026-05-10) ----
+     - text:        primary body text (#f3f1ea, slightly warmer than prior #f0efe8)
+     - text-muted:  secondary labels (#cfceda, unchanged from May 8 lift)
+     - text-3:      tertiary — timestamps, IDs, dim labels (#8e8d99)
+     - text-dim:    very dim — disabled states, ghosted hints       */
+  --color-text: #f3f1ea;
+  --color-text-muted: #cfceda;
+  --color-text-3: #8e8d99;
+  --color-text-dim: rgba(243, 241, 234, 0.42);
+  /* Legacy `dim` token retained — used in existing bg-dim/15 recipes
+     across admin tables. New code should prefer text-3 / text-dim. */
+  --color-dim: rgba(240, 239, 232, 0.36);
+
+  /* ---- Lines / borders (3-level system 2026-05-10) ----
+     line:        subtle dividers, default card border
+     line-2:      medium emphasis, hover borders
+     line-strong: focus / selected / active borders                  */
+  --color-line: rgba(255, 255, 255, 0.06);
+  --color-line-2: rgba(255, 255, 255, 0.10);
+  --color-line-strong: rgba(255, 255, 255, 0.16);
+
+  /* ---- Light theme tokens (preview cards + email body only) ----
+     2026-05-10 refresh: paper-mid lifted #6e6e66 → #6b6960 to match
+     the refresh palette. Other values unchanged.                    */
   --color-l-bg: #fbfaf6;
   --color-l-surface: #ffffff;
-  --color-l-text: #1a1a1a;
-  --color-l-mid: #6e6e66;
-  --color-l-border: #e8e8e0;
+  --color-l-text: #15140e;
+  --color-l-mid: #6b6960;
+  --color-l-border: #e8e6dd;
 
-  /* ---- Semantic accents (status, fit score) ---- */
+  /* ---- Semantic accents (status, fit score) — refresh keeps unchanged ---- */
   --color-success: #3ecf8e;
   --color-info: #4b9fe8;
   --color-warn: #f0a030;
@@ -59,20 +75,36 @@
   --color-danger: #e25b5b;
   /* Added 2026-05-03 for the admin usage status palette so the
      terminal-quiet "cancelled" pill is visually distinct from the
-     greyed "abandoned" pill. Warm enough to sit alongside the brand
-     orange without competing; lower saturation than danger so it
-     doesn't read as an active error. Also handy for any future
-     "warning-but-soft" chip surface. */
+     greyed "abandoned" pill. No refresh equivalent — kept. */
   --color-rose: #d97a8c;
   /* Added 2026-05-03 for queue / "fresh, waiting" surfaces in admin
      where the existing info-blue felt indistinguishable from
-     hyperlinks; this is a cooler cyan than info, sits cleanly between
-     blue and green on the wheel. */
+     hyperlinks. No refresh equivalent — kept. */
   --color-cyan: #4dc4c0;
 
-  /* ---- Typography ---- */
-  --font-sans: var(--font-outfit), Helvetica, Arial, sans-serif;
-  --font-serif: var(--font-fraunces), Georgia, serif;
+  /* ---- Radii — explicit scale (2026-05-10 refresh) ----
+     6/8/12/16/22/28 — refresh uses larger, more generous corners.
+     Per-utility usage:
+       xs (6)   — kbd chips, small inline indicators
+       sm (8)   — input fields, small buttons
+       md (12)  — standard buttons, status pills
+       lg (16)  — small cards, list rows
+       xl (22)  — primary buttons, main CTAs
+       2xl (28) — surface cards, panels                              */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-2xl: 28px;
+
+  /* ---- Typography ----
+     2026-05-10 refresh: sans Outfit → Inter (Phase 3 commit will swap
+     the next/font/google import in app/layout.tsx). Mono added —
+     JetBrains Mono via next/font/google. Fraunces serif unchanged. */
+  --font-sans: var(--font-inter), Inter, "DM Sans", system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), Fraunces, "Instrument Serif", Georgia, serif;
+  --font-mono: var(--font-jetbrains-mono), "JetBrains Mono", ui-monospace, monospace;
 }
 
 /* ============================================================
@@ -220,21 +252,34 @@
    :root:not(.dark) overrides on .surface-card / .panel below), not
    by cream tints. Dark mode behaviour is unchanged. */
 :root:not(.dark) {
-  --color-dark: #f5f3ed;
+  /* 2026-05-10 refresh: page bg shifts #f5f3ed → #fbfaf6 (warmer paper
+     tone matching the refresh `--paper`). Subordinate / card / popover
+     unchanged. New tokens (text-3, dark-elev, line / line-2 /
+     line-strong) get light-mode values too — light surfaces need
+     darker line tokens for visibility on white. */
+  --color-dark: #fbfaf6;
   --color-dark2: #faf8f2;
   --color-dark3: #ffffff;
   --color-dark4: #ffffff;
+  --color-dark-elev: #ffffff;
   --color-text: #15140e;
-  /* Lift history: #6c6a60 → #5a5851 (2026-05-03) → #3f3d36 (2026-05-08).
-     On the warm-white light surface the muted token was reading
-     washed-out. We go the OPPOSITE direction from the dark-mode
-     change — muted-on-light wants more contrast (darker), while
-     muted-on-dark wants more contrast (lighter). Same readability
-     outcome, opposite direction in lightness space. */
-  --color-text-muted: #3f3d36;
+  /* Lift history: #6c6a60 → #5a5851 (2026-05-03) → #3f3d36 (2026-05-08)
+     → #4a4842 (2026-05-10). The refresh palette uses #6b6960 for
+     paper-mid which is lighter than our prior #3f3d36 — landing on
+     #4a4842 keeps the darker-than-refresh contrast we calibrated to
+     in pass-2 while not crushing as hard against the new Inter sans.
+     Phase-3 typography will retest. */
+  --color-text-muted: #4a4842;
+  --color-text-3: #75726a;
+  --color-text-dim: rgba(21, 20, 14, 0.42);
   /* Flat warm-grey (not rgba) so bg-dim/15 produces a visible 15%
      warm-grey wash instead of vanishing into the surface. */
   --color-dim: #b8b6ad;
+  /* Lines on light: darker-than-dark-mode alphas so they show on
+     white. Same 3-level emphasis scale as dark mode. */
+  --color-line: rgba(21, 20, 14, 0.08);
+  --color-line-2: rgba(21, 20, 14, 0.14);
+  --color-line-strong: rgba(21, 20, 14, 0.22);
 }
 
 .dark {
