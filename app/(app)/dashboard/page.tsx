@@ -89,7 +89,7 @@ export default async function DashboardPage() {
       <header className="text-center">
         <p className="eyebrow">Welcome back</p>
         <h1 className="heading-display mt-5">Pick up where you left off.</h1>
-        <p className="mt-5 text-lg text-muted-foreground">
+        <p className="lead mx-auto mt-5 max-w-[640px] text-muted-foreground">
           Your CV, stripped to its sharpest form. ATS ready, recruiter approved.
         </p>
       </header>
@@ -100,7 +100,7 @@ export default async function DashboardPage() {
           <h2 className="heading-section mt-5">
             Upload your master CV first.
           </h2>
-          <p className="mx-auto mt-5 max-w-md text-lg text-muted-foreground">
+          <p className="lead mx-auto mt-5 max-w-md text-muted-foreground">
             One PDF or DOCX, up to 3MB. We&apos;ll use it as the source of truth
             for every tailored application.
           </p>
@@ -118,7 +118,7 @@ export default async function DashboardPage() {
           <h2 className="heading-section mt-5">
             Tailor your first application.
           </h2>
-          <p className="mx-auto mt-5 max-w-md text-lg text-muted-foreground">
+          <p className="lead mx-auto mt-5 max-w-md text-muted-foreground">
             Paste a job description. Get a tailored CV and cover letter, both
             matched to the role.
           </p>
