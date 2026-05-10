@@ -453,6 +453,67 @@
 }
 
 /* ============================================================
+   Micro-interactions — system responsiveness layer.
+   Two patterns wired into button + surface primitives so they
+   apply site-wide once the class is used:
+     1. Hover glow: a subtle orange-tinted box-shadow on :hover
+        for the four interactive primitives. Additive depth on
+        top of the existing hover:border-orange/40 — the border
+        is the dominant signal, the glow is secondary warmth.
+        Low intensity (12% alpha, 8px blur) so it doesn't flatten
+        to "everything glows".
+     2. Click kickback: transform: scale(0.97) on :active for the
+        same primitives, snappy 80ms ease-out transition. Tiny
+        enough to read as physical feedback rather than a bounce.
+
+   Both gated on (prefers-reduced-motion: no-preference) so users
+   who opt out of motion get no animation, no glow shift. The
+   transform is wrapped in a media query because :active state +
+   transform plays back as motion to assistive tech that respects
+   the preference. Hover glow stays for everyone since it's an
+   opacity / shadow change, not motion.
+   ============================================================ */
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn-primary,
+  .btn-secondary,
+  .surface-card-interactive,
+  .surface-row {
+    transition: transform 80ms ease-out, box-shadow 180ms ease-out,
+      border-color 180ms ease-out, background-color 180ms ease-out,
+      color 180ms ease-out;
+  }
+  .btn-primary:active,
+  .btn-secondary:active,
+  .surface-card-interactive:active,
+  .surface-row:active {
+    transform: scale(0.97);
+  }
+}
+
+.btn-primary:hover {
+  box-shadow:
+    0 0 0 1px rgba(226, 97, 59, 0.18),
+    0 6px 18px rgba(226, 97, 59, 0.22);
+}
+.btn-secondary:hover {
+  box-shadow: 0 6px 16px rgba(226, 97, 59, 0.10);
+}
+.surface-card-interactive:hover {
+  box-shadow: 0 8px 24px rgba(226, 97, 59, 0.10);
+}
+.surface-row:hover {
+  box-shadow: 0 4px 14px rgba(226, 97, 59, 0.10);
+}
+
+/* btn-primary has no light-mode override below, so the dark-mode
+   :hover above applies in light mode too. The other three primitives
+   (btn-secondary, surface-card-interactive, surface-row) get their
+   orange glow merged into the light-mode hover blocks below so the
+   later-source-order rule carries both the existing paper shadow and
+   the new orange warmth. */
+
+/* ============================================================
    Light-mode surface elevation. Dark mode elevates by lightening
    the surface (each step up the dark/dark2/dark3/dark4 scale is a
    brighter grey). Light mode can't lighten further than white, so
@@ -481,7 +542,8 @@
   border-color: rgba(226, 97, 59, 0.32);
   box-shadow:
     0 2px 6px rgba(21, 20, 14, 0.05),
-    0 6px 14px rgba(21, 20, 14, 0.03);
+    0 6px 14px rgba(21, 20, 14, 0.03),
+    0 10px 28px rgba(226, 97, 59, 0.14);
 }
 
 :root:not(.dark) .surface-row {
@@ -494,6 +556,7 @@
 :root:not(.dark) .surface-row:hover {
   background-color: var(--color-dark2);
   border-color: rgba(226, 97, 59, 0.32);
+  box-shadow: 0 6px 18px rgba(226, 97, 59, 0.14);
 }
 
 :root:not(.dark) .btn-secondary {
@@ -504,6 +567,7 @@
 :root:not(.dark) .btn-secondary:hover {
   background-color: var(--color-dark2);
   border-color: rgba(226, 97, 59, 0.32);
+  box-shadow: 0 8px 20px rgba(226, 97, 59, 0.14);
 }
 :root:not(.dark) .btn-ghost:hover,
 :root:not(.dark) .btn-icon:hover {
