@@ -40,24 +40,32 @@ import type {
   ApplicationOutputSuccess,
 } from "@/lib/llm/output-schema";
 
+// 2026-05-10 UI refresh phase 6b: tone maps return pill variant class
+// names from the design-system primitives in globals.css. Caller wraps
+// with the base `.pill` class:
+//   <span className={`pill ${FIT_TONE[score]}`}>…</span>
 const FIT_TONE: Record<"strong" | "moderate" | "weak", string> = {
-  strong: "bg-success/15 text-success border-success/30",
-  moderate: "bg-warn/15 text-warn border-warn/30",
-  weak: "bg-danger/15 text-danger border-danger/30",
+  strong: "pill-success",
+  moderate: "pill-warn",
+  weak: "pill-danger",
 };
 
 export const dynamic = "force-dynamic";
 
+// running / rendering use pill-running (which carries its own glow as
+// the live-state cue). queued maps to pill-queued. insufficient_input
+// stays warn (orange-amber), abandoned/cancelled stay muted (default
+// pill base). error → danger.
 const STATUS_TONE: Record<string, string> = {
-  success: "bg-success/15 text-success border-success/25",
-  queued: "bg-info/15 text-info border-info/25",
-  paused: "bg-warn/15 text-warn border-warn/25",
-  running: "bg-warn/15 text-warn border-warn/25",
-  rendering: "bg-warn/15 text-warn border-warn/25",
-  insufficient_input: "bg-warn/15 text-warn border-warn/25",
-  abandoned: "bg-dim/15 text-muted-foreground border-border",
-  cancelled: "bg-dim/15 text-muted-foreground border-border",
-  error: "bg-danger/15 text-danger border-danger/25",
+  success: "pill-success",
+  queued: "pill-queued",
+  paused: "pill-warn",
+  running: "pill-running",
+  rendering: "pill-running",
+  insufficient_input: "pill-warn",
+  abandoned: "",
+  cancelled: "",
+  error: "pill-danger",
 };
 
 // User-facing label for the status pill. Internal enum values like
@@ -93,10 +101,11 @@ export default async function ApplicationPage({ params }: RouteCtx) {
     .maybeSingle();
   if (!app) notFound();
 
-  const tone =
-    STATUS_TONE[app.status] ??
-    "bg-dim/15 text-muted-foreground border-border";
+  const tone = STATUS_TONE[app.status] ?? "";
   const label = STATUS_LABEL[app.status] ?? app.status;
+  // running / rendering states show a pulsing dot inside the pill —
+  // ties the topbar pill to the same live-state vocabulary as ChainCard.
+  const isLive = app.status === "running" || app.status === "rendering";
 
   // For error states, look up the latest error_code from request_logs and
   // map it to a recovery descriptor. Drives which branch the error
@@ -150,7 +159,16 @@ export default async function ApplicationPage({ params }: RouteCtx) {
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl text-text">Application</h1>
           <CopyId value={id} />
-          <span className={`status-pill ${tone}`}>{label}</span>
+          <span className={`pill ${tone}`}>
+            {isLive && (
+              <span
+                aria-hidden
+                className="dot dot-pulse"
+                style={{ backgroundColor: "currentColor" }}
+              />
+            )}
+            {label}
+          </span>
           {app.parent_application_id && (
             <span className="text-base text-muted-foreground">
               retry of {app.parent_application_id.slice(0, 8)}
@@ -274,13 +292,9 @@ function SuccessView({
       <section className="surface-card">
         <p className="eyebrow">Fit</p>
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          <span
-            className={`inline-flex items-center rounded-full border px-4 py-1 text-sm font-bold uppercase tracking-[0.08em] ${fitTone}`}
-          >
-            {fit.score}
-          </span>
+          <span className={`pill ${fitTone}`}>{fit.score}</span>
           {salary && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/15 px-4 py-1 text-sm font-medium text-success">
+            <span className="pill pill-success gap-1.5">
               {salary.range}
               <span className="text-xs uppercase tracking-[0.08em] text-success/70">
                 · {salary.confidence}
