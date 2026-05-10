@@ -2,6 +2,7 @@
 // the upload form (client component) for the actual POST.
 
 import { redirect } from "next/navigation";
+import { FadeUp } from "@/components/app/FadeUp";
 import { ProTip } from "@/components/app/ProTip";
 import { UploadForm } from "@/components/upload/UploadForm";
 import { createClient } from "@/lib/supabase/server";
@@ -31,7 +32,7 @@ export default async function UploadPage() {
 
   return (
     <div className="space-y-8">
-      <header className="text-center">
+      <FadeUp mode="mount" as="header" className="text-center">
         <p className="eyebrow">
           {isFirstUpload ? "Step 1 of 2" : "Replace master CV"}
         </p>
@@ -45,10 +46,10 @@ export default async function UploadPage() {
             ? "Upload your master CV with all your experience, skills, and accomplishments. Don't hold back — the more we know, the sharper the result."
             : "Replacing the CV won't affect applications already in the queue. They keep using the snapshot from when they were submitted."}
         </p>
-      </header>
+      </FadeUp>
 
       {existing && (
-        <div className="rounded-2xl border border-orange/30 bg-[var(--color-orange-subtle)] p-5">
+        <FadeUp mode="mount" delay={120} className="rounded-2xl border border-orange/30 bg-[var(--color-orange-subtle)] p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange">
             Currently on file
           </p>
@@ -64,10 +65,10 @@ export default async function UploadPage() {
             the queue. They keep using the snapshot from when they were
             submitted.
           </p>
-        </div>
+        </FadeUp>
       )}
 
-      <section className="surface-card">
+      <FadeUp mode="mount" delay={existing ? 200 : 120} as="section" className="surface-card">
         <h2 className="heading-section">
           {existing ? "Replace master CV" : "Upload your master CV"}
         </h2>
@@ -79,7 +80,7 @@ export default async function UploadPage() {
             ? "Include every project, certification, and skill you can think of. We'll pick the ones that matter for each role."
             : "Replacements supersede the previous CV; queued applications keep their original snapshot."}
         </ProTip>
-      </section>
+      </FadeUp>
     </div>
   );
 }

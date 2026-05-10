@@ -13,6 +13,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRightIcon } from "lucide-react";
 import { ChainCard } from "@/components/app/ChainCard";
+import { FadeUp } from "@/components/app/FadeUp";
 import {
   groupIntoChains,
   type FlatRow,
@@ -86,16 +87,16 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <header className="text-center">
+      <FadeUp mode="mount" as="header" className="text-center">
         <p className="eyebrow">Welcome back</p>
         <h1 className="heading-display mt-4">Pick up where you left off.</h1>
         <p className="mt-4 text-base text-muted-foreground">
           Your CV, stripped to its sharpest form. ATS ready, recruiter approved.
         </p>
-      </header>
+      </FadeUp>
 
       {!hasCv && (
-        <section className="surface-card text-center">
+        <FadeUp mode="mount" delay={120} as="section" className="surface-card text-center">
           <p className="eyebrow">Get started</p>
           <h2 className="heading-section mt-4">
             Upload your master CV first.
@@ -109,11 +110,11 @@ export default async function DashboardPage() {
               Upload CV
             </Link>
           </div>
-        </section>
+        </FadeUp>
       )}
 
       {hasCv && !hasAnyHistory && (
-        <section className="surface-card text-center">
+        <FadeUp mode="mount" delay={120} as="section" className="surface-card text-center">
           <p className="eyebrow">Ready</p>
           <h2 className="heading-section mt-4">
             Tailor your first application.
@@ -127,11 +128,11 @@ export default async function DashboardPage() {
               Tailor a new application
             </Link>
           </div>
-        </section>
+        </FadeUp>
       )}
 
       {hasCv && liveChains.length > 0 && (
-        <section>
+        <FadeUp mode="mount" delay={120} as="section">
           <div className="mb-4 flex items-baseline justify-between">
             <h2 className="eyebrow-muted">In progress</h2>
             <span className="text-meta">
@@ -146,11 +147,11 @@ export default async function DashboardPage() {
               </li>
             ))}
           </ul>
-        </section>
+        </FadeUp>
       )}
 
       {hasCv && recentChains.length > 0 && (
-        <section>
+        <FadeUp mode="mount" delay={liveChains.length > 0 ? 200 : 120} as="section">
           <div className="mb-4 flex items-baseline justify-between">
             <h2 className="eyebrow-muted">Recent</h2>
             <Link href="/history" className="btn-pill">
@@ -165,7 +166,7 @@ export default async function DashboardPage() {
               </li>
             ))}
           </ul>
-        </section>
+        </FadeUp>
       )}
     </div>
   );

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronRightIcon, DownloadIcon } from "lucide-react";
 import { signOut } from "@/app/(auth)/login/actions";
+import { FadeUp } from "@/components/app/FadeUp";
 import { DeleteAccountForm } from "@/components/settings/DeleteAccountForm";
 import { createClient } from "@/lib/supabase/server";
 
@@ -43,12 +44,12 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-8">
-      <header>
+      <FadeUp mode="mount" as="header">
         <p className="eyebrow">Account</p>
         <h1 className="heading-display mt-3">Settings</h1>
-      </header>
+      </FadeUp>
 
-      <section className="surface-card">
+      <FadeUp mode="mount" delay={80} as="section" className="surface-card">
         <p className="eyebrow">Account</p>
         <dl className="mt-5 space-y-2.5 text-base">
           <div className="flex justify-between gap-4">
@@ -68,9 +69,9 @@ export default async function SettingsPage() {
             </div>
           )}
         </dl>
-      </section>
+      </FadeUp>
 
-      <section className="surface-card">
+      <FadeUp mode="mount" delay={160} as="section" className="surface-card">
         <p className="eyebrow">Master CV</p>
         {cv ? (
           <>
@@ -129,10 +130,10 @@ export default async function SettingsPage() {
             </div>
           </>
         )}
-      </section>
+      </FadeUp>
 
       {profile?.is_admin && (
-        <section>
+        <FadeUp mode="mount" delay={240} as="section">
           <div className="mb-4">
             <p className="eyebrow">Admin tools</p>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -186,14 +187,14 @@ export default async function SettingsPage() {
               </Link>
             </li>
           </ul>
-        </section>
+        </FadeUp>
       )}
 
       {/* Condensed view of the standards + data treatment we publish
           on /faq — same source claims, abbreviated for in-app context.
           Designed so a logged-in user can verify what we hold without
           tab-switching to the public FAQ. */}
-      <section className="surface-card">
+      <FadeUp mode="mount" delay={profile?.is_admin ? 320 : 240} as="section" className="surface-card">
         <p className="eyebrow">Standards & your data</p>
         <ul className="mt-5 space-y-3 text-base text-muted-foreground">
           <li className="flex items-baseline gap-3">
@@ -234,9 +235,9 @@ export default async function SettingsPage() {
         <Link href="/faq" className="btn-link-orange mt-6 inline-block">
           Read the full FAQ →
         </Link>
-      </section>
+      </FadeUp>
 
-      <section className="surface-card">
+      <FadeUp mode="mount" delay={profile?.is_admin ? 400 : 320} as="section" className="surface-card">
         <p className="eyebrow">Session</p>
         <p className="mt-5 text-base text-muted-foreground">
           End your session on this device.
@@ -246,14 +247,14 @@ export default async function SettingsPage() {
             Sign out
           </button>
         </form>
-      </section>
+      </FadeUp>
 
-      <section className="surface-card border-danger/30">
+      <FadeUp mode="mount" delay={profile?.is_admin ? 480 : 400} as="section" className="surface-card border-danger/30">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-danger">
           Danger zone
         </p>
         <DeleteAccountForm email={userData.user.email ?? ""} />
-      </section>
+      </FadeUp>
     </div>
   );
 }

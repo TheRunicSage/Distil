@@ -22,6 +22,7 @@ import {
   PencilIcon,
 } from "lucide-react";
 import { CopyId } from "@/components/app/CopyId";
+import { FadeUp } from "@/components/app/FadeUp";
 import { ApplicationLiveView } from "@/components/application/ApplicationLiveView";
 import { CoverLetterPreview } from "@/components/application/CoverLetterPreview";
 import { CvPreview } from "@/components/application/CvPreview";
@@ -271,7 +272,7 @@ function SuccessView({
 
   return (
     <div className="space-y-6">
-      <section className="surface-card">
+      <FadeUp mode="mount" as="section" className="surface-card">
         <p className="eyebrow">Fit</p>
         <div className="mt-4 flex flex-wrap items-center gap-2.5">
           <span
@@ -304,9 +305,9 @@ function SuccessView({
             </ul>
           </>
         )}
-      </section>
+      </FadeUp>
 
-      <section className="surface-card border-orange/30 bg-[var(--color-orange-subtle)]">
+      <FadeUp mode="mount" delay={120} as="section" className="surface-card border-orange/30 bg-[var(--color-orange-subtle)]">
         <p className="eyebrow">What we did</p>
         <ul className="mt-4 space-y-2.5">
           {success.what_we_did_checklist.map((item, i) => (
@@ -320,7 +321,7 @@ function SuccessView({
             </li>
           ))}
         </ul>
-      </section>
+      </FadeUp>
 
       {/* Side-by-side previews. The (app) layout caps content at 800px;
           this section breaks out to ~viewport width via a 50vw negative-
@@ -332,7 +333,7 @@ function SuccessView({
           is a continuous scroll inside a max-height frame; the cover
           letter is one A4 page (CoverLetterPreview's own min-height
           fills the card naturally). */}
-      <section className="relative left-1/2 right-1/2 -mx-[50vw] w-screen px-6">
+      <FadeUp mode="scroll" as="section" className="relative left-1/2 right-1/2 -mx-[50vw] w-screen px-6">
         <div className="mx-auto max-w-[1280px]">
           {/* `items-start` keeps each card at its content height so the
               cover letter doesn't stretch to match the CV's longer body. */}
@@ -357,13 +358,13 @@ function SuccessView({
             </PreviewPanel>
           </div>
         </div>
-      </section>
+      </FadeUp>
 
       {/* Warm sign-off. Sits at the very bottom of the success view; first
           name is extracted from contact_details.full_name. Tone matches the
           NZ register of the cover letter (Kia ora / Nga mihi) — explicit
           "good luck" because the user expects to see it as a closing line. */}
-      <section className="pt-4 text-center">
+      <FadeUp mode="scroll" as="section" className="pt-4 text-center">
         <p className="font-serif text-3xl font-light leading-snug text-text sm:text-4xl">
           {firstName
             ? `Good luck with your application, ${firstName}.`
@@ -384,7 +385,7 @@ function SuccessView({
             .
           </p>
         )}
-      </section>
+      </FadeUp>
     </div>
   );
 }

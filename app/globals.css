@@ -576,6 +576,42 @@
 }
 
 /* ============================================================
+   FadeUp — reveal-on-mount + reveal-on-intersect primitive.
+   Driven by the FadeUp client component (components/app/FadeUp.tsx)
+   which sets data-fade-state="visible" either on mount (mode="mount",
+   used by (app) pages for a one-time "coming to life" stagger after
+   page load) or when the element scrolls into view (mode="scroll",
+   used by the landing page where there's real below-fold distance).
+
+   Initial state: 8px below position, fully transparent. Visible state:
+   in position, fully opaque. 540ms ease-out tween — long enough to
+   read as deliberate, short enough not to feel slow. Reduced-motion
+   users get instant visibility (no transform, no opacity tween) so
+   the page never appears empty for anyone who opted out of motion.
+   ============================================================ */
+
+.fade-up {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 540ms cubic-bezier(0.2, 0.6, 0.2, 1),
+    transform 540ms cubic-bezier(0.2, 0.6, 0.2, 1);
+  will-change: opacity, transform;
+}
+
+.fade-up[data-fade-state="visible"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-up {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ============================================================
    Custom scrollbars — site-wide, theme-aware.
    Dark mode: orange-tinted thumb on transparent track (warm Curiosum
    accent against the warm-grey surface). Light mode: a slightly

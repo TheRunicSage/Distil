@@ -3,6 +3,7 @@
 // run the 3-second debounce + word-count UI.
 
 import { redirect } from "next/navigation";
+import { FadeUp } from "@/components/app/FadeUp";
 import { NewApplicationForm } from "@/components/application/NewApplicationForm";
 import { createClient } from "@/lib/supabase/server";
 
@@ -23,7 +24,7 @@ export default async function NewApplicationPage() {
 
   return (
     <div className="space-y-8">
-      <header className="text-center">
+      <FadeUp mode="mount" as="header" className="text-center">
         <p className="eyebrow">New application</p>
         <h1 className="heading-display mt-3">
           Now, the role you&apos;re after.
@@ -33,9 +34,11 @@ export default async function NewApplicationPage() {
           the listing. We&apos;ll reverse-engineer exactly what they&apos;re
           looking for.
         </p>
-      </header>
+      </FadeUp>
 
-      <NewApplicationForm />
+      <FadeUp mode="mount" delay={120}>
+        <NewApplicationForm />
+      </FadeUp>
     </div>
   );
 }

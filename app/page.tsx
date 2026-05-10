@@ -19,6 +19,7 @@
 
 import { AmbientBackground } from "@/components/app/AmbientBackground";
 import { CustomCursor } from "@/components/app/CustomCursor";
+import { FadeUp } from "@/components/app/FadeUp";
 import { MagneticDots } from "@/components/app/MagneticDots";
 import { CuriosumSection } from "@/components/landing/CuriosumSection";
 import { Footer } from "@/components/landing/Footer";
@@ -37,11 +38,22 @@ export default function LandingPage() {
       <div className="relative z-10 flex min-h-screen flex-col">
         <LandingTopbar />
         <main className="flex-1">
+          {/* Hero is excluded — it carries its own word-rise motion;
+              wrapping it in FadeUp would compete with the headline tween. */}
           <HeroSection />
-          <ProblemSection />
-          <HowItWorksSection />
-          <WhatYouGetSection />
-          <CuriosumSection />
+          {/* Below-the-fold sections reveal as the reader works down. */}
+          <FadeUp mode="scroll">
+            <ProblemSection />
+          </FadeUp>
+          <FadeUp mode="scroll">
+            <HowItWorksSection />
+          </FadeUp>
+          <FadeUp mode="scroll">
+            <WhatYouGetSection />
+          </FadeUp>
+          <FadeUp mode="scroll">
+            <CuriosumSection />
+          </FadeUp>
         </main>
         <Footer />
       </div>
