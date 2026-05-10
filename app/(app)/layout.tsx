@@ -1,13 +1,15 @@
 // Authenticated app shell. Topbar uses the design-system classes from
 // globals.css so spacing/typography stay aligned across (app) pages.
 //
-// IA: the Distil wordmark is the only "home" affordance (links to
-// /dashboard); the History link is secondary nav; Settings collapses
-// behind a gear icon (account, master CV, admin, sign-out all live
-// there); "+ New application" is the always-visible primary action.
-// When the user has no master CV, the same button routes to /upload
-// with a context-appropriate label rather than dead-ending on a
-// "you need to upload first" message.
+// IA (UI refresh phase 5, 2026-05-10):
+//   - Distil wordmark — home affordance, links to /dashboard
+//   - "+ New application" — always-visible primary CTA (orange).
+//     When no master CV: same button routes to /upload with a
+//     context-appropriate label.
+//   - History link — secondary nav, text-only
+//   - UserMenu (avatar dropdown) — collapses Email · Theme toggle ·
+//     FAQ · Settings · Sign out behind a single click.
+//     Settings is reachable ONLY via this menu (per user directive).
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -15,6 +17,7 @@ import { AmbientBackground } from "@/components/app/AmbientBackground";
 import { AppShell } from "@/components/app/AppShell";
 import { MagneticDots } from "@/components/app/MagneticDots";
 import { TopbarNav } from "@/components/app/TopbarNav";
+import { UserMenu } from "@/components/app/UserMenu";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({
@@ -53,6 +56,7 @@ export default async function AppLayout({
           </Link>
           <nav className="flex items-center gap-1.5 sm:gap-2.5">
             <TopbarNav hasCv={hasCv} />
+            <UserMenu email={userData.user.email ?? ""} />
           </nav>
         </header>
         <main className="flex-1 overflow-y-auto px-4 py-10 sm:px-6 sm:py-16">

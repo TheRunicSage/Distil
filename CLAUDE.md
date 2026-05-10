@@ -1354,6 +1354,29 @@ Test path: trigger `llm_invalid_output` (today's three identical failures will r
 
 Rollback: single `git revert`. The codes-table additions are additive (new optional-shape fields); the page changes are scoped to the error branch. The new `ErrorRecoverySection` component is inline so removal is a single-block delete.
 
+[14] UI refresh phase 5 — UserMenu dropdown + topbar redesign (2026-05-10). New `components/app/UserMenu.tsx` client component. Trigger is a 40px circular avatar (orange-subtle bg, orange text, first letter of email; `font-semibold`) with a 1px line-2 border. Hover/aria-expanded shows the same orange-glow halo as `.btn-icon` (`box-shadow: 0 0 14px -4px var(--color-orange-glow)`). Panel is positioned absolute right-0 top-+0.5rem, 16rem wide, on the new `--color-dark-elev` popover surface, with a 12px depth shadow + 1px ring. 160ms fade-up animation in (respects `prefers-reduced-motion: reduce`).
+
+Panel contents (5 items):
+1. Email header — read-only, `.user-menu-email` (truncated, mono font for the address, muted color)
+2. Theme toggle — Sun/Moon icon + label, click triggers the same `document.startViewTransition()` circular reveal that `ThemeToggle` had (writes click x/y to --x/--y CSS vars before the swap). Falls back to instant theme swap on browsers without View Transitions.
+3. FAQ link → `/faq`
+4. Settings link → `/settings`
+5. Sign out — form action calling existing `signOut` from `app/(auth)/login/actions.ts`. `.user-menu-item-danger` styling: hover/focus surfaces danger-tinted bg + danger color text + danger color icon.
+
+Accessibility (WAI-ARIA Authoring Practices):
+- Trigger `aria-haspopup="menu"`, `aria-expanded={open}`, `aria-label="Account menu"`
+- Panel `role="menu"`, `aria-label="Account menu"`
+- Items `role="menuitem"`
+- Esc closes + returns focus to trigger
+- Click outside (mousedown listener) closes
+- Theme toggle is a button, not a checkbox — the icon flip + label change make the affordance clear without an explicit checked state
+
+`(app)/layout.tsx` updated: threads `userData.user.email` into the new UserMenu component. Header gains UserMenu after TopbarNav. `TopbarNav.tsx` slimmed: removed ThemeToggle and Settings gear icon — both now live in the UserMenu. New Application stays as `.btn-primary` (orange + glow on hover via Phase 4 primitive). History link unchanged. `app/(app)/settings/page.tsx`: removed the "Session" surface-card with the Sign out button (the function moved to UserMenu) plus the unused `signOut` import. Settings page now: Account → Master CV → Admin tools → Standards & data → Danger zone.
+
+Settings is reachable ONLY via the UserMenu (per user directive). The legacy `ThemeToggle` component file stays — still imported by `LandingTopbar.tsx` (signed-out visitors need a theme toggle on the public landing page; no UserMenu there since no user).
+
+`npx tsc --noEmit` clean except pre-existing DeepSeek errors. Phase 6+ (per-page polish) next.
+
 [14] UI refresh phase 4 — primitives retune + glow polish + new primitives (2026-05-10). Polish thesis applied: orange-glow box-shadow on hover for primary CTAs and interactive shells. Bg-color shifts retained as secondary cue. 220ms ease-out transitions on box-shadow + transform. Reduced-motion users still get the shadow, just no animation.
 
 Existing primitives retuned with glow:

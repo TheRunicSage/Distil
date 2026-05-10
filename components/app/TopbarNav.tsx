@@ -1,17 +1,21 @@
 "use client";
 
-// (app) topbar nav. Uses usePathname() to highlight the route the user
-// is on — History link picks up an orange-tinted active state, Settings
-// icon picks up an active outline + colour. Wordmark is intentionally
-// excluded (it's the home affordance, not a destination tab in the same
-// sense). The primary CTA also doesn't switch to "active" — it's an
-// action, and the page it leads to is short-lived (new-application
-// or upload), so an active style would just be noise.
+// (app) topbar nav — left/middle cluster.
+//
+// Renders:
+//   - "+ New application" / "Upload CV" — primary orange CTA. Always
+//     leftmost so the eye lands on it; user directive 2026-05-10 to
+//     keep this orange by default to lead users into a new generation.
+//   - History link — secondary nav (text-only btn-ghost).
+//
+// Theme toggle, Settings, FAQ, Sign out moved into the UserMenu
+// avatar dropdown (right of this component) per the UI refresh
+// phase 5 (2026-05-10). Wordmark is in the parent layout — it's the
+// home affordance, not a destination tab in the same sense.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PlusIcon, SettingsIcon, UploadIcon } from "lucide-react";
-import { ThemeToggle } from "@/components/app/ThemeToggle";
+import { PlusIcon, UploadIcon } from "lucide-react";
 
 type Props = {
   hasCv: boolean;
@@ -25,10 +29,6 @@ function isActive(pathname: string, href: string): boolean {
 export function TopbarNav({ hasCv }: Props) {
   const pathname = usePathname() ?? "";
 
-  // Settings icon active state covers /settings and /admin (admin lives
-  // under Settings → Admin tools per the IA pass).
-  const settingsActive =
-    isActive(pathname, "/settings") || isActive(pathname, "/admin");
   const historyActive =
     isActive(pathname, "/history") || isActive(pathname, "/application");
 
@@ -59,20 +59,6 @@ export function TopbarNav({ hasCv }: Props) {
         }
       >
         History
-      </Link>
-      <ThemeToggle />
-      <Link
-        href="/settings"
-        aria-label="Settings"
-        aria-current={settingsActive ? "page" : undefined}
-        title="Settings"
-        className={
-          settingsActive
-            ? "inline-flex size-10 items-center justify-center rounded-md bg-[var(--color-orange-subtle)] text-orange focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40"
-            : "btn-icon"
-        }
-      >
-        <SettingsIcon size={18} aria-hidden />
       </Link>
     </>
   );
