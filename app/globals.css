@@ -392,102 +392,305 @@
    ============================================================ */
 
 @layer components {
-  /* Type primitives.
-     History:
-       2026-05-03 readability pass: eyebrow 11→12, text-meta 12→12.5.
-       2026-05-08 (rolled back) html 16→17 + eyebrow 12→13 + text-meta 12.5→13.5.
-       2026-05-08 audit pass 1: revert the html bump (broke the preview's
-       1123px page-break math), keep the muted-foreground contrast lift,
-       scale each primitive one step explicitly so we control which
-       surfaces grow. Eyebrow text-sm; text-meta 14.5; heading-display
-       text-5xl; heading-section text-3xl.
-       2026-05-08 audit pass 2: same teammate still finds grey/secondary
-       text undersized; lift everything one more notch in the (app)
-       shell. Previews stay pinned. Eyebrow text-sm → text-base (14→16);
-       text-meta 14.5 → 16; heading-display text-5xl → text-6xl;
-       heading-section text-3xl → text-4xl. */
+  /* ---- Type primitives ----
+     History up to 2026-05-09 in audit passes 1-4. 2026-05-10 UI refresh
+     phase 4: keep audit-pass-4 sizing (modern app norms — text-base
+     buttons, size-10 icons). Inter is denser than Outfit so type reads
+     about right at the same px sizes. Lead added per refresh vocab. */
   .eyebrow {
     @apply text-base font-semibold uppercase tracking-[0.20em] text-orange;
   }
   .eyebrow-muted {
     @apply text-base font-semibold uppercase tracking-[0.20em] text-muted-foreground;
   }
-  /* Headings: mobile-first base + sm: bump to the audit-pass-2 desktop
-     value. text-6xl (60px) overflowed and wrapped awkwardly at 375px;
-     text-4xl mobile + text-6xl desktop reads as one piece of typography
-     at both ends. Same shape for heading-section. Audit pass 3
-     (2026-05-09). */
   .heading-display {
     @apply font-serif text-4xl font-light leading-[1.15] tracking-tight text-text sm:text-6xl;
   }
   .heading-section {
     @apply font-serif text-3xl font-normal leading-tight tracking-tight text-text sm:text-4xl;
   }
+  /* lead — refresh vocab. Larger paragraph below an h-display, used for
+     hero subtitles and panel intros. Sits one step heavier than .text-meta
+     (which is muted secondary). */
+  .lead {
+    @apply text-lg leading-relaxed text-text/90 sm:text-xl;
+  }
   .text-meta {
     @apply text-base leading-[1.5] text-muted-foreground;
   }
+  /* mono — short identifiers, dates, queue positions. Uses JetBrains
+     Mono via --font-mono. Pairs well with .tabular for numerics. */
+  .mono {
+    font-family: var(--font-mono);
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  /* kbd — inline keyboard shortcut chip. */
+  .kbd {
+    @apply inline-flex items-center rounded-[6px] border border-border bg-dark3 px-1.5 py-0.5 font-mono text-xs text-text/90;
+    box-shadow: 0 1px 0 var(--color-line-strong);
+  }
+  /* chapter / chapter-num — numbered section markers used on landing
+     page to create a sense of rhythm down the page. */
+  .chapter {
+    @apply flex items-baseline gap-3;
+  }
+  .chapter-num {
+    @apply font-mono text-sm tabular-nums text-orange;
+  }
 
-  /* Surface primitives. Tailwind v4's @apply only resolves utilities,
-     not other component classes — so .surface-card-interactive
-     repeats the .surface-card properties rather than composing via
-     @apply.
-     Audit pass 2 (2026-05-08): surface-row px-5 py-3.5 → px-6 py-4
-     so the bigger row content has matching breathing room. surface-card
-     p-8 stays — already roomy at 32px. */
+  /* ---- Surface primitives ----
+     2026-05-10 refresh phase 4: surface-card-interactive gains an
+     orange-glow halo on hover (the polish thesis). surface-row gets
+     a smaller-amplitude version. The transition is on box-shadow so
+     reduced-motion users still get the visual; just no animation. */
   .surface-card {
     @apply rounded-2xl border border-border bg-dark2/60 p-6 backdrop-blur-sm sm:p-8;
   }
   .surface-card-interactive {
-    @apply rounded-2xl border border-border bg-dark2/60 p-6 backdrop-blur-sm transition-colors hover:border-orange/40 sm:p-8;
+    @apply rounded-2xl border border-border bg-dark2/60 p-6 backdrop-blur-sm sm:p-8;
+    transition:
+      border-color 220ms ease-out,
+      box-shadow 220ms ease-out,
+      transform 220ms ease-out;
+  }
+  .surface-card-interactive:hover {
+    border-color: rgba(226, 97, 59, 0.4);
+    box-shadow:
+      0 0 0 1px var(--color-orange-glow),
+      0 8px 28px -8px var(--color-orange-glow);
+    transform: translateY(-1px);
   }
   .surface-row {
-    @apply flex items-center justify-between rounded-xl border border-border bg-dark2/60 px-5 py-3.5 backdrop-blur-sm transition-colors hover:border-orange/40 hover:bg-dark3/80 sm:px-6 sm:py-4;
+    @apply flex items-center justify-between rounded-xl border border-border bg-dark2/60 px-5 py-3.5 backdrop-blur-sm sm:px-6 sm:py-4;
+    transition:
+      border-color 220ms ease-out,
+      background-color 220ms ease-out,
+      box-shadow 220ms ease-out;
   }
-  /* .panel — container without baked-in padding. Used for admin
-     tables and stat cards where the consumer wants to control its
-     own spacing or sit a table flush inside. Same elevation
-     treatment as .surface-card. */
+  .surface-row:hover {
+    border-color: rgba(226, 97, 59, 0.4);
+    background-color: color-mix(in srgb, var(--color-dark3) 80%, transparent);
+    box-shadow: 0 0 18px -6px var(--color-orange-glow);
+  }
   .panel {
     @apply rounded-2xl border border-border bg-dark2/60 backdrop-blur-sm;
   }
+  /* paper — light-mode "document" surface. Used for CV/cover letter
+     preview-shaped panels in landing/marketing surfaces. Always renders
+     as a white-ish paper, regardless of theme — distinct from card. */
+  .paper {
+    background: var(--color-l-bg);
+    color: var(--color-l-text);
+    border: 1px solid var(--color-l-border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+  }
 
-  /* Button primitives. Audit pass 2 (2026-05-08):
-     - btn-primary / btn-secondary / btn-disabled-shell: text-base →
-       text-lg, padding px-6 py-3 → px-7 py-3.5.
-     - btn-ghost: text-base → text-lg, padding px-4 py-2 → px-5 py-2.5.
-     - btn-icon: size-10 → size-11 (40→44px).
-     - btn-link-orange: text-base → text-lg.
-     - status-pill: text-[11px] → text-xs (12px); px-2.5 → px-3. */
+  /* ---- Button primitives ----
+     2026-05-10 refresh phase 4: glow-on-hover for primary CTAs and
+     interactive shells. btn-lg / btn-sm size variants added. Glow is
+     box-shadow + slight translateY(-1px) lift, returning on :active.
+     Polish thesis: hover should feel like the surface is responding,
+     not just changing color. */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-orange px-5 py-2.5 text-base font-semibold text-white transition-colors hover:bg-orange-light disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-orange px-5 py-2.5 text-base font-semibold text-white disabled:pointer-events-none disabled:opacity-50;
+    transition:
+      background-color 220ms ease-out,
+      box-shadow 220ms ease-out,
+      transform 220ms ease-out;
+  }
+  .btn-primary:hover {
+    background-color: var(--color-orange-light);
+    box-shadow:
+      0 0 0 1px var(--color-orange),
+      0 0 24px -2px var(--color-orange-glow),
+      0 6px 18px -10px rgba(0, 0, 0, 0.4);
+    transform: translateY(-1px);
+  }
+  .btn-primary:active {
+    background-color: var(--color-orange-deep);
+    transform: translateY(0);
+    box-shadow: 0 0 0 1px var(--color-orange-deep);
+  }
+  .btn-primary:focus-visible {
+    outline: 2px solid var(--color-orange);
+    outline-offset: 2px;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-dark3/60 px-5 py-2.5 text-base font-medium text-text transition-colors hover:border-orange/40 hover:bg-dark3 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-dark3/60 px-5 py-2.5 text-base font-medium text-text disabled:pointer-events-none disabled:opacity-50;
+    transition:
+      background-color 220ms ease-out,
+      border-color 220ms ease-out,
+      box-shadow 220ms ease-out,
+      transform 220ms ease-out;
+  }
+  .btn-secondary:hover {
+    border-color: rgba(226, 97, 59, 0.4);
+    background-color: var(--color-dark3);
+    box-shadow: 0 0 18px -6px var(--color-orange-glow);
+    transform: translateY(-1px);
+  }
+  .btn-secondary:active {
+    transform: translateY(0);
+  }
+  .btn-secondary:focus-visible {
+    outline: 2px solid var(--color-orange);
+    outline-offset: 2px;
   }
   .btn-ghost {
-    @apply inline-flex items-center gap-2 rounded-md px-4 py-2 text-base text-muted-foreground transition-colors hover:bg-dark3 hover:text-text;
+    @apply inline-flex items-center gap-2 rounded-md px-4 py-2 text-base text-muted-foreground;
+    transition:
+      background-color 180ms ease-out,
+      color 180ms ease-out;
+  }
+  .btn-ghost:hover {
+    background-color: var(--color-dark3);
+    color: var(--color-text);
   }
   .btn-icon {
-    @apply inline-flex size-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-dark3 hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40;
+    @apply inline-flex size-10 items-center justify-center rounded-md text-muted-foreground;
+    transition:
+      background-color 180ms ease-out,
+      color 180ms ease-out,
+      box-shadow 220ms ease-out;
+  }
+  .btn-icon:hover {
+    background-color: var(--color-dark3);
+    color: var(--color-text);
+    box-shadow: 0 0 12px -4px var(--color-orange-glow);
+  }
+  .btn-icon:focus-visible {
+    outline: 2px solid var(--color-orange);
+    outline-offset: 2px;
   }
   .btn-link-orange {
-    @apply text-base text-orange transition-colors hover:text-orange-light;
+    @apply text-base text-orange;
+    transition: color 180ms ease-out;
+  }
+  .btn-link-orange:hover {
+    color: var(--color-orange-light);
   }
   /* btn-pill — small navigable chip for secondary nav (back-links and
-     "view all" affordances). Reads as clickable without the heft of
-     btn-ghost or the full button shell of btn-secondary. Uses the
-     same border + hover treatment as surface-row so it shares a visual
-     family with the (app) shell's row patterns. */
+     "view all" affordances). Refresh phase 4: glow on hover (smaller
+     than primary) + border-color shift to orange/40. */
   .btn-pill {
-    @apply inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-base text-muted-foreground transition-colors hover:border-orange/40 hover:bg-dark3 hover:text-text;
+    @apply inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-base text-muted-foreground;
+    transition:
+      border-color 200ms ease-out,
+      background-color 200ms ease-out,
+      color 200ms ease-out,
+      box-shadow 220ms ease-out;
+  }
+  .btn-pill:hover {
+    border-color: rgba(226, 97, 59, 0.4);
+    background-color: var(--color-dark3);
+    color: var(--color-text);
+    box-shadow: 0 0 14px -6px var(--color-orange-glow);
   }
   .btn-disabled-shell {
     @apply inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-border bg-dark4 px-5 py-2.5 text-base font-medium text-muted-foreground;
   }
+  /* btn-lg / btn-sm — size variants for btn-primary and btn-secondary
+     contexts. Apply alongside the base class:
+       <button class="btn-primary btn-lg">  → larger CTA on landing
+       <button class="btn-secondary btn-sm"> → small inline action      */
+  .btn-lg {
+    @apply px-7 py-3 text-lg;
+    border-radius: var(--radius-xl);
+  }
+  .btn-sm {
+    @apply px-3.5 py-1.5 text-sm;
+    border-radius: var(--radius-sm);
+  }
 
-  /* Status pill (used for application.status badges). */
+  /* ---- Status pills + dots ----
+     2026-05-10 refresh phase 4: bespoke .pill with built-in tone
+     variants replaces the `status-pill + tone class` recipe sprinkled
+     across the app. .status-pill stays as an alias for the base
+     so existing markup keeps working — call sites can migrate to
+     .pill + variant when they touch surrounding code.
+     Glow on running/queued matches the live-state amber/cyan. */
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-xs font-bold uppercase tracking-[0.06em];
+    border-color: var(--color-line-2);
+    background-color: var(--color-dark3);
+    color: var(--color-text-muted);
+  }
+  .pill-success {
+    border-color: rgba(62, 207, 142, 0.30);
+    background-color: rgba(62, 207, 142, 0.15);
+    color: var(--color-success);
+  }
+  .pill-running {
+    border-color: rgba(226, 97, 59, 0.30);
+    background-color: rgba(226, 97, 59, 0.15);
+    color: var(--color-orange);
+    box-shadow: 0 0 14px -6px var(--color-orange-glow);
+  }
+  .pill-queued {
+    border-color: rgba(75, 159, 232, 0.30);
+    background-color: rgba(75, 159, 232, 0.15);
+    color: var(--color-info);
+  }
+  .pill-warn {
+    border-color: rgba(240, 160, 48, 0.30);
+    background-color: rgba(240, 160, 48, 0.15);
+    color: var(--color-warn);
+  }
+  .pill-danger {
+    border-color: rgba(226, 91, 91, 0.30);
+    background-color: rgba(226, 91, 91, 0.15);
+    color: var(--color-danger);
+  }
+  .pill-info {
+    border-color: rgba(75, 159, 232, 0.30);
+    background-color: rgba(75, 159, 232, 0.15);
+    color: var(--color-info);
+  }
+  /* Legacy alias — existing call sites pass a tone class (e.g.
+     `.status-pill bg-success/15 text-success border-success/25`) which
+     produces the same visual as `.pill .pill-success`. New code should
+     reach for `.pill` + a variant. Old call sites still resolve
+     because the tone classes are still legal Tailwind utilities. */
   .status-pill {
     @apply inline-flex items-center rounded-full border px-3 py-0.5 text-xs font-bold uppercase tracking-[0.06em];
+  }
+  /* dot — small status dot. Size 8px, used inline before pill labels
+     or anywhere a tiny "in this state" cue is needed. dot-pulse adds
+     a soft expanding ring for live/in-progress states. */
+  .dot {
+    @apply inline-block size-2 shrink-0 rounded-full;
+    background-color: var(--color-text-3);
+  }
+  .dot-pulse {
+    position: relative;
+  }
+  .dot-pulse::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 9999px;
+    border: 1.5px solid currentColor;
+    opacity: 0.4;
+    animation: dot-pulse 1.6s ease-out infinite;
+  }
+  @keyframes dot-pulse {
+    0% {
+      transform: scale(0.6);
+      opacity: 0.6;
+    }
+    100% {
+      transform: scale(1.6);
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dot-pulse::after {
+      animation: none;
+      opacity: 0.4;
+    }
   }
 }
 

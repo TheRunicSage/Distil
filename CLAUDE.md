@@ -1354,6 +1354,30 @@ Test path: trigger `llm_invalid_output` (today's three identical failures will r
 
 Rollback: single `git revert`. The codes-table additions are additive (new optional-shape fields); the page changes are scoped to the error branch. The new `ErrorRecoverySection` component is inline so removal is a single-block delete.
 
+[14] UI refresh phase 4 — primitives retune + glow polish + new primitives (2026-05-10). Polish thesis applied: orange-glow box-shadow on hover for primary CTAs and interactive shells. Bg-color shifts retained as secondary cue. 220ms ease-out transitions on box-shadow + transform. Reduced-motion users still get the shadow, just no animation.
+
+Existing primitives retuned with glow:
+* `.btn-primary:hover` — orange-glow halo (3-stop shadow: 1px ring, soft 24px halo, 6px depth) + `translateY(-1px)` lift. `:active` returns lift, swaps to `--color-orange-deep`. `:focus-visible` adds 2px orange outline.
+* `.btn-secondary:hover` — softer 18px halo + border-orange/40 + lift. Same active/focus discipline.
+* `.btn-icon:hover` — small 12px halo + bg/color shift. focus-visible outline.
+* `.btn-pill:hover` — 14px halo + border-orange/40 (already had border treatment, now joined by glow).
+* `.surface-card-interactive:hover` — 28px wide halo (the marquee surface glow) + 1px orange-glow ring + lift.
+* `.surface-row:hover` — 18px halo + bg shift via `color-mix`.
+* `.btn-ghost` and `.btn-link-orange` — kept gentle (no glow); these are utility nav, not "lead" affordances.
+
+New primitives added (Phase 4):
+* `.lead` — large paragraph below an h-display (refresh vocab).
+* `.mono` — `font-family: var(--font-mono)` (JetBrains Mono).
+* `.tabular` — `font-variant-numeric: tabular-nums`.
+* `.kbd` — keyboard shortcut chip with subtle inset-line shadow.
+* `.chapter` + `.chapter-num` — landing-page numbered section markers.
+* `.paper` — light-mode "document" surface for preview-shaped panels (always white-ish regardless of theme — distinct from card).
+* `.btn-lg` / `.btn-sm` — button size variants. Apply alongside base class.
+* `.pill` + `.pill-{success,running,queued,warn,danger,info}` — status pill primitive with built-in tone variants. `.pill-running` carries its own glow (live-state cue). Replaces the existing `status-pill + tone class` recipe; legacy `.status-pill` kept as alias so existing call sites still resolve.
+* `.dot` + `.dot-pulse` — small status dot with optional expanding-ring pulse. Pulse uses keyframes; `prefers-reduced-motion: reduce` halts animation but keeps the static ring.
+
+Backwards compat: every existing primitive call site renders unchanged. Glow is purely additive (no layout shift). The `:hover` shape moved from Tailwind `hover:bg-X` utilities to raw CSS for the shadow stops; primitives that previously had `transition-colors` now have `transition` on multiple properties (background, box-shadow, transform). `npx tsc --noEmit` clean except pre-existing DeepSeek errors. Phase 5 (UserMenu dropdown + topbar redesign) next.
+
 [14] UI refresh phase 3 — typography swap (2026-05-10). `app/layout.tsx` updated. `Outfit` removed from `next/font/google` imports; `Inter` and `JetBrains_Mono` added. Inter loads weights 400/500/600/700 (dropped 300 vs prior Outfit since Inter Light is rarely used in our shell). JetBrains Mono loads 400/500 only — used via the upcoming `.mono` / `.tabular` primitives in Phase 4. Font CSS variables: `--font-inter`, `--font-fraunces` (unchanged), `--font-jetbrains-mono`. Threading: `<html className>` now carries all three font variable classes. The Phase 2 token block already references `--font-inter` and `--font-jetbrains-mono` so the swap is hot once this commit lands. No other code changes — `font-sans` Tailwind utility resolves through the same `--font-sans` token chain. Body inherits new sans automatically. Phase 4 (primitives + glow) next: Inter's denser metrics will be retested as part of the primitive retune.
 
 [14] UI refresh phase 2 — token layer (2026-05-10). `app/globals.css` `@theme` block updated to the refresh palette + new tokens. Brand orange unchanged (`#e2613b`). New: `--color-orange-deep: #c44a26`, `--color-orange-tint: rgba(0.04)`, `--color-orange-dim` tightened 0.15 → 0.08. Surface elevation gains 5th rung `--color-dark-elev: #2f2f3a` for popovers/floating UI. Dark surface palette shifts cooler (`--color-dark: #11111a` → `#0f0f15`, etc.). Text gains 3-tier scale: `--color-text-3: #8e8d99` (timestamps/IDs), `--color-text-dim` (disabled/ghosted). Line system: `--color-line` (subtle), `--color-line-2` (medium), `--color-line-strong` (focused). Radii explicit scale: `--radius-xs/sm/md/lg/xl/2xl: 6/8/12/16/22/28`. Typography variable updated to reference future Inter + JetBrains Mono fonts (Phase 3 will swap the next/font/google import). Light-mode `:root:not(.dark)` overrides updated: page bg `#f5f3ed` → `#fbfaf6` (warmer), text-muted `#3f3d36` → `#4a4842` (slightly lifted to land between prior calibration and refresh #6b6960), new tokens get light-mode equivalents (text-3, line / line-2 / line-strong with darker-than-dark alphas to show on white). Old tokens kept for backwards-compat: `--color-dim` legacy, `--color-text-muted` unchanged in dark mode. Refresh phase 1 (brief) shipped previously. Phase 3 (typography swap to Inter + JetBrains Mono) next.
