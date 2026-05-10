@@ -30,17 +30,17 @@ export default async function UploadPage() {
     : "Master CV replaced.";
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <header className="text-center">
         <p className="eyebrow">
           {isFirstUpload ? "Step 1 of 2" : "Replace master CV"}
         </p>
-        <h1 className="heading-display mt-5">
+        <h1 className="heading-display mt-3">
           {isFirstUpload
             ? "Start with everything you have."
             : "Swap in a new master CV."}
         </h1>
-        <p className="mx-auto mt-5 max-w-md text-lg text-muted-foreground">
+        <p className="mx-auto mt-3 max-w-md text-base text-muted-foreground">
           {isFirstUpload
             ? "Upload your master CV with all your experience, skills, and accomplishments. Don't hold back — the more we know, the sharper the result."
             : "Replacing the CV won't affect applications already in the queue. They keep using the snapshot from when they were submitted."}
@@ -48,18 +48,18 @@ export default async function UploadPage() {
       </header>
 
       {existing && (
-        <div className="rounded-2xl border border-orange/30 bg-[var(--color-orange-subtle)] p-7">
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-orange">
+        <div className="rounded-2xl border border-orange/30 bg-[var(--color-orange-subtle)] p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange">
             Currently on file
           </p>
-          <p className="mt-4 text-lg text-text">
+          <p className="mt-3 text-base text-text">
             {existing.mime_type === "application/pdf" ? "PDF" : "DOCX"} ·{" "}
             {Math.round(existing.file_size_bytes / 1024)} KB · uploaded{" "}
             {new Date(existing.created_at).toLocaleDateString("en-NZ", {
               timeZone: "Pacific/Auckland",
             })}
           </p>
-          <p className="mt-3 text-base text-muted-foreground">
+          <p className="mt-2 text-sm text-muted-foreground">
             Replacing the CV won&apos;t affect applications already in
             the queue. They keep using the snapshot from when they were
             submitted.
@@ -71,10 +71,10 @@ export default async function UploadPage() {
         <h2 className="heading-section">
           {existing ? "Replace master CV" : "Upload your master CV"}
         </h2>
-        <div className="mt-7">
+        <div className="mt-5">
           <UploadForm redirectTo={redirectTo} successToast={successToast} />
         </div>
-        <ProTip className="mt-8">
+        <ProTip className="mt-6">
           {isFirstUpload
             ? "Include every project, certification, and skill you can think of. We'll pick the ones that matter for each role."
             : "Replacements supersede the previous CV; queued applications keep their original snapshot."}

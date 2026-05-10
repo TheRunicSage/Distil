@@ -197,10 +197,10 @@ export default async function AdminUsagePage({
   const activeProvider = getLlmProvider();
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-4xl font-semibold text-text">Usage</h1>
-        <p className="mt-3 text-lg text-muted-foreground">
+        <h1 className="text-3xl font-semibold text-text">Usage</h1>
+        <p className="mt-2 text-base text-muted-foreground">
           Last 50 applications and the 7-day spend.
         </p>
       </div>
@@ -239,8 +239,8 @@ export default async function AdminUsagePage({
         );
       })()}
 
-      <section className="panel p-8">
-        <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-orange">
+      <section className="panel p-6">
+        <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-orange">
           7-day spend by provider
         </h2>
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -275,7 +275,7 @@ export default async function AdminUsagePage({
             <Link
               key={g.key}
               href={href}
-              className={`rounded-full border px-5 py-2 text-base font-medium transition-colors ${
+              className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
                 active
                   ? "border-orange/60 bg-[var(--color-orange-subtle)] text-orange"
                   : "border-border bg-dark2/60 text-muted-foreground hover:border-orange/40 hover:text-text"
@@ -288,8 +288,8 @@ export default async function AdminUsagePage({
       </nav>
 
       <section className="panel overflow-x-auto">
-        <table className="w-full table-auto text-lg">
-          <thead className="bg-dark2 text-left text-base font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        <table className="w-full table-auto text-base">
+          <thead className="bg-dark2 text-left text-sm font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             <tr>
               <th className="whitespace-nowrap px-3 py-3.5">Created</th>
               <th className="whitespace-nowrap px-3 py-3.5">Application</th>
@@ -437,19 +437,19 @@ function Stat({
   labelTone?: StatTone;
 }) {
   return (
-    <div className="panel p-6">
+    <div className="panel p-5">
       <p
-        className={`text-sm font-bold uppercase tracking-[0.16em] ${STAT_LABEL_CLASS[labelTone]}`}
+        className={`text-xs font-bold uppercase tracking-[0.16em] ${STAT_LABEL_CLASS[labelTone]}`}
       >
         {label}
       </p>
       <p
-        className={`mt-3 text-4xl font-semibold ${STAT_VALUE_CLASS[tone]}`}
+        className={`mt-2 text-3xl font-semibold ${STAT_VALUE_CLASS[tone]}`}
       >
         {value}
       </p>
       {sub && (
-        <p className="mt-2 font-mono text-sm text-muted-foreground">
+        <p className="mt-2 font-mono text-xs text-muted-foreground">
           {sub}
         </p>
       )}
@@ -484,10 +484,10 @@ function ProviderSpend({
   return (
     <div>
       <div className="flex items-baseline justify-between">
-        <span className="text-base font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        <span className="text-sm font-semibold uppercase tracking-[0.08em] text-muted-foreground">
           {label}
         </span>
-        <span className={`font-mono text-lg font-semibold ${valueColour}`}>
+        <span className={`font-mono text-base font-semibold ${valueColour}`}>
           ${cost.toFixed(2)}
         </span>
       </div>

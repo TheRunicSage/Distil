@@ -152,7 +152,7 @@ export function NewApplicationForm() {
       </div>
 
       {error && (
-        <p role="alert" className="text-lg text-danger">
+        <p role="alert" className="text-base text-danger">
           {error}
         </p>
       )}
@@ -172,7 +172,7 @@ export function NewApplicationForm() {
           {pending ? "Submitting…" : "Tailor my CV and cover letter"}
         </button>
         {debounced && !pending && (
-          <span className="text-base text-muted-foreground">
+          <span className="text-sm text-muted-foreground">
             Just a sec — preventing duplicate submission.
           </span>
         )}

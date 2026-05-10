@@ -85,11 +85,11 @@ export default async function DashboardPage() {
   const hasAnyHistory = liveChains.length > 0 || recentChains.length > 0;
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-8">
       <header className="text-center">
         <p className="eyebrow">Welcome back</p>
-        <h1 className="heading-display mt-5">Pick up where you left off.</h1>
-        <p className="mt-5 text-lg text-muted-foreground">
+        <h1 className="heading-display mt-4">Pick up where you left off.</h1>
+        <p className="mt-4 text-base text-muted-foreground">
           Your CV, stripped to its sharpest form. ATS ready, recruiter approved.
         </p>
       </header>
@@ -97,14 +97,14 @@ export default async function DashboardPage() {
       {!hasCv && (
         <section className="surface-card text-center">
           <p className="eyebrow">Get started</p>
-          <h2 className="heading-section mt-5">
+          <h2 className="heading-section mt-4">
             Upload your master CV first.
           </h2>
-          <p className="mx-auto mt-5 max-w-md text-lg text-muted-foreground">
+          <p className="mx-auto mt-4 max-w-md text-base text-muted-foreground">
             One PDF or DOCX, up to 3MB. We&apos;ll use it as the source of truth
             for every tailored application.
           </p>
-          <div className="mt-8 flex justify-center">
+          <div className="mt-6 flex justify-center">
             <Link href="/upload" className="btn-primary">
               Upload CV
             </Link>
@@ -115,14 +115,14 @@ export default async function DashboardPage() {
       {hasCv && !hasAnyHistory && (
         <section className="surface-card text-center">
           <p className="eyebrow">Ready</p>
-          <h2 className="heading-section mt-5">
+          <h2 className="heading-section mt-4">
             Tailor your first application.
           </h2>
-          <p className="mx-auto mt-5 max-w-md text-lg text-muted-foreground">
+          <p className="mx-auto mt-4 max-w-md text-base text-muted-foreground">
             Paste a job description. Get a tailored CV and cover letter, both
             matched to the role.
           </p>
-          <div className="mt-8 flex justify-center">
+          <div className="mt-6 flex justify-center">
             <Link href="/application/new" className="btn-primary">
               Tailor a new application
             </Link>
@@ -132,14 +132,14 @@ export default async function DashboardPage() {
 
       {hasCv && liveChains.length > 0 && (
         <section>
-          <div className="mb-6 flex items-baseline justify-between">
+          <div className="mb-4 flex items-baseline justify-between">
             <h2 className="eyebrow-muted">In progress</h2>
             <span className="text-meta">
               {liveChains.length}{" "}
               {liveChains.length === 1 ? "application" : "applications"}
             </span>
           </div>
-          <ul className="space-y-3">
+          <ul className="space-y-2">
             {liveChains.map((c) => (
               <li key={c.rootId}>
                 <ChainCard chain={c} />
@@ -151,14 +151,14 @@ export default async function DashboardPage() {
 
       {hasCv && recentChains.length > 0 && (
         <section>
-          <div className="mb-6 flex items-baseline justify-between">
+          <div className="mb-4 flex items-baseline justify-between">
             <h2 className="eyebrow-muted">Recent</h2>
             <Link href="/history" className="btn-pill">
               View all
               <ArrowRightIcon size={14} aria-hidden />
             </Link>
           </div>
-          <ul className="space-y-3">
+          <ul className="space-y-2">
             {recentChains.map((c) => (
               <li key={c.rootId}>
                 <ChainCard chain={c} />

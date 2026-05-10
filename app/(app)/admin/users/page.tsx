@@ -45,10 +45,10 @@ export default async function AdminUsersPage() {
   });
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-4xl font-semibold text-text">Users</h1>
-        <p className="mt-3 text-lg text-muted-foreground">
+        <h1 className="text-3xl font-semibold text-text">Users</h1>
+        <p className="mt-2 text-base text-muted-foreground">
           Every email registered with the app. {sorted.length} total.
         </p>
       </div>
@@ -65,8 +65,8 @@ export default async function AdminUsersPage() {
       </section>
 
       <section className="panel overflow-x-auto">
-        <table className="w-full table-auto text-lg">
-          <thead className="bg-dark2 text-left text-base font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        <table className="w-full table-auto text-base">
+          <thead className="bg-dark2 text-left text-sm font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             <tr>
               <th className="whitespace-nowrap px-3 py-3.5">User</th>
               <th className="whitespace-nowrap px-3 py-3.5">Email</th>
@@ -102,16 +102,16 @@ export default async function AdminUsersPage() {
                       {userPillLabel(u.id)}
                     </span>
                   </td>
-                  <td className="px-3 py-4 text-base">
+                  <td className="px-3 py-3.5 text-sm">
                     {u.email ?? <span className="text-muted-foreground">—</span>}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-4 text-base text-muted-foreground">
+                  <td className="whitespace-nowrap px-3 py-3.5 text-sm text-muted-foreground">
                     {formatDate(u.created_at)}
                   </td>
-                  <td className="hidden whitespace-nowrap px-3 py-4 text-base text-muted-foreground lg:table-cell">
+                  <td className="hidden whitespace-nowrap px-3 py-3.5 text-sm text-muted-foreground lg:table-cell">
                     {formatDate(u.last_sign_in_at ?? null)}
                   </td>
-                  <td className="hidden px-3 py-4 text-base sm:table-cell">
+                  <td className="hidden px-3 py-3.5 text-sm sm:table-cell">
                     {u.email_confirmed_at ? (
                       <span className="text-success">Yes</span>
                     ) : (
@@ -133,15 +133,15 @@ export default async function AdminUsersPage() {
       </section>
 
       {deletions.length > 0 && (
-        <section className="panel p-8">
-          <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-orange">
+        <section className="panel p-6">
+          <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-orange">
             Recent deletions
           </h2>
-          <p className="mt-4 text-base text-muted-foreground">
+          <p className="mt-3 text-sm text-muted-foreground">
             Email addresses are stored hashed (sha256) for privacy; this list
             shows the timeline only.
           </p>
-          <ul className="mt-6 divide-y divide-border text-base">
+          <ul className="mt-5 divide-y divide-border text-sm">
             {deletions.map((d) => (
               <li
                 key={d.id}
@@ -166,11 +166,11 @@ export default async function AdminUsersPage() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="panel p-6">
-      <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange">
+    <div className="panel p-5">
+      <p className="text-xs font-bold uppercase tracking-[0.16em] text-orange">
         {label}
       </p>
-      <p className="mt-3 text-4xl font-semibold text-text">{value}</p>
+      <p className="mt-2 text-3xl font-semibold text-text">{value}</p>
     </div>
   );
 }

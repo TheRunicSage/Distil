@@ -39,15 +39,15 @@ export default async function AppLayout({
       <AmbientBackground />
       <MagneticDots />
       <div className="relative z-10 flex flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-[60px] shrink-0 items-center justify-between border-b border-border/50 bg-dark/70 px-4 backdrop-blur-md sm:h-[72px] sm:px-8">
+        <header className="sticky top-0 z-30 flex h-[56px] shrink-0 items-center justify-between border-b border-border/50 bg-dark/70 px-4 backdrop-blur-md sm:h-[64px] sm:px-6">
           <Link
             href="/dashboard"
             className="flex items-baseline gap-3 outline-none focus-visible:opacity-80"
           >
-            <span className="font-serif text-2xl font-light tracking-tight text-text sm:text-4xl">
+            <span className="font-serif text-xl font-light tracking-tight text-text sm:text-3xl">
               Distil
             </span>
-            <span className="hidden text-sm font-semibold uppercase tracking-[0.18em] text-orange sm:inline">
+            <span className="hidden text-xs font-semibold uppercase tracking-[0.18em] text-orange sm:inline">
               Curiosum.ai
             </span>
           </Link>
@@ -55,8 +55,8 @@ export default async function AppLayout({
             <TopbarNav hasCv={hasCv} />
           </nav>
         </header>
-        <main className="flex-1 overflow-y-auto px-4 py-10 sm:px-6 sm:py-16">
-          <div className="mx-auto max-w-[800px]">{children}</div>
+        <main className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 sm:py-12">
+          <div className="mx-auto max-w-[760px]">{children}</div>
         </main>
       </div>
     </AppShell>

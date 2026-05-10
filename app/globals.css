@@ -360,26 +360,29 @@
        text undersized; lift everything one more notch in the (app)
        shell. Previews stay pinned. Eyebrow text-sm → text-base (14→16);
        text-meta 14.5 → 16; heading-display text-5xl → text-6xl;
-       heading-section text-3xl → text-4xl. */
+       heading-section text-3xl → text-4xl.
+       2026-05-10 polish pass: audit-pass-2 was a hedge for a contrast
+       problem that was also fixed independently (May-3 muted-foreground
+       rgba(0.66) → rgba(0.82)). The contrast fix is locked, so the size
+       hedge unwinds. Desktop full-resolution was reading editorial /
+       ceremonial for a productivity tool. Eyebrow text-base → text-sm
+       (16→14); text-meta text-base → text-sm; heading-display
+       sm:text-6xl → sm:text-5xl (60→48); heading-section sm:text-4xl
+       → sm:text-3xl (36→30). Mobile values held. */
   .eyebrow {
-    @apply text-base font-semibold uppercase tracking-[0.20em] text-orange;
+    @apply text-sm font-semibold uppercase tracking-[0.20em] text-orange;
   }
   .eyebrow-muted {
-    @apply text-base font-semibold uppercase tracking-[0.20em] text-muted-foreground;
+    @apply text-sm font-semibold uppercase tracking-[0.20em] text-muted-foreground;
   }
-  /* Headings: mobile-first base + sm: bump to the audit-pass-2 desktop
-     value. text-6xl (60px) overflowed and wrapped awkwardly at 375px;
-     text-4xl mobile + text-6xl desktop reads as one piece of typography
-     at both ends. Same shape for heading-section. Audit pass 3
-     (2026-05-09). */
   .heading-display {
-    @apply font-serif text-4xl font-light leading-[1.15] tracking-tight text-text sm:text-6xl;
+    @apply font-serif text-4xl font-light leading-[1.15] tracking-tight text-text sm:text-5xl;
   }
   .heading-section {
-    @apply font-serif text-3xl font-normal leading-tight tracking-tight text-text sm:text-4xl;
+    @apply font-serif text-2xl font-normal leading-tight tracking-tight text-text sm:text-3xl;
   }
   .text-meta {
-    @apply text-base leading-[1.5] text-muted-foreground;
+    @apply text-sm leading-[1.5] text-muted-foreground;
   }
 
   /* Surface primitives. Tailwind v4's @apply only resolves utilities,
@@ -388,15 +391,18 @@
      @apply.
      Audit pass 2 (2026-05-08): surface-row px-5 py-3.5 → px-6 py-4
      so the bigger row content has matching breathing room. surface-card
-     p-8 stays — already roomy at 32px. */
+     p-8 stays — already roomy at 32px.
+     Polish pass (2026-05-10): surface-card sm:p-8 → sm:p-6 (32→24px)
+     and surface-row sm:px-6 sm:py-4 → sm:px-5 sm:py-3.5 to walk back
+     the editorial breathing room. surface-card mobile p-6 stays. */
   .surface-card {
-    @apply rounded-2xl border border-border bg-dark2/60 p-6 backdrop-blur-sm sm:p-8;
+    @apply rounded-2xl border border-border bg-dark2/60 p-5 backdrop-blur-sm sm:p-6;
   }
   .surface-card-interactive {
-    @apply rounded-2xl border border-border bg-dark2/60 p-6 backdrop-blur-sm transition-colors hover:border-orange/40 sm:p-8;
+    @apply rounded-2xl border border-border bg-dark2/60 p-5 backdrop-blur-sm transition-colors hover:border-orange/40 sm:p-6;
   }
   .surface-row {
-    @apply flex items-center justify-between rounded-xl border border-border bg-dark2/60 px-5 py-3.5 backdrop-blur-sm transition-colors hover:border-orange/40 hover:bg-dark3/80 sm:px-6 sm:py-4;
+    @apply flex items-center justify-between rounded-xl border border-border bg-dark2/60 px-4 py-3 backdrop-blur-sm transition-colors hover:border-orange/40 hover:bg-dark3/80 sm:px-5 sm:py-3.5;
   }
   /* .panel — container without baked-in padding. Used for admin
      tables and stat cards where the consumer wants to control its

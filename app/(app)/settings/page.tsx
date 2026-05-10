@@ -42,15 +42,15 @@ export default async function SettingsPage() {
   const cv = cvRes.data;
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <header>
         <p className="eyebrow">Account</p>
-        <h1 className="heading-display mt-4">Settings</h1>
+        <h1 className="heading-display mt-3">Settings</h1>
       </header>
 
       <section className="surface-card">
         <p className="eyebrow">Account</p>
-        <dl className="mt-6 space-y-3 text-lg">
+        <dl className="mt-5 space-y-2.5 text-base">
           <div className="flex justify-between gap-4">
             <dt className="text-muted-foreground">Email</dt>
             <dd className="text-text">{userData.user.email}</dd>
@@ -74,7 +74,7 @@ export default async function SettingsPage() {
         <p className="eyebrow">Master CV</p>
         {cv ? (
           <>
-            <dl className="mt-6 space-y-3 text-lg">
+            <dl className="mt-5 space-y-2.5 text-base">
               <div className="flex justify-between gap-4">
                 <dt className="text-muted-foreground">Format</dt>
                 <dd className="text-text">
@@ -92,7 +92,7 @@ export default async function SettingsPage() {
                 <dd className="text-text">{formatDate(cv.created_at)}</dd>
               </div>
             </dl>
-            <p className="mt-6 text-base text-muted-foreground">
+            <p className="mt-5 text-sm text-muted-foreground">
               Replacing your CV won&apos;t affect applications already in the
               queue. They keep using the snapshot from when they were
               submitted.
@@ -101,7 +101,7 @@ export default async function SettingsPage() {
                 redirects to a 60-second signed Supabase URL. Icon
                 button for primary affordance; "Replace" stays
                 secondary so the read action reads first. */}
-            <div className="mt-7 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap gap-3">
               <a
                 href="/api/master-cv/download"
                 className="btn-primary"
@@ -117,12 +117,12 @@ export default async function SettingsPage() {
           </>
         ) : (
           <>
-            <p className="mt-6 text-lg text-text">No master CV on file yet.</p>
-            <p className="mt-3 text-base text-muted-foreground">
+            <p className="mt-5 text-base text-text">No master CV on file yet.</p>
+            <p className="mt-2 text-sm text-muted-foreground">
               Upload one PDF or DOCX (up to 3MB) before tailoring an
               application.
             </p>
-            <div className="mt-7">
+            <div className="mt-6">
               <Link href="/upload" className="btn-primary">
                 Upload CV
               </Link>
@@ -133,23 +133,23 @@ export default async function SettingsPage() {
 
       {profile?.is_admin && (
         <section>
-          <div className="mb-6">
+          <div className="mb-4">
             <p className="eyebrow">Admin tools</p>
-            <p className="mt-3 text-lg text-muted-foreground">
+            <p className="mt-2 text-sm text-muted-foreground">
               Internal observability for the admin user.
             </p>
           </div>
-          <ul className="space-y-3">
+          <ul className="space-y-2">
             <li>
               <Link href="/admin/usage" className="surface-row">
-                <div className="flex flex-col gap-1">
-                  <span className="text-lg font-medium text-text">Usage</span>
-                  <span className="text-base text-muted-foreground">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-base font-medium text-text">Usage</span>
+                  <span className="text-sm text-muted-foreground">
                     Last 50 applications
                   </span>
                 </div>
                 <ChevronRightIcon
-                  size={18}
+                  size={16}
                   className="shrink-0 text-muted-foreground"
                   aria-hidden
                 />
@@ -157,14 +157,14 @@ export default async function SettingsPage() {
             </li>
             <li>
               <Link href="/admin/logs" className="surface-row">
-                <div className="flex flex-col gap-1">
-                  <span className="text-lg font-medium text-text">Errors</span>
-                  <span className="text-base text-muted-foreground">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-base font-medium text-text">Errors</span>
+                  <span className="text-sm text-muted-foreground">
                     Recent errors
                   </span>
                 </div>
                 <ChevronRightIcon
-                  size={18}
+                  size={16}
                   className="shrink-0 text-muted-foreground"
                   aria-hidden
                 />
@@ -172,14 +172,14 @@ export default async function SettingsPage() {
             </li>
             <li>
               <Link href="/admin/telemetry" className="surface-row">
-                <div className="flex flex-col gap-1">
-                  <span className="text-lg font-medium text-text">Telemetry</span>
-                  <span className="text-base text-muted-foreground">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-base font-medium text-text">Telemetry</span>
+                  <span className="text-sm text-muted-foreground">
                     7-day cost total
                   </span>
                 </div>
                 <ChevronRightIcon
-                  size={18}
+                  size={16}
                   className="shrink-0 text-muted-foreground"
                   aria-hidden
                 />
@@ -195,9 +195,9 @@ export default async function SettingsPage() {
           tab-switching to the public FAQ. */}
       <section className="surface-card">
         <p className="eyebrow">Standards & your data</p>
-        <ul className="mt-7 space-y-4 text-lg text-muted-foreground">
+        <ul className="mt-5 space-y-3 text-base text-muted-foreground">
           <li className="flex items-baseline gap-3">
-            <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-orange/70" aria-hidden />
+            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-orange/70" aria-hidden />
             <span>
               <strong className="text-text">ATS-safe by default.</strong>{" "}
               Industry-standard structure and section labels that
@@ -205,7 +205,7 @@ export default async function SettingsPage() {
             </span>
           </li>
           <li className="flex items-baseline gap-3">
-            <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-orange/70" aria-hidden />
+            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-orange/70" aria-hidden />
             <span>
               <strong className="text-text">Encrypted at rest + in transit.</strong>{" "}
               AES-256 storage, TLS in transit. Private to your
@@ -213,7 +213,7 @@ export default async function SettingsPage() {
             </span>
           </li>
           <li className="flex items-baseline gap-3">
-            <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-orange/70" aria-hidden />
+            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-orange/70" aria-hidden />
             <span>
               <strong className="text-text">Auto-deleted on schedule.</strong>{" "}
               Generated files after 60 days; application metadata
@@ -222,7 +222,7 @@ export default async function SettingsPage() {
             </span>
           </li>
           <li className="flex items-baseline gap-3">
-            <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-orange/70" aria-hidden />
+            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-orange/70" aria-hidden />
             <span>
               <strong className="text-text">Not used to train AI models.</strong>{" "}
               We don't train any models on your data, and we don't
@@ -231,17 +231,17 @@ export default async function SettingsPage() {
             </span>
           </li>
         </ul>
-        <Link href="/faq" className="btn-link-orange mt-7 inline-block">
+        <Link href="/faq" className="btn-link-orange mt-6 inline-block">
           Read the full FAQ →
         </Link>
       </section>
 
       <section className="surface-card">
         <p className="eyebrow">Session</p>
-        <p className="mt-6 text-lg text-muted-foreground">
+        <p className="mt-5 text-base text-muted-foreground">
           End your session on this device.
         </p>
-        <form action={signOut} className="mt-7">
+        <form action={signOut} className="mt-6">
           <button type="submit" className="btn-secondary">
             Sign out
           </button>
@@ -249,7 +249,7 @@ export default async function SettingsPage() {
       </section>
 
       <section className="surface-card border-danger/30">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-danger">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-danger">
           Danger zone
         </p>
         <DeleteAccountForm email={userData.user.email ?? ""} />

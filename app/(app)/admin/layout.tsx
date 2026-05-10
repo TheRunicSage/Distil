@@ -33,10 +33,10 @@ export default async function AdminLayout({
 
   return (
     <div className="relative left-1/2 right-1/2 -mx-[50vw] w-screen px-6">
-      <div className="mx-auto max-w-[1280px] space-y-8">
-        <div className="flex flex-wrap items-center justify-between gap-5 border-b border-border pb-6">
-          <div className="flex flex-wrap items-center gap-6">
-            <span className="text-sm font-bold uppercase tracking-[0.16em] text-orange">
+      <div className="mx-auto max-w-[1280px] space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-5">
+          <div className="flex flex-wrap items-center gap-5">
+            <span className="text-xs font-bold uppercase tracking-[0.16em] text-orange">
               Admin
             </span>
             <AdminNav />

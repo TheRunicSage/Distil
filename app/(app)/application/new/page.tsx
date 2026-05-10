@@ -22,13 +22,13 @@ export default async function NewApplicationPage() {
   if (!cv) redirect("/upload");
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <header className="text-center">
         <p className="eyebrow">New application</p>
-        <h1 className="heading-display mt-5">
+        <h1 className="heading-display mt-3">
           Now, the role you&apos;re after.
         </h1>
-        <p className="mx-auto mt-5 max-w-md text-lg text-muted-foreground">
+        <p className="mx-auto mt-3 max-w-md text-base text-muted-foreground">
           Paste the full job description. Title, company, every detail from
           the listing. We&apos;ll reverse-engineer exactly what they&apos;re
           looking for.

@@ -103,10 +103,10 @@ export default async function AdminTelemetryPage() {
     .sort((a, b) => b[1] - a[1]);
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-4xl font-semibold text-text">Telemetry</h1>
-        <p className="mt-3 text-lg text-muted-foreground">
+        <h1 className="text-3xl font-semibold text-text">Telemetry</h1>
+        <p className="mt-2 text-base text-muted-foreground">
           7-day event counts. Trailing window from{" "}
           {new Date(since).toLocaleDateString("en-NZ", {
             timeZone: "Pacific/Auckland",
@@ -125,7 +125,7 @@ export default async function AdminTelemetryPage() {
         <Stat label="Errors" value={String(outcomes.error)} accent="danger" />
       </section>
 
-      <section className="panel p-8">
+      <section className="panel p-6">
         <div className="flex items-baseline justify-between">
           <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-orange">
             LLM spend by provider (7 days)
@@ -135,13 +135,13 @@ export default async function AdminTelemetryPage() {
           </span>
         </div>
         {providerStats.length === 0 ? (
-          <p className="mt-5 text-lg text-muted-foreground">
+          <p className="mt-4 text-base text-muted-foreground">
             No LLM calls in the window.
           </p>
         ) : (
           <div className="mt-6 overflow-x-auto">
-            <table className="w-full table-auto text-lg">
-              <thead className="text-left text-base font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            <table className="w-full table-auto text-base">
+              <thead className="text-left text-sm font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 <tr className="border-b border-border">
                   <th className="whitespace-nowrap py-2 pr-3">Model</th>
                   <th className="whitespace-nowrap py-2 px-3 text-right">Calls</th>
@@ -249,7 +249,7 @@ export default async function AdminTelemetryPage() {
         )}
       </section>
 
-      <section className="panel p-8">
+      <section className="panel p-6">
         <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-orange">
           Submission funnel
         </h2>
@@ -277,12 +277,12 @@ export default async function AdminTelemetryPage() {
         </ul>
       </section>
 
-      <section className="panel p-8">
+      <section className="panel p-6">
         <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-orange">
           Other events
         </h2>
         {otherEvents.length === 0 ? (
-          <p className="mt-5 text-lg text-muted-foreground">
+          <p className="mt-4 text-base text-muted-foreground">
             Nothing else recorded in the window.
           </p>
         ) : (
@@ -334,11 +334,11 @@ function Stat({
         ? "text-warn"
         : "text-danger";
   return (
-    <div className="panel p-6">
-      <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange">
+    <div className="panel p-5">
+      <p className="text-xs font-bold uppercase tracking-[0.16em] text-orange">
         {label}
       </p>
-      <p className={`mt-3 text-4xl font-semibold ${accentClass}`}>{value}</p>
+      <p className={`mt-2 text-3xl font-semibold ${accentClass}`}>{value}</p>
     </div>
   );
 }
