@@ -28,7 +28,7 @@ export default async function NewApplicationPage() {
         <h1 className="heading-display mt-5">
           Now, the role you&apos;re after.
         </h1>
-        <p className="lead mx-auto mt-5 max-w-md text-muted-foreground">
+        <p className="mx-auto mt-5 max-w-md text-lg text-muted-foreground">
           Paste the full job description. Title, company, every detail from
           the listing. We&apos;ll reverse-engineer exactly what they&apos;re
           looking for.

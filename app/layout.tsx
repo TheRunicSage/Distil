@@ -1,17 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
+import { Fraunces, Outfit } from "next/font/google";
 import "./globals.css";
 import { CustomCursor } from "@/components/app/CustomCursor";
 import { cn } from "@/lib/utils";
 
-// Inter — body sans (UI Refresh phase 3, 2026-05-10).
-// Replaces Outfit. Inter is the de-facto modern app sans (Linear,
-// Vercel, Stripe). Slightly denser metrics than Outfit at the same px
-// size — paragraphs will read tighter without scale changes.
-const inter = Inter({
-  variable: "--font-inter",
+// Outfit — body sans. Geometric, friendly, holds at small sizes.
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 // Fraunces — display serif. Optical sizing 9..144 lets the same family
@@ -21,16 +18,6 @@ const fraunces = Fraunces({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
   style: ["normal", "italic"],
-});
-
-// JetBrains Mono — for IDs, dates, queue positions, tabular numerics.
-// Added as part of the UI Refresh phase 3 (2026-05-10). Single weight
-// pair (400 + 500) keeps the font payload modest. Used via the
-// `.mono` and `.tabular` primitives that Phase 4 will introduce.
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
@@ -69,12 +56,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn(
-        "dark h-full",
-        inter.variable,
-        fraunces.variable,
-        jetbrainsMono.variable,
-      )}
+      className={cn("dark h-full", outfit.variable, fraunces.variable)}
       suppressHydrationWarning
     >
       <head>

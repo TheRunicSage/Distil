@@ -27,9 +27,6 @@ export function ChainCard({ chain }: { chain: Chain }) {
 
   const showDownload = chain.effectiveStatus === "ready";
 
-  // Live-state chains get the dot-pulse cue alongside the pill.
-  const isLive = chain.effectiveStatus === "in_progress";
-
   return (
     <article className="rounded-xl border border-border bg-dark2/60 backdrop-blur-sm transition-colors hover:border-orange/40">
       <div className="relative">
@@ -40,21 +37,18 @@ export function ChainCard({ chain }: { chain: Chain }) {
           <div className="min-w-0 flex-1">
             <p className="truncate text-lg text-text">
               {chain.title ?? (
-                <span className="mono text-text/70">{chain.fallbackId}</span>
+                <span className="font-mono text-text/70">
+                  {chain.fallbackId}
+                </span>
               )}
             </p>
             <p className="mt-1.5 text-base text-muted-foreground">
               {formatDate(chain.latestActivityAt)}
             </p>
           </div>
-          <span className={`pill shrink-0 ${tone}`}>
-            {isLive && (
-              <span
-                aria-hidden
-                className="dot dot-pulse"
-                style={{ backgroundColor: "currentColor" }}
-              />
-            )}
+          <span
+            className={`shrink-0 inline-flex items-center rounded-full border px-3 py-0.5 text-xs font-bold uppercase tracking-[0.06em] ${tone}`}
+          >
             {chain.effectiveLabel}
           </span>
           {showDownload && (
@@ -85,10 +79,12 @@ export function ChainCard({ chain }: { chain: Chain }) {
                   className="flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-dark3/60"
                 >
                   <span className="text-muted-foreground">#{i + 1}</span>
-                  <span className="mono text-base text-text/70 tabular">
+                  <span className="font-mono text-base text-text/70">
                     {a.id.slice(0, 8)}
                   </span>
-                  <span className={`pill ml-auto ${chainToneClass(a.effectiveTone)}`}>
+                  <span
+                    className={`ml-auto inline-flex items-center rounded-full border px-3 py-0.5 text-xs font-bold uppercase tracking-[0.06em] ${chainToneClass(a.effectiveTone)}`}
+                  >
                     {a.effectiveLabel}
                   </span>
                   <span className="w-32 shrink-0 text-right text-base text-muted-foreground">

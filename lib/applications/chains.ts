@@ -217,23 +217,18 @@ export function groupIntoChains(rows: FlatRow[]): ChainCard[] {
   return chains;
 }
 
-// 2026-05-10 UI refresh phase 6: returns the design-system pill
-// variant class instead of an ad-hoc bg/text/border recipe. Caller
-// applies it alongside the base `.pill` class:
-//   <span className={`pill ${chainToneClass(tone)}`}>…</span>
-// Glow (e.g. on running) is baked into the pill variant primitive.
 export function chainToneClass(tone: ChainTone): string {
   switch (tone) {
     case "success":
-      return "pill-success";
+      return "bg-success/15 text-success border-success/30";
     case "warn":
-      return "pill-warn";
+      return "bg-warn/15 text-warn border-warn/30";
     case "danger":
-      return "pill-danger";
+      return "bg-danger/15 text-danger border-danger/30";
     case "info":
-      return "pill-info";
+      return "bg-info/15 text-info border-info/30";
     case "muted":
     default:
-      return "";
+      return "bg-dim/15 text-muted-foreground border-border";
   }
 }

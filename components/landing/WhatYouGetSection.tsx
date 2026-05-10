@@ -1,74 +1,53 @@
-// Chapter 03 — What you get. Two documents + a read of fit. Three
-// eyebrow-labeled cards, with the fit card carrying a tabular numeric
-// read so the page's editorial tabular rhythm shows up before the
-// success view ever does.
+// What you get — three surface cards, one sentence each. Static.
+// Mirrors the dashboard's surface-card composition so a returning user
+// recognises the visual language.
 
-import { FileTextIcon, MailIcon } from "lucide-react";
-import { Chapter } from "@/components/app/Chapter";
-import { FadeUp } from "@/components/app/FadeUp";
+import { FileTextIcon, MailIcon, GaugeIcon } from "lucide-react";
+
+const ITEMS = [
+  {
+    icon: FileTextIcon,
+    title: "Tailored CV",
+    body: "Two pages, ATS-safe, written from your real experience — not invented.",
+  },
+  {
+    icon: MailIcon,
+    title: "Cover letter",
+    body: "One page, story-led, signed in your voice.",
+  },
+  {
+    icon: GaugeIcon,
+    title: "Honest fit read",
+    body: "Score, salary band, and the gaps you should know about.",
+  },
+];
 
 export function WhatYouGetSection() {
   return (
     <section className="px-6 py-32">
       <div className="mx-auto max-w-[1100px]">
-        <FadeUp className="text-center">
-          <Chapter num="03" label="What you get" />
-          <h2 className="heading-section mt-6">
-            Two documents.{" "}
-            <span className="font-serif italic text-orange">
-              One read of fit.
-            </span>
+        <div className="text-center">
+          <p className="eyebrow-muted">What you get</p>
+          <h2 className="mt-6 font-serif text-3xl font-light leading-[1.2] tracking-tight text-text md:text-4xl">
+            Two documents. One read of fit.
           </h2>
-        </FadeUp>
-        <FadeUp stagger className="mt-16 grid gap-4 md:grid-cols-3">
-          <div className="fade-up h-full">
-            <article className="surface-card-interactive flex h-full flex-col">
-              <div className="flex size-10 items-center justify-center rounded-xl border border-orange/40 bg-orange-subtle text-orange">
-                <FileTextIcon size={18} aria-hidden />
-              </div>
-              <p className="eyebrow-muted mt-6">Document one</p>
-              <h3 className="mt-4 font-serif text-2xl font-normal leading-tight tracking-tight text-text">
-                Tailored CV
-              </h3>
-              <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-                Two pages, ATS-safe, written from your real experience &mdash;
-                not invented.
-              </p>
-            </article>
-          </div>
-          <div className="fade-up h-full">
-            <article className="surface-card-interactive flex h-full flex-col">
-              <div className="flex size-10 items-center justify-center rounded-xl border border-orange/40 bg-orange-subtle text-orange">
-                <MailIcon size={18} aria-hidden />
-              </div>
-              <p className="eyebrow-muted mt-6">Document two</p>
-              <h3 className="mt-4 font-serif text-2xl font-normal leading-tight tracking-tight text-text">
-                Cover letter
-              </h3>
-              <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-                One page, story-led, signed in your voice. No hollow
-                superlatives.
-              </p>
-            </article>
-          </div>
-          <div className="fade-up h-full">
-            <article className="surface-card-interactive flex h-full flex-col">
-              <p className="eyebrow">+ a read of fit</p>
-              <h3 className="mt-5 font-serif text-2xl font-normal leading-tight tracking-tight text-text">
-                Honest assessment
-              </h3>
-              <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-                Based on the JD and your real experience, we call your fit
-                one of three things. No invented percentages.
-              </p>
-              <div className="mt-6 flex flex-wrap items-center gap-2">
-                <span className="pill pill-success">Strong</span>
-                <span className="pill pill-warn">Moderate</span>
-                <span className="pill pill-danger">Weak</span>
-              </div>
-            </article>
-          </div>
-        </FadeUp>
+        </div>
+        <ul className="mt-16 grid gap-4 md:grid-cols-3">
+          {ITEMS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <li key={item.title} className="surface-card flex flex-col">
+                <div className="flex size-10 items-center justify-center rounded-xl border border-orange/40 bg-orange-subtle text-orange">
+                  <Icon size={18} aria-hidden />
+                </div>
+                <h3 className="mt-6 heading-section">{item.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  {item.body}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </section>
   );

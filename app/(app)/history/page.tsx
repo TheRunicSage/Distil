@@ -46,7 +46,7 @@ export default async function HistoryPage() {
       <header>
         <p className="eyebrow">History</p>
         <h1 className="heading-display mt-5">All your applications.</h1>
-        <p className="lead mt-4 text-muted-foreground">
+        <p className="mt-4 text-lg text-muted-foreground">
           Newest first. Retries are nested under the original generation.
         </p>
       </header>

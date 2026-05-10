@@ -45,7 +45,7 @@ export default async function AdminLogsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-4xl font-semibold text-text">Errors</h1>
-        <p className="lead mt-3 text-muted-foreground">
+        <p className="mt-3 text-lg text-muted-foreground">
           Last 20 error rows from request_logs. Click a row for the full
           message.
         </p>

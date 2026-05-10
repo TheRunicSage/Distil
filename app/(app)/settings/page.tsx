@@ -6,6 +6,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronRightIcon, DownloadIcon } from "lucide-react";
+import { signOut } from "@/app/(auth)/login/actions";
 import { DeleteAccountForm } from "@/components/settings/DeleteAccountForm";
 import { createClient } from "@/lib/supabase/server";
 
@@ -134,7 +135,7 @@ export default async function SettingsPage() {
         <section>
           <div className="mb-6">
             <p className="eyebrow">Admin tools</p>
-            <p className="lead mt-3 text-muted-foreground">
+            <p className="mt-3 text-lg text-muted-foreground">
               Internal observability for the admin user.
             </p>
           </div>
@@ -235,9 +236,17 @@ export default async function SettingsPage() {
         </Link>
       </section>
 
-      {/* Session / Sign out moved into the UserMenu dropdown in the
-          topbar (UI refresh phase 5, 2026-05-10). The dropdown is the
-          single source for high-frequency actions like signing out. */}
+      <section className="surface-card">
+        <p className="eyebrow">Session</p>
+        <p className="mt-6 text-lg text-muted-foreground">
+          End your session on this device.
+        </p>
+        <form action={signOut} className="mt-7">
+          <button type="submit" className="btn-secondary">
+            Sign out
+          </button>
+        </form>
+      </section>
 
       <section className="surface-card border-danger/30">
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-danger">
