@@ -54,19 +54,18 @@ export function WhatYouGetSection() {
           <div className="fade-up h-full">
             <article className="surface-card-interactive flex h-full flex-col">
               <p className="eyebrow">+ a read of fit</p>
-              <p className="mt-5 flex items-baseline gap-2">
-                <span className="font-serif text-6xl font-light tabular-nums leading-none text-text">
-                  82
-                </span>
-                <span className="text-meta">/100</span>
+              <h3 className="mt-5 font-serif text-2xl font-normal leading-tight tracking-tight text-text">
+                Honest assessment
+              </h3>
+              <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+                Based on the JD and your real experience, we call your fit
+                one of three things. No invented percentages.
               </p>
-              <p className="mt-4 font-serif text-xl font-normal italic leading-snug text-text">
-                Strong match. Worth applying.
-              </p>
-              <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-                Score, salary band, and the gaps you should know about &mdash;
-                before you apply.
-              </p>
+              <div className="mt-6 flex flex-wrap items-center gap-2">
+                <span className="pill pill-success">Strong</span>
+                <span className="pill pill-warn">Moderate</span>
+                <span className="pill pill-danger">Weak</span>
+              </div>
             </article>
           </div>
         </FadeUp>
