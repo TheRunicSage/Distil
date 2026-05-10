@@ -134,7 +134,7 @@ export default async function SettingsPage() {
         <section>
           <div className="mb-6">
             <p className="eyebrow">Admin tools</p>
-            <p className="mt-3 text-lg text-muted-foreground">
+            <p className="lead mt-3 text-muted-foreground">
               Internal observability for the admin user.
             </p>
           </div>

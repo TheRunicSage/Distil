@@ -106,7 +106,7 @@ export default async function AdminTelemetryPage() {
     <div className="space-y-10">
       <div>
         <h1 className="text-4xl font-semibold text-text">Telemetry</h1>
-        <p className="mt-3 text-lg text-muted-foreground">
+        <p className="lead mt-3 text-muted-foreground">
           7-day event counts. Trailing window from{" "}
           {new Date(since).toLocaleDateString("en-NZ", {
             timeZone: "Pacific/Auckland",

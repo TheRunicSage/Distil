@@ -48,8 +48,9 @@ export default async function AdminUsersPage() {
     <div className="space-y-10">
       <div>
         <h1 className="text-4xl font-semibold text-text">Users</h1>
-        <p className="mt-3 text-lg text-muted-foreground">
-          Every email registered with the app. {sorted.length} total.
+        <p className="lead mt-3 text-muted-foreground">
+          Every email registered with the app.{" "}
+          <span className="tabular">{sorted.length}</span> total.
         </p>
       </div>
 

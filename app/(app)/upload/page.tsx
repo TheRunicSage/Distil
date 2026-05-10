@@ -40,7 +40,7 @@ export default async function UploadPage() {
             ? "Start with everything you have."
             : "Swap in a new master CV."}
         </h1>
-        <p className="mx-auto mt-5 max-w-md text-lg text-muted-foreground">
+        <p className="lead mx-auto mt-5 max-w-md text-muted-foreground">
           {isFirstUpload
             ? "Upload your master CV with all your experience, skills, and accomplishments. Don't hold back — the more we know, the sharper the result."
             : "Replacing the CV won't affect applications already in the queue. They keep using the snapshot from when they were submitted."}

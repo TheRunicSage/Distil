@@ -200,7 +200,7 @@ export default async function AdminUsagePage({
     <div className="space-y-10">
       <div>
         <h1 className="text-4xl font-semibold text-text">Usage</h1>
-        <p className="mt-3 text-lg text-muted-foreground">
+        <p className="lead mt-3 text-muted-foreground">
           Last 50 applications and the 7-day spend.
         </p>
       </div>
