@@ -1,29 +1,44 @@
-// Powered by Curiosum.ai — the closer. Typographic Gravity field of
-// Curiosum lineage words sits between the eyebrow + heading and the
-// closing wordmark. Heaviest words ("fit", "honesty") pull hardest;
-// "match" / "candour" / "shape" stay closer to anchor.
+// Chapter 04 — Powered by Curiosum. Heritage chapter: who's behind the
+// product. The Gravity field of lineage words ("fit", "candour", "shape"
+// pulling toward "honesty") sits between the chapter heading and the
+// closing wordmark. Heaviest words pull hardest; lighter ones drift.
 
+import { Chapter } from "@/components/app/Chapter";
+import { FadeUp } from "@/components/app/FadeUp";
 import { GravityField } from "./GravityField";
 
 export function CuriosumSection() {
   return (
     <section className="relative px-6 py-32">
       <div className="mx-auto max-w-[1100px]">
-        <div className="text-center">
-          <p className="eyebrow">Powered by Curiosum.ai</p>
-          <h2 className="mt-6 font-serif text-3xl font-light italic leading-[1.2] tracking-tight text-text md:text-4xl">
-            Built on the same craft we apply to every Curiosum brief.
+        <FadeUp className="text-center">
+          <Chapter num="04" label="Powered by Curiosum" />
+          <h2 className="heading-section mt-6">
+            Built by the same team behind{" "}
+            <span className="font-serif italic text-orange">
+              Curiosum Management Consulting
+            </span>
+            .
           </h2>
-        </div>
-        <GravityField className="mx-auto mt-20 h-[420px] w-full max-w-[920px]" />
-        <div className="mt-12 text-center">
-          <p className="font-serif text-2xl font-light italic tracking-tight text-text">
-            Distil, by Curiosum.ai.
+          <p className="lead mx-auto mt-6 max-w-[640px] text-muted-foreground">
+            Twenty years of helping people land roles they're proud of
+            &mdash; distilled into a tool that does the same job in two
+            minutes, with the same honesty.
           </p>
-          <p className="mt-3 text-meta">
-            A thousand briefs, one craft. Apply with the same care.
-          </p>
-        </div>
+        </FadeUp>
+        <FadeUp>
+          <GravityField className="mx-auto mt-20 h-[420px] w-full max-w-[920px]" />
+        </FadeUp>
+        <FadeUp className="mt-12 flex flex-wrap items-center justify-center gap-3">
+          <a
+            href="https://curiosum.ai"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary"
+          >
+            curiosum.ai
+          </a>
+        </FadeUp>
       </div>
     </section>
   );
