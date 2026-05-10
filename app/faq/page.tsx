@@ -243,7 +243,7 @@ export default function FaqPage() {
             <header className="text-center">
               <p className="eyebrow">Frequently asked</p>
               <h1 className="heading-display mt-3">Standards, fairness, and your data.</h1>
-              <p className="mx-auto mt-5 max-w-[560px] text-base leading-relaxed text-muted-foreground">
+              <p className="lead mx-auto mt-5 max-w-[560px] text-muted-foreground">
                 What ATS is, what recruiters look for in a 30-second
                 scan, and how we treat your data — what we keep, for
                 how long, and how to delete it.
