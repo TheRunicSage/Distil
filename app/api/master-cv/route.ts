@@ -8,6 +8,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { ApiError } from "@/lib/errors/api-error";
 import { withLogging } from "@/lib/logging/with-logging";
+import { detectMissingFields } from "@/lib/parsing/detect-missing-fields";
 import { parsePdf } from "@/lib/parsing/parse-pdf";
 import { parseDocx } from "@/lib/parsing/parse-docx";
 import { createClient } from "@/lib/supabase/server";
@@ -163,6 +164,14 @@ export const POST = withLogging(
       throw new ApiError("database_error", supersedeErr.message);
     }
 
+    // 2026-05-11: regex heuristic over the parsed text flags any
+    // "absolutely necessary" contact fields not detected. Result
+    // drives the yellow-exclamation badge across the (app) UI. We
+    // always write a non-null array (even empty {}) so downstream
+    // queries can distinguish "checked and clean" from "not yet
+    // detected" (null for legacy rows).
+    const missingFields = detectMissingFields(parsedText);
+
     const { error: insertErr } = await service.from("master_cvs").insert({
       id: cvId,
       user_id: userId,
@@ -170,6 +179,7 @@ export const POST = withLogging(
       mime_type: mime,
       file_size_bytes: file.size,
       parsed_text: parsedText,
+      missing_fields: missingFields,
     });
     if (insertErr) {
       // Roll back: undo the storage upload and re-clear superseded_at
