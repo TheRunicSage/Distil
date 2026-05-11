@@ -203,10 +203,10 @@ function PageButton({
       aria-label={label}
       onClick={onClick}
       disabled={disabled}
-      className={`flex h-7 w-7 items-center justify-center rounded-full border transition-colors ${
+      className={`flex h-7 w-7 items-center justify-center rounded-full border transition-[transform,box-shadow,background-color,border-color,color] duration-150 ${
         disabled
           ? "cursor-not-allowed border-border text-muted-foreground/40"
-          : "border-orange/50 text-orange hover:bg-[var(--color-orange-subtle)]"
+          : "border-orange/50 text-orange hover:bg-[var(--color-orange-subtle)] hover:shadow-[0_2px_8px_rgba(226,97,59,0.18)] motion-safe:active:scale-[0.92]"
       }`}
     >
       {children}

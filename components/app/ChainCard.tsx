@@ -28,11 +28,11 @@ export function ChainCard({ chain }: { chain: Chain }) {
   const showDownload = chain.effectiveStatus === "ready";
 
   return (
-    <article className="rounded-xl border border-border bg-dark2/60 backdrop-blur-sm transition-colors hover:border-orange/40">
+    <article className="rounded-xl border border-border bg-dark2/60 backdrop-blur-sm transition-[transform,box-shadow,border-color,background-color,color] duration-200 ease-out hover:border-orange/40 hover:shadow-[0_4px_14px_rgba(226,97,59,0.10)]">
       <div className="relative">
         <Link
           href={`/application/${chain.anchorId}`}
-          className="flex items-center gap-4 px-5 py-4"
+          className="flex items-center gap-4 px-5 py-4 transition-transform motion-safe:active:scale-[0.99]"
         >
           <div className="min-w-0 flex-1">
             <p className="truncate text-base text-text">
@@ -68,7 +68,7 @@ export function ChainCard({ chain }: { chain: Chain }) {
 
       {hasRetries && (
         <details className="border-t border-border/50">
-          <summary className="cursor-pointer px-5 py-2.5 text-sm text-muted-foreground transition-colors hover:text-text">
+          <summary className="cursor-pointer px-5 py-2.5 text-sm text-muted-foreground transition-colors hover:text-text motion-safe:active:scale-[0.99]">
             {chain.attempts.length} attempts
           </summary>
           <ul className="space-y-1 px-5 pb-3 pt-1 text-sm">
@@ -76,7 +76,7 @@ export function ChainCard({ chain }: { chain: Chain }) {
               <li key={a.id}>
                 <Link
                   href={`/application/${a.id}`}
-                  className="flex items-center gap-3 rounded-md px-3 py-2 transition-colors hover:bg-dark3/60"
+                  className="flex items-center gap-3 rounded-md px-3 py-2 transition-[transform,background-color,color] hover:bg-dark3/60 motion-safe:active:scale-[0.98]"
                 >
                   <span className="text-muted-foreground">#{i + 1}</span>
                   <span className="font-mono text-sm text-text/70">

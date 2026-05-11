@@ -53,7 +53,7 @@ export function TopbarNav({ hasCv, email, isAdmin }: Props) {
         aria-current={historyActive ? "page" : undefined}
         className={
           historyActive
-            ? "inline-flex items-center gap-2 rounded-md bg-[var(--color-orange-subtle)] px-4 py-2 text-base font-semibold text-orange transition-colors"
+            ? "inline-flex items-center gap-2 rounded-md bg-[var(--color-orange-subtle)] px-4 py-2 text-base font-semibold text-orange transition-colors hover:bg-[var(--color-orange-subtle)] hover:shadow-[0_2px_8px_rgba(226,97,59,0.12)] motion-safe:active:scale-[0.97]"
             : "btn-ghost"
         }
       >

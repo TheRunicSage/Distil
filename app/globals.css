@@ -477,6 +477,9 @@
 @media (prefers-reduced-motion: no-preference) {
   .btn-primary,
   .btn-secondary,
+  .btn-ghost,
+  .btn-icon,
+  .btn-pill,
   .surface-card-interactive,
   .surface-row {
     transition: transform 80ms ease-out, box-shadow 180ms ease-out,
@@ -485,10 +488,17 @@
   }
   .btn-primary:active,
   .btn-secondary:active,
+  .btn-ghost:active,
+  .btn-icon:active,
+  .btn-pill:active,
   .surface-card-interactive:active,
   .surface-row:active {
     transform: scale(0.97);
   }
+  /* btn-link-orange is inline text — active-scale would shift the
+     surrounding flow. Color-only feedback (existing hover:text-orange-light)
+     is enough; clicks navigate immediately so the lack of kickback isn't
+     a perceived dead-button issue. */
 }
 
 .btn-primary:hover {
@@ -498,6 +508,15 @@
 }
 .btn-secondary:hover {
   box-shadow: 0 6px 16px rgba(226, 97, 59, 0.10);
+}
+.btn-ghost:hover {
+  box-shadow: 0 2px 8px rgba(226, 97, 59, 0.08);
+}
+.btn-icon:hover {
+  box-shadow: 0 2px 8px rgba(226, 97, 59, 0.10);
+}
+.btn-pill:hover {
+  box-shadow: 0 4px 14px rgba(226, 97, 59, 0.10);
 }
 .surface-card-interactive:hover {
   box-shadow: 0 8px 24px rgba(226, 97, 59, 0.10);

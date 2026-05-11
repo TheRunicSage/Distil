@@ -91,7 +91,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={pending}
-            className="mt-3 h-12 rounded-xl bg-orange px-4 text-sm font-semibold tracking-wide text-white transition-colors hover:bg-orange-light disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-3 h-12 rounded-xl bg-orange px-4 text-sm font-semibold tracking-wide text-white transition-[transform,box-shadow,background-color] duration-200 hover:bg-orange-light hover:shadow-[0_6px_18px_rgba(226,97,59,0.28)] disabled:cursor-not-allowed disabled:opacity-60 motion-safe:active:scale-[0.97]"
           >
             {pending ? "Signing in…" : "Sign in"}
           </button>

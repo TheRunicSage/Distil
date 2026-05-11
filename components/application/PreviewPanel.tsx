@@ -42,7 +42,7 @@ export function PreviewPanel({
               onClick={() => setZoomOpen(true)}
               aria-label={zoomLabel}
               title={zoomLabel}
-              className="flex size-10 shrink-0 items-center justify-center rounded-full border border-orange/40 bg-dark2/60 text-orange transition-colors hover:border-orange hover:bg-orange/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40"
+              className="flex size-10 shrink-0 items-center justify-center rounded-full border border-orange/40 bg-dark2/60 text-orange transition-[transform,box-shadow,border-color,background-color,color] duration-200 hover:border-orange hover:bg-orange/10 hover:shadow-[0_4px_14px_rgba(226,97,59,0.18)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40 motion-safe:active:scale-[0.95]"
             >
               <Maximize2Icon size={18} aria-hidden />
             </button>
@@ -50,7 +50,7 @@ export function PreviewPanel({
               href={downloadHref}
               aria-label={downloadLabel}
               title={downloadLabel}
-              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-orange text-white transition-colors hover:bg-orange-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40"
+              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-orange text-white transition-[transform,box-shadow,background-color] duration-200 hover:bg-orange-light hover:shadow-[0_6px_18px_rgba(226,97,59,0.28)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40 motion-safe:active:scale-[0.95]"
             >
               <DownloadIcon size={18} aria-hidden />
             </a>

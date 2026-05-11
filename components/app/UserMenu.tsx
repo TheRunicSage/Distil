@@ -62,7 +62,7 @@ export function UserMenu({ email, isAdmin }: Props) {
         aria-expanded={open}
         aria-label="Account menu"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex size-10 items-center justify-center rounded-full border border-border bg-dark2 text-base font-semibold text-orange transition-colors hover:border-orange/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40"
+        className="inline-flex size-10 items-center justify-center rounded-full border border-border bg-dark2 text-base font-semibold text-orange transition-colors hover:border-orange/40 hover:bg-dark3 hover:shadow-[0_2px_8px_rgba(226,97,59,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40 motion-safe:active:scale-[0.97]"
       >
         {initialOf(email)}
       </button>
@@ -111,7 +111,7 @@ export function UserMenu({ email, isAdmin }: Props) {
             <button
               type="submit"
               role="menuitem"
-              className="surface-row w-full gap-3 text-left"
+              className="surface-row w-full gap-3 text-left text-orange hover:bg-[var(--color-orange-subtle)] hover:text-orange-light"
             >
               <LogOutIcon size={18} aria-hidden />
               <span className="flex-1">Sign out</span>

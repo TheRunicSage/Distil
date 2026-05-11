@@ -117,10 +117,10 @@ export function DownloadDropdown({ applicationId }: { applicationId: string }) {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
+        className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-[transform,box-shadow,background-color,border-color,color] duration-150 motion-safe:active:scale-[0.92] ${
           open
-            ? "border-orange/60 bg-[var(--color-orange-subtle)] text-orange"
-            : "border-border bg-dark2/40 text-muted-foreground hover:border-orange/40 hover:text-orange"
+            ? "border-orange/60 bg-[var(--color-orange-subtle)] text-orange shadow-[0_2px_8px_rgba(226,97,59,0.18)]"
+            : "border-border bg-dark2/40 text-muted-foreground hover:border-orange/40 hover:bg-dark3 hover:text-orange hover:shadow-[0_2px_8px_rgba(226,97,59,0.10)]"
         }`}
       >
         <DownloadIcon className="h-4 w-4" />
@@ -195,7 +195,7 @@ function DownloadItem({
       // browser triggers a save dialog rather than navigating.
       download
       onClick={onPick}
-      className="flex items-center gap-3 px-3 py-2.5 text-sm text-text transition-colors hover:bg-dark3 hover:text-orange"
+      className="flex items-center gap-3 px-3 py-2.5 text-sm text-text transition-[transform,background-color,color] hover:bg-dark3 hover:text-orange motion-safe:active:scale-[0.98]"
     >
       <span className="text-muted-foreground">{icon}</span>
       <span className="min-w-0 flex-1 truncate">{label}</span>

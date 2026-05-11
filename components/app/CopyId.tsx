@@ -36,7 +36,7 @@ export function CopyId({
       type="button"
       onClick={copy}
       title={`Copy ${value}`}
-      className={`group inline-flex items-center gap-1.5 rounded-sm border border-border bg-dark3 px-2 py-0.5 font-mono text-xs text-text transition-colors hover:border-orange/40 hover:bg-dark4 ${className ?? ""}`}
+      className={`group inline-flex items-center gap-1.5 rounded-sm border border-border bg-dark3 px-2 py-0.5 font-mono text-xs text-text transition-colors hover:border-orange/40 hover:bg-dark4 hover:shadow-[0_2px_8px_rgba(226,97,59,0.08)] motion-safe:active:scale-[0.97] ${className ?? ""}`}
     >
       <span>{display}</span>
       <span className="text-[10px] text-muted-foreground transition-colors group-hover:text-orange">

@@ -37,7 +37,7 @@ export function DeleteAccountForm({ email }: { email: string }) {
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-danger/40 bg-danger/10 px-5 py-2.5 text-sm font-medium text-danger transition-colors hover:bg-danger/20"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-danger/40 bg-danger/10 px-5 py-2.5 text-sm font-medium text-danger transition-[transform,box-shadow,background-color,border-color] duration-200 hover:bg-danger/20 hover:shadow-[0_4px_14px_rgba(220,38,38,0.18)] motion-safe:active:scale-[0.97]"
           >
             Delete account
           </button>
@@ -71,7 +71,7 @@ export function DeleteAccountForm({ email }: { email: string }) {
         <button
           type="submit"
           disabled={!matches || pending}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-danger px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-danger/90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-danger px-5 py-2.5 text-sm font-semibold text-white transition-[transform,box-shadow,background-color] duration-200 hover:bg-danger/90 hover:shadow-[0_6px_18px_rgba(220,38,38,0.32)] disabled:cursor-not-allowed disabled:opacity-50 motion-safe:active:scale-[0.97]"
         >
           {pending ? "Deleting…" : "Permanently delete"}
         </button>

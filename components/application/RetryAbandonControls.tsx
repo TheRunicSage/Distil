@@ -103,7 +103,7 @@ export function RetryAbandonControls({
           type="button"
           onClick={abandon}
           disabled={pending}
-          className="rounded-sm bg-orange px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-light disabled:opacity-60"
+          className="btn-primary"
         >
           {pending ? "Working…" : "Continue queued applications"}
         </button>
@@ -151,7 +151,7 @@ export function RetryAbandonControls({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-sm bg-orange px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-light disabled:opacity-60"
+          className="btn-primary"
         >
           {pending ? "Retrying…" : "Retry"}
         </button>
@@ -159,7 +159,7 @@ export function RetryAbandonControls({
           type="button"
           onClick={abandon}
           disabled={pending}
-          className="rounded-sm border border-border bg-dark3 px-4 py-2 text-sm text-text/80 transition-colors hover:bg-dark4 disabled:opacity-60"
+          className="btn-secondary"
         >
           Abandon
         </button>
