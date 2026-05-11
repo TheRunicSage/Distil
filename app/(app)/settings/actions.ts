@@ -69,3 +69,19 @@ export async function deleteAccount(
   await supabase.auth.signOut();
   redirect("/login");
 }
+
+// Preference: when ON, the generate-application Inngest pipeline fires
+// an automatic email to the user's auth address immediately after
+// files upload on the success branch. Off by default; the success view
+// "Email me both documents" button still works regardless.
+export async function setEmailOnGeneration(value: boolean): Promise<void> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return;
+
+  // RLS already restricts UPDATE on profiles to id = auth.uid().
+  await supabase
+    .from("profiles")
+    .update({ email_on_generation: value })
+    .eq("id", userData.user.id);
+}

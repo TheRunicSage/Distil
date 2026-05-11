@@ -536,7 +536,7 @@ Full list with purposes in `app_handoff_v8.md §7.1`. Key notes:
 
 - `GENERATION_ENABLED`: read at request time (not module scope). Default true if unset.
 - `DAILY_COST_CEILING_USD`: read at request time. Default 10.00 if unset.
-- `RESEND_API_KEY` and `EMAIL_FROM_ADDRESS`: optional (email feature deferred).
+- `RESEND_API_KEY` and `EMAIL_FROM_ADDRESS`: optional. Both must be set for email delivery to work; missing either fails closed with `ApiError('email_send_failed')` (telemetry fires, toast surfaces failure, auto-email step swallows and continues). With both absent the rest of the app runs normally.
 - `SUPABASE_SERVICE_ROLE_KEY`: imported ONLY in `lib/supabase/service.ts`. Never elsewhere.
 - Startup validation via Zod in `lib/env.ts`. Fail fast with clear message on missing vars.
 
@@ -547,14 +547,14 @@ Full list with purposes in `app_handoff_v8.md §7.1`. Key notes:
 These are explicitly deferred until after the internal demo milestone.
 The schema columns exist (so adding code later is additive). The routes do not.
 
-- `/api/applications/[id]/email` route
-- `lib/email/client.ts` and `lib/email/templates.ts` (create stubs only)
-- Email button on Screen 8
-- Email confirmation modal
-- `email.send.*` telemetry event emission (schema entries in events.ts are fine)
 - Per-user rate limiting (add via Upstash when signups open)
 - Magic link auth (single Supabase toggle + 2 file changes when ready)
-- Account deletion flow
+
+Email delivery, email confirmation UX, and account deletion have all
+graduated from this list (see Decision Log entries dated 2026-05-01
+and 2026-05-11). The `/api/applications/[id]/email` route, the
+EmailMeButton on the success view, the auto-email Inngest step, and the
+Settings → Preferences toggle ship as v1.
 
 ---
 
@@ -1370,6 +1370,31 @@ Two new server-component primitives in `components/app/`:
 What was *not* changed: `LandingTopbar` itself (still the right component for the landing page); `(app)/layout.tsx`'s data-fetch block (already fetches the same fields, just delegates rendering); FAQ content; root layout. The `AuthAwareTopbar` does a small extra round-trip on every /faq render — same query shape as the (app) layout, so cost is negligible (`maybeSingle` on indexed user_id).
 
 Rollback: single `git revert`. Both primitives are additive; reverting restores the previous `<LandingTopbar />` + inline (app) header JSX.
+
+[v6→v1 email-delivery] Email graduates from "Deferred Features" to v1 (2026-05-11). Resend + DOCX attachments + per-user auto-email opt-in. Eight DPs decided before code:
+
+- **DP-1 recipient → A**: user's auth email only. No per-send recipient field. Anti-abuse default; session already carries the address.
+- **DP-2 attachments → A**: true Resend `attachments: [...]`, base64-encoded DOCX bytes pulled from Supabase Storage. ~30–80 KB each, well under Resend's 40 MB cap.
+- **DP-3 trigger → A**: single primary "Email me both documents" button on the success view, inside a new "Send to inbox" surface-card section between What we did and the previews. Plus a companion (i) info popover that links to the auto-email toggle in Settings — affordance for users who want this to be automatic.
+- **DP-4 confirmation → A**: one-click action, toast feedback. No modal — recipient is fixed to the session email so there's nothing to confirm. Success copy "Sent to {auth-email} — check your inbox."; failure copy "Couldn't send the email. Try again, or download the files directly."
+- **DP-5 body content → C**: both plaintext and HTML multipart. Plaintext fallback covers spam-filter posture; HTML carries the brand wordmark + a single brand-orange rule. **Graceful fallback rule** (user-added): the template MUST never render bracket placeholders or empty values that read as broken software. `lib/email/templates.ts` `clean()` helper treats blank / `[]` / em-dash strings as empty; subject degrades from "Your tailored CV and cover letter — {company}" → "Your tailored CV and cover letter" when company is missing; greeting degrades from "Hi {first},\n" → "Hi there,"; lead sentence picks one of four shapes depending on which of role/company are present.
+- **DP-6 rate limit → A+C combined**: no count cap, but Idempotency-Key support (mirror of the rest of the API). The button generates a per-click key `email-{appId}-{Date.now()}` so double-click is safe but two genuine clicks from different sessions both send.
+- **DP-7 send mechanism → A**: synchronous in the route handler for the manual button. Two attachments + one Resend call is a couple seconds wall-clock, well under the 300s function timeout. Resend has its own retry. Auto-email runs as a step inside the existing generate-application Inngest pipeline, not a separate function — closer to the work; failures emit telemetry but do NOT fail the application (the user still has files via download + the manual button).
+- **DP-8 sent state → B**: new `applications.last_emailed_at TIMESTAMPTZ NULL` column. Set by both code paths. SuccessView renders "Emailed X ago" muted line under the button when set; `router.refresh()` after a successful manual send pulls the new stamp from the server.
+
+Shipped in 3 commits:
+
+1. **`Email infra`** — migration `0005_email_feature.sql` (adds `applications.last_emailed_at` + `profiles.email_on_generation BOOLEAN DEFAULT false`), `resend ^6.12.3`, `lib/email/{client,templates,send-application-email}.ts`, `lib/docx/filename.ts` (extracted from the download route — single source of truth so attachment filenames stay aligned with download filenames). Download route refactored to import from the new module; no behaviour change.
+2. **`Email manual-send route + Email me button`** — `app/api/applications/[id]/email/route.ts` POST handler (auth + ownership via RLS client + Idempotency-Key + service-role call to shared sender); `components/application/EmailMeButton.tsx` (one-click + (i) popover + Emailed-X-ago line); integration into the success view.
+3. **`Email auto-send + Settings toggle`** — `setEmailOnGeneration` server action; `components/settings/EmailOnGenerationToggle.tsx` (optimistic switch with rollback-on-failure toast); new "Preferences" section on `/settings` at delay 200; auto-email Inngest step appended to the success branch in `inngest/functions/generate-application.ts` after `finalize-success` (reads the user's preference; calls `sendApplicationEmail`; swallows errors so the application's terminal state is independent of email outcome).
+
+Env vars (existing, kept `.optional()` per Decision Log [3]): `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`. The client throws `ApiError('email_send_failed')` if either is missing at call time — `telemetry: email.send.failed` fires, the manual button surfaces the toast failure, the auto-email pipeline step logs and continues. So production traffic with these env vars absent fails closed and visibly (no half-broken sends).
+
+What was *not* changed: the discriminated-union output schema; the DOCX renderer; the system prompt; the LLM provider layer; the queue / retry / abandon routes; the Inngest pipeline shape outside the new step; download route filename output (still bit-for-bit identical, helpers just moved). The `email_send_failed` error code, `email.send.{attempted,succeeded,failed}` telemetry events, and Resend env vars were all already scaffolded — this graduates them.
+
+Rollback: each commit reverts cleanly on its own. The migration is additive (both columns nullable / defaulted) so rolling back the code without rolling back the schema is safe. If the schema needs to go too, `DROP COLUMN` on both is non-blocking.
+
+Future work (not in v1): per-recipient input (DP-1 B), HTML what-we-did checklist body (DP-5 B+), history-list re-send action (DP-3 B), Inngest-job send for batch use cases (DP-7 B). All deferred until a real user pull surfaces.
 
 ---
 

@@ -30,6 +30,7 @@ import {
   checkCostCapPost,
   submitApplicationTool,
 } from "@/lib/llm";
+import { sendApplicationEmail } from "@/lib/email/send-application-email";
 import { isGenerationEnabled } from "@/lib/env";
 import { ApiError } from "@/lib/errors/api-error";
 import { buildUserMessage } from "@/lib/llm/build-user-message";
@@ -403,6 +404,31 @@ export const generateApplication = inngest.createFunction(
         },
         { application_id, user_id },
       );
+    });
+
+    // Auto-email step (opt-in via profiles.email_on_generation). Runs
+    // after the application is fully finalized so the success state
+    // doesn't depend on the email outcome — a Resend hiccup leaves the
+    // user with downloadable files and a logged telemetry failure, not
+    // a broken generation. sendApplicationEmail emits all three
+    // email.send.* events internally so we just call and swallow.
+    await withInngestStep(step, "auto-email", stepCtx, async () => {
+      const service = createServiceClient();
+      const { data: profile } = await service
+        .from("profiles")
+        .select("email_on_generation")
+        .eq("id", user_id)
+        .maybeSingle();
+      if (!profile?.email_on_generation) return { sent: false };
+      try {
+        await sendApplicationEmail(application_id, service);
+        return { sent: true };
+      } catch {
+        // Telemetry already emitted by sendApplicationEmail; nothing
+        // more to surface here — file delivery is best-effort, the
+        // success page's manual "Email me" button is the fallback.
+        return { sent: false };
+      }
     });
 
     await inngest.send({

@@ -10,6 +10,7 @@ import { signOut } from "@/app/(auth)/login/actions";
 import { FadeUp } from "@/components/app/FadeUp";
 import { MissingFieldsBadge } from "@/components/app/MissingFieldsBadge";
 import { DeleteAccountForm } from "@/components/settings/DeleteAccountForm";
+import { EmailOnGenerationToggle } from "@/components/settings/EmailOnGenerationToggle";
 import type { MissingFieldCode } from "@/lib/parsing/detect-missing-fields";
 import { createClient } from "@/lib/supabase/server";
 
@@ -30,7 +31,7 @@ export default async function SettingsPage() {
   const [profileRes, cvRes] = await Promise.all([
     supabase
       .from("profiles")
-      .select("is_admin, created_at")
+      .select("is_admin, created_at, email_on_generation")
       .eq("id", userData.user.id)
       .maybeSingle(),
     supabase
@@ -41,7 +42,13 @@ export default async function SettingsPage() {
       .maybeSingle(),
   ]);
 
-  const profile = profileRes.data;
+  const profile = profileRes.data as
+    | {
+        is_admin: boolean | null;
+        created_at: string | null;
+        email_on_generation: boolean | null;
+      }
+    | null;
   const cv = cvRes.data as
     | {
         id: string;
@@ -145,6 +152,16 @@ export default async function SettingsPage() {
             </div>
           </>
         )}
+      </FadeUp>
+
+      <FadeUp mode="mount" delay={200} as="section" className="surface-card">
+        <p className="eyebrow">Preferences</p>
+        <div className="mt-5">
+          <EmailOnGenerationToggle
+            initialValue={Boolean(profile?.email_on_generation)}
+            email={userData.user.email ?? ""}
+          />
+        </div>
       </FadeUp>
 
       {profile?.is_admin && (
