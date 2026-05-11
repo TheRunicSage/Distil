@@ -26,13 +26,22 @@ export default async function AppLayout({
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) redirect("/login");
 
-  const { data: cv } = await supabase
-    .from("master_cvs")
-    .select("id")
-    .eq("user_id", userData.user.id)
-    .is("superseded_at", null)
-    .maybeSingle();
+  const [{ data: cv }, { data: profile }] = await Promise.all([
+    supabase
+      .from("master_cvs")
+      .select("id")
+      .eq("user_id", userData.user.id)
+      .is("superseded_at", null)
+      .maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", userData.user.id)
+      .maybeSingle(),
+  ]);
   const hasCv = Boolean(cv);
+  const isAdmin = Boolean(profile?.is_admin);
+  const email = userData.user.email ?? "";
 
   return (
     <AppShell>
@@ -52,7 +61,7 @@ export default async function AppLayout({
             </span>
           </Link>
           <nav className="flex items-center gap-1.5 sm:gap-2.5">
-            <TopbarNav hasCv={hasCv} />
+            <TopbarNav hasCv={hasCv} email={email} isAdmin={isAdmin} />
           </nav>
         </header>
         <main className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 sm:py-12">

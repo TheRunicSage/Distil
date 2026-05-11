@@ -15,6 +15,8 @@ import { ThemeToggle } from "@/components/app/ThemeToggle";
 
 type Props = {
   hasCv: boolean;
+  email: string;
+  isAdmin: boolean;
 };
 
 function isActive(pathname: string, href: string): boolean {
@@ -22,7 +24,7 @@ function isActive(pathname: string, href: string): boolean {
   return pathname.startsWith(href + "/");
 }
 
-export function TopbarNav({ hasCv }: Props) {
+export function TopbarNav({ hasCv, email: _email, isAdmin: _isAdmin }: Props) {
   const pathname = usePathname() ?? "";
 
   // Settings icon active state covers /settings and /admin (admin lives
