@@ -37,7 +37,14 @@ type ViewTransitionDoc = Document & {
   startViewTransition?: (cb: () => void) => { ready: Promise<void> };
 };
 
-export function ThemeToggle() {
+type Props = {
+  // "icon" renders the standalone topbar button (landing page); "menu"
+  // renders as a row that drops into the (app) UserMenu dropdown. Both
+  // share the same toggle + View Transitions reveal logic.
+  variant?: "icon" | "menu";
+};
+
+export function ThemeToggle({ variant = "icon" }: Props = {}) {
   const [theme, setTheme] = useState<Theme>("dark");
 
   useEffect(() => {
@@ -62,19 +69,35 @@ export function ThemeToggle() {
     }
   }
 
+  const Icon = theme === "dark" ? SunIcon : MoonIcon;
+  const label = theme === "dark" ? "Light theme" : "Dark theme";
+  const ariaLabel =
+    theme === "dark" ? "Switch to light theme" : "Switch to dark theme";
+
+  if (variant === "menu") {
+    return (
+      <button
+        type="button"
+        onClick={toggle}
+        aria-label={ariaLabel}
+        role="menuitem"
+        className="surface-row w-full gap-3 text-left"
+      >
+        <Icon size={18} aria-hidden />
+        <span className="flex-1">{label}</span>
+      </button>
+    );
+  }
+
   return (
     <button
       type="button"
       onClick={toggle}
-      aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-      title={theme === "dark" ? "Light theme" : "Dark theme"}
+      aria-label={ariaLabel}
+      title={label}
       className="btn-icon"
     >
-      {theme === "dark" ? (
-        <SunIcon size={18} aria-hidden />
-      ) : (
-        <MoonIcon size={18} aria-hidden />
-      )}
+      <Icon size={18} aria-hidden />
     </button>
   );
 }

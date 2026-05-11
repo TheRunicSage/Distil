@@ -1,17 +1,18 @@
 "use client";
 
 // (app) topbar nav. Uses usePathname() to highlight the route the user
-// is on — History link picks up an orange-tinted active state, Settings
-// icon picks up an active outline + colour. Wordmark is intentionally
-// excluded (it's the home affordance, not a destination tab in the same
-// sense). The primary CTA also doesn't switch to "active" — it's an
-// action, and the page it leads to is short-lived (new-application
-// or upload), so an active style would just be noise.
+// is on — History link picks up an orange-tinted active state. Wordmark
+// is the home affordance, the UserMenu dropdown on the right collapses
+// theme toggle + Settings + FAQ + Admin (gated) + Sign out behind one
+// 40px circle trigger (see Decision Log [14], 2026-05-11). The primary
+// CTA doesn't switch to "active" — it's an action, and the page it
+// leads to is short-lived (new-application or upload), so an active
+// style would just be noise.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PlusIcon, SettingsIcon, UploadIcon } from "lucide-react";
-import { ThemeToggle } from "@/components/app/ThemeToggle";
+import { PlusIcon, UploadIcon } from "lucide-react";
+import { UserMenu } from "@/components/app/UserMenu";
 
 type Props = {
   hasCv: boolean;
@@ -24,13 +25,9 @@ function isActive(pathname: string, href: string): boolean {
   return pathname.startsWith(href + "/");
 }
 
-export function TopbarNav({ hasCv, email: _email, isAdmin: _isAdmin }: Props) {
+export function TopbarNav({ hasCv, email, isAdmin }: Props) {
   const pathname = usePathname() ?? "";
 
-  // Settings icon active state covers /settings and /admin (admin lives
-  // under Settings → Admin tools per the IA pass).
-  const settingsActive =
-    isActive(pathname, "/settings") || isActive(pathname, "/admin");
   const historyActive =
     isActive(pathname, "/history") || isActive(pathname, "/application");
 
@@ -62,20 +59,7 @@ export function TopbarNav({ hasCv, email: _email, isAdmin: _isAdmin }: Props) {
       >
         History
       </Link>
-      <ThemeToggle />
-      <Link
-        href="/settings"
-        aria-label="Settings"
-        aria-current={settingsActive ? "page" : undefined}
-        title="Settings"
-        className={
-          settingsActive
-            ? "inline-flex size-10 items-center justify-center rounded-md bg-[var(--color-orange-subtle)] text-orange focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40"
-            : "btn-icon"
-        }
-      >
-        <SettingsIcon size={18} aria-hidden />
-      </Link>
+      <UserMenu email={email} isAdmin={isAdmin} />
     </>
   );
 }
