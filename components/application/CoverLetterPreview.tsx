@@ -9,6 +9,7 @@
 // corner. Padding moved off the article onto an inner wrapper so the
 // band is full-bleed against the paper edge.
 
+import { normaliseSalutation } from "@/lib/llm/normalise-salutation";
 import type { ApplicationOutputSuccess } from "@/lib/llm/output-schema";
 
 type Props = {
@@ -66,7 +67,7 @@ export function CoverLetterPreview({ content }: Props) {
         </div>
 
         <p className="mt-6 text-sm" data-page-section>
-          {content.salutation}
+          {normaliseSalutation(content.salutation)}
         </p>
 
         <div className="mt-4 space-y-4 text-sm">

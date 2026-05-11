@@ -247,14 +247,45 @@ const SalaryBandSchema = z.object({
 // length cap to catch genuinely runaway prose.
 const EMAIL_FIELD = z.string().min(1).max(200);
 
+// Contact-detail nullable preprocess: the model can emit `null` (canonical
+// per the revised §7.1 of the system prompt — "omit when missing, never
+// placeholder"), but it also sometimes emits empty string "" or
+// whitespace-only " " for the same intent. Normalise all three to `null`
+// before validation so the renderer's pipe filter (which already drops
+// null) sees a consistent shape. Without the preprocess, an empty-string
+// emission would either fail the inner .min(1) or sneak through and
+// produce a phantom pipe-separator with no content.
+//
+// Keeps the .min(1).max(N).nullable() shape so non-null values still get
+// the upper bound enforced — caps catch runaway prose where the model
+// emits a paragraph in a 40-char phone field.
+const nullableContactField = (max: number) =>
+  z.preprocess(
+    (val) => {
+      if (typeof val === "string" && val.trim().length === 0) return null;
+      return val;
+    },
+    z.string().min(1).max(max).nullable(),
+  );
+
+// 2026-05-11 §7.1 rewrite (Decision Log [18]): the model now emits `null`
+// when the master CV doesn't state a field, rather than substituting
+// "Available on request" / "LinkedIn" / "[Surname]" / etc. Five fields
+// are nullable; full_name + location stay required strings (full_name
+// is the doc heading + sign-off first-name source; location is needed by
+// §3 region detection and the renderer's location-first contact line).
 const ContactDetailsSchema = z.object({
   full_name: z.string().min(1).max(120),
   location: z.string().min(1).max(120),
-  phone: z.string().min(1).max(40),
-  email: EMAIL_FIELD,
-  linkedin: z.string().min(1).max(200),
-  work_rights: z.string().min(1).max(200),
-  availability: z.string().min(1).max(120),
+  phone: nullableContactField(40),
+  email: z
+    .preprocess((val) => {
+      if (typeof val === "string" && val.trim().length === 0) return null;
+      return val;
+    }, EMAIL_FIELD.nullable()),
+  linkedin: nullableContactField(200),
+  work_rights: nullableContactField(200),
+  availability: nullableContactField(120),
 });
 
 // TechnicalSkillsGroupSchema: skills array is preprocess-filtered
@@ -441,11 +472,18 @@ const CvContentSchema = z.object({
 
 // ------ Cover letter content ------
 
+// 2026-05-11: cover letter header mirrors ContactDetails nullability so
+// the contact-line on the cover letter and the CV behave identically.
+// phone / email / linkedin are nullable; full_name + location stay required.
 const CoverLetterHeaderSchema = z.object({
   full_name: z.string().min(1).max(120),
-  phone: z.string().min(1).max(40),
-  email: EMAIL_FIELD,
-  linkedin: z.string().min(1).max(200),
+  phone: nullableContactField(40),
+  email: z
+    .preprocess((val) => {
+      if (typeof val === "string" && val.trim().length === 0) return null;
+      return val;
+    }, EMAIL_FIELD.nullable()),
+  linkedin: nullableContactField(200),
   location: z.string().min(1).max(120),
   // Accepts the literal `{{TODAY}}` placeholder; the system overrides it
   // server-side via the inject-date Inngest step.

@@ -17,6 +17,7 @@ import {
   type ISectionOptions,
 } from "docx";
 import type { ApplicationOutputSuccess } from "@/lib/llm/output-schema";
+import { normaliseSalutation } from "@/lib/llm/normalise-salutation";
 import {
   bodyParagraph,
   contactLine,
@@ -90,10 +91,11 @@ export async function renderCoverLetter(
     );
   });
 
-  // 4. Salutation
+  // 4. Salutation — normalised to ensure a trailing comma (§5.2). The
+  // prompt requires it; this is the defensive net for prompt drift.
   children.push(
     new Paragraph({
-      children: [plainRun(content.salutation, { sizes: SIZES })],
+      children: [plainRun(normaliseSalutation(content.salutation), { sizes: SIZES })],
       spacing: {
         after: SPACING.section_after,
         line: SPACING.line_115,

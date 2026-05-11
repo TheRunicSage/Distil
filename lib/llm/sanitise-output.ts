@@ -46,6 +46,14 @@ function stripDashes(text: string): string {
     .replace(/[‐-–]/g, "-");
 }
 
+// Null-safe wrapper for the contact-detail fields that became nullable
+// in the 2026-05-11 §7.1 rewrite (phone, email, linkedin, work_rights,
+// availability on both CV and cover letter). Returns null untouched so
+// the renderer's pipe filter still drops absent fields cleanly.
+function stripDashesOpt(text: string | null): string | null {
+  return text === null ? null : stripDashes(text);
+}
+
 export function sanitiseOutput(
   output: ApplicationOutputSuccess,
 ): ApplicationOutputSuccess {
@@ -60,10 +68,10 @@ export function sanitiseOutput(
         ...cv.contact_details,
         full_name: stripDashes(cv.contact_details.full_name),
         location: stripDashes(cv.contact_details.location),
-        phone: stripDashes(cv.contact_details.phone),
-        linkedin: stripDashes(cv.contact_details.linkedin),
-        work_rights: stripDashes(cv.contact_details.work_rights),
-        availability: stripDashes(cv.contact_details.availability),
+        phone: stripDashesOpt(cv.contact_details.phone),
+        linkedin: stripDashesOpt(cv.contact_details.linkedin),
+        work_rights: stripDashesOpt(cv.contact_details.work_rights),
+        availability: stripDashesOpt(cv.contact_details.availability),
         // email never contains dashes worth worrying about; leave as-is.
       },
       profile: stripDashes(cv.profile),
@@ -106,8 +114,8 @@ export function sanitiseOutput(
       header: {
         ...cl.header,
         full_name: stripDashes(cl.header.full_name),
-        phone: stripDashes(cl.header.phone),
-        linkedin: stripDashes(cl.header.linkedin),
+        phone: stripDashesOpt(cl.header.phone),
+        linkedin: stripDashesOpt(cl.header.linkedin),
         location: stripDashes(cl.header.location),
         // date already replaced server-side by injectDate; no dashes.
         recipient_line: stripDashes(cl.header.recipient_line),
