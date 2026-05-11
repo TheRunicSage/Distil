@@ -359,16 +359,6 @@ function SuccessView({
               it as a sense-check, not a binding number.
             </HoverHint>
           )}
-          {fit.warnings.length > 0 && (
-            <a
-              href="#fit-detail"
-              className="inline-flex items-center gap-1.5 rounded-full border border-warn/40 bg-warn/10 px-3 py-1 text-xs font-medium text-warn transition-colors hover:bg-warn/20"
-            >
-              {fit.warnings.length}{" "}
-              {fit.warnings.length === 1 ? "consideration" : "considerations"}
-              <span aria-hidden className="text-warn/70">↓</span>
-            </a>
-          )}
         </div>
       </FadeUp>
 
@@ -443,7 +433,6 @@ function SuccessView({
           chip-strip above is the at-a-glance summary; this section is
           the "why" for users who want the reasoning. Anchor id wires
           the "{N} considerations" chip's scroll-jump. */}
-      <span id="fit-detail" aria-hidden className="block scroll-mt-24" />
       <FadeUp mode="scroll" as="section" className="surface-card">
         <p className="eyebrow">Why this fits</p>
         <p className="mt-3 text-base leading-relaxed text-text">
