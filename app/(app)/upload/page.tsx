@@ -3,8 +3,10 @@
 
 import { redirect } from "next/navigation";
 import { FadeUp } from "@/components/app/FadeUp";
+import { MissingFieldsBadge } from "@/components/app/MissingFieldsBadge";
 import { ProTip } from "@/components/app/ProTip";
 import { UploadForm } from "@/components/upload/UploadForm";
+import type { MissingFieldCode } from "@/lib/parsing/detect-missing-fields";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -14,12 +16,21 @@ export default async function UploadPage() {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) redirect("/login");
 
-  const { data: existing } = await supabase
+  const { data: existingRow } = await supabase
     .from("master_cvs")
-    .select("id, mime_type, file_size_bytes, created_at")
+    .select("id, mime_type, file_size_bytes, created_at, missing_fields")
     .eq("user_id", userData.user.id)
     .is("superseded_at", null)
     .maybeSingle();
+  const existing = existingRow as
+    | {
+        id: string;
+        mime_type: string;
+        file_size_bytes: number;
+        created_at: string;
+        missing_fields: MissingFieldCode[] | null;
+      }
+    | null;
 
   // First upload → drop the user straight into /application/new with the
   // CV already wired up; replacements (reached from /settings) bounce
@@ -50,9 +61,17 @@ export default async function UploadPage() {
 
       {existing && (
         <FadeUp mode="mount" delay={120} className="rounded-2xl border border-orange/30 bg-[var(--color-orange-subtle)] p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange">
-            Currently on file
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange">
+              Currently on file
+            </p>
+            {existing.missing_fields && existing.missing_fields.length > 0 && (
+              <MissingFieldsBadge
+                fields={existing.missing_fields}
+                variant="parse"
+              />
+            )}
+          </div>
           <p className="mt-3 text-base text-text">
             {existing.mime_type === "application/pdf" ? "PDF" : "DOCX"} ·{" "}
             {Math.round(existing.file_size_bytes / 1024)} KB · uploaded{" "}

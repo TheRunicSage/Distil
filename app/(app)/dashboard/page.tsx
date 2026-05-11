@@ -14,12 +14,14 @@ import { redirect } from "next/navigation";
 import { ArrowRightIcon } from "lucide-react";
 import { ChainCard } from "@/components/app/ChainCard";
 import { FadeUp } from "@/components/app/FadeUp";
+import { MissingFieldsBadge } from "@/components/app/MissingFieldsBadge";
 import {
   groupIntoChains,
   type FlatRow,
 } from "@/lib/applications/chains";
 import { createClient } from "@/lib/supabase/server";
 import type { ApplicationOutput } from "@/lib/llm/output-schema";
+import type { MissingFieldCode } from "@/lib/parsing/detect-missing-fields";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +56,7 @@ export default async function DashboardPage() {
   const [cvRes, liveRes, recentRes] = await Promise.all([
     supabase
       .from("master_cvs")
-      .select("id")
+      .select("id, missing_fields")
       .eq("user_id", userData.user.id)
       .is("superseded_at", null)
       .maybeSingle(),
@@ -77,7 +79,11 @@ export default async function DashboardPage() {
       .limit(40),
   ]);
 
-  const hasCv = Boolean(cvRes.data);
+  const cv = cvRes.data as
+    | { id: string; missing_fields: MissingFieldCode[] | null }
+    | null;
+  const hasCv = Boolean(cv);
+  const missingMasterFields = cv?.missing_fields ?? [];
   const liveChains = groupIntoChains(toFlat(liveRes.data ?? []));
   const recentChains = groupIntoChains(toFlat(recentRes.data ?? [])).slice(
     0,
@@ -93,6 +99,15 @@ export default async function DashboardPage() {
         <p className="mt-4 text-base text-muted-foreground">
           Your CV, stripped to its sharpest form. ATS ready, recruiter approved.
         </p>
+        {missingMasterFields.length > 0 && (
+          <div className="mt-5 flex justify-center">
+            <MissingFieldsBadge
+              fields={missingMasterFields}
+              variant="parse"
+              label={`Master CV · ${missingMasterFields.length} ${missingMasterFields.length === 1 ? "field" : "fields"} missing`}
+            />
+          </div>
+        )}
       </FadeUp>
 
       {!hasCv && (

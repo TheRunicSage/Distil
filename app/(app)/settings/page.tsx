@@ -8,7 +8,9 @@ import { redirect } from "next/navigation";
 import { ChevronRightIcon, DownloadIcon } from "lucide-react";
 import { signOut } from "@/app/(auth)/login/actions";
 import { FadeUp } from "@/components/app/FadeUp";
+import { MissingFieldsBadge } from "@/components/app/MissingFieldsBadge";
 import { DeleteAccountForm } from "@/components/settings/DeleteAccountForm";
+import type { MissingFieldCode } from "@/lib/parsing/detect-missing-fields";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -33,14 +35,22 @@ export default async function SettingsPage() {
       .maybeSingle(),
     supabase
       .from("master_cvs")
-      .select("id, mime_type, file_size_bytes, created_at")
+      .select("id, mime_type, file_size_bytes, created_at, missing_fields")
       .eq("user_id", userData.user.id)
       .is("superseded_at", null)
       .maybeSingle(),
   ]);
 
   const profile = profileRes.data;
-  const cv = cvRes.data;
+  const cv = cvRes.data as
+    | {
+        id: string;
+        mime_type: string;
+        file_size_bytes: number;
+        created_at: string;
+        missing_fields: MissingFieldCode[] | null;
+      }
+    | null;
 
   return (
     <div className="space-y-8">
@@ -72,7 +82,12 @@ export default async function SettingsPage() {
       </FadeUp>
 
       <FadeUp mode="mount" delay={160} as="section" className="surface-card">
-        <p className="eyebrow">Master CV</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="eyebrow">Master CV</p>
+          {cv?.missing_fields && cv.missing_fields.length > 0 && (
+            <MissingFieldsBadge fields={cv.missing_fields} variant="parse" />
+          )}
+        </div>
         {cv ? (
           <>
             <dl className="mt-5 space-y-2.5 text-base">

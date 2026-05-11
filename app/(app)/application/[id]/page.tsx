@@ -23,6 +23,10 @@ import {
 } from "lucide-react";
 import { CopyId } from "@/components/app/CopyId";
 import { FadeUp } from "@/components/app/FadeUp";
+import {
+  MissingFieldsBadge,
+  computeOutputMissingFields,
+} from "@/components/app/MissingFieldsBadge";
 import { ApplicationLiveView } from "@/components/application/ApplicationLiveView";
 import { CoverLetterPreview } from "@/components/application/CoverLetterPreview";
 import { CvPreview } from "@/components/application/CvPreview";
@@ -270,8 +274,40 @@ function SuccessView({
   const firstName =
     success.cv_content.contact_details.full_name.trim().split(/\s+/)[0] ?? "";
 
+  // Output-time missing-field check: scans the rendered contact_details
+  // for null / single-word-name. Distinct signal from the master CV's
+  // parse-time badge (which scanned the raw CV text) — this is "what
+  // this specific generation came out missing", a soft reminder that
+  // future applications could be richer if the user fills the master
+  // CV gaps. Returns [] when everything's present, badge auto-hides.
+  const outputMissing = computeOutputMissingFields({
+    full_name: success.cv_content.contact_details.full_name,
+    phone: success.cv_content.contact_details.phone,
+    email: success.cv_content.contact_details.email,
+    linkedin: success.cv_content.contact_details.linkedin,
+  });
+
   return (
     <div className="space-y-6">
+      {outputMissing.length > 0 && (
+        <FadeUp mode="mount" as="section">
+          <div className="rounded-2xl border border-warn/30 bg-warn/10 p-5">
+            <div className="flex flex-wrap items-start gap-3">
+              <MissingFieldsBadge
+                fields={outputMissing}
+                variant="output"
+                label={`${outputMissing.length} ${outputMissing.length === 1 ? "detail" : "details"} missing`}
+              />
+              <p className="text-sm text-text/85 sm:flex-1">
+                We couldn&apos;t find these in your master CV, so we left
+                them blank. Update your master CV (or fill them into the
+                downloaded docx) to send the most complete application.
+              </p>
+            </div>
+          </div>
+        </FadeUp>
+      )}
+
       <FadeUp mode="mount" as="section" className="surface-card">
         <p className="eyebrow">Fit</p>
         <div className="mt-4 flex flex-wrap items-center gap-2.5">
