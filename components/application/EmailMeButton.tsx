@@ -6,8 +6,14 @@
 // (DP-1 A) so there's nothing to confirm before send.
 //
 // Companion "i" affordance opens a small popover hinting at the
-// auto-email preference under /settings — promoted from the
-// info-icon hover behaviour we already use elsewhere.
+// auto-email preference under /settings. The popover renders via
+// createPortal to document.body with a fixed-position style + computed
+// coords on every relevant event — same shape as DownloadDropdown
+// (Decision Log [14] 2026-05-08 entry). Without the portal, the
+// popover's z-index lives inside the parent surface-card's
+// backdrop-blur stacking context, so the next sibling section (the
+// preview viewport-breakout block) renders over it. Portal sidesteps
+// every parent stacking context.
 //
 // When the row's last_emailed_at is non-null on initial render, we
 // show a muted "Emailed X ago" line beneath the button. After a
@@ -16,7 +22,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { InfoIcon, MailIcon } from "lucide-react";
 
 import { useToast } from "@/components/ui/toast";
@@ -25,6 +32,12 @@ type Props = {
   applicationId: string;
   lastEmailedAt: string | null;
 };
+
+const POPOVER_WIDTH = 288; // w-72
+const POPOVER_OFFSET = 8; // px below the trigger
+const VIEWPORT_MARGIN = 12; // keep popover off the viewport edge
+
+type Position = { top: number; left: number } | null;
 
 function formatRelative(iso: string): string {
   const then = new Date(iso).getTime();
@@ -45,17 +58,53 @@ export function EmailMeButton({ applicationId, lastEmailedAt }: Props) {
   const toast = useToast();
   const [pending, setPending] = useState(false);
   const [hintOpen, setHintOpen] = useState(false);
-  const hintWrapRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [pos, setPos] = useState<Position>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
-  // Outside-click + Esc dismiss for the hint popover (same shape as
-  // UserMenu — kept inline since the popover is one-off and small).
+  // createPortal needs document — defer rendering until mount so SSR
+  // doesn't choke. Trigger renders on the server in the closed state.
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Re-compute popover position from the trigger's bounding rect.
+  // Right-aligned to the trigger; clamped to the viewport. Re-runs on
+  // scroll + resize so the popover tracks the trigger reliably.
+  useLayoutEffect(() => {
+    if (!hintOpen) return;
+    function update() {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const top = rect.bottom + POPOVER_OFFSET;
+      let left = rect.right - POPOVER_WIDTH;
+      const maxLeft = window.innerWidth - POPOVER_WIDTH - VIEWPORT_MARGIN;
+      if (left > maxLeft) left = maxLeft;
+      if (left < VIEWPORT_MARGIN) left = VIEWPORT_MARGIN;
+      setPos({ top, left });
+    }
+    update();
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
+  }, [hintOpen]);
+
+  // Esc + outside-click dismiss.
   useEffect(() => {
     if (!hintOpen) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setHintOpen(false);
     }
     function onClick(e: MouseEvent) {
-      if (!hintWrapRef.current?.contains(e.target as Node)) setHintOpen(false);
+      const t = e.target as Node;
+      if (triggerRef.current?.contains(t)) return;
+      if (popoverRef.current?.contains(t)) return;
+      setHintOpen(false);
     }
     document.addEventListener("keydown", onKey);
     document.addEventListener("mousedown", onClick);
@@ -104,59 +153,72 @@ export function EmailMeButton({ applicationId, lastEmailedAt }: Props) {
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={send}
-          disabled={pending}
-          className="btn-primary"
-          aria-label="Email me both documents"
-        >
-          <MailIcon size={16} aria-hidden />
-          <span>{pending ? "Sending…" : "Email me both documents"}</span>
-        </button>
-        <div className="relative" ref={hintWrapRef}>
-          <button
-            type="button"
-            onClick={() => setHintOpen((v) => !v)}
-            aria-label="About auto-email"
-            aria-haspopup="dialog"
-            aria-expanded={hintOpen}
-            className="btn-icon"
-            title="About auto-email"
-          >
-            <InfoIcon size={18} aria-hidden />
-          </button>
-          {hintOpen && (
-            <div
-              role="dialog"
-              aria-label="About auto-email"
-              className="panel absolute right-0 top-[calc(100%+8px)] z-40 w-72 max-w-[calc(100vw-1rem)] p-4 text-sm leading-relaxed text-text"
-            >
-              <p>
-                Want this automatically after every successful generation?
-              </p>
-              <p className="mt-2 text-muted-foreground">
-                Turn on{" "}
-                <Link
-                  href="/settings"
-                  className="btn-link-orange"
-                  onClick={() => setHintOpen(false)}
-                >
-                  Email me documents after generation
-                </Link>{" "}
-                in Settings.
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={send}
+        disabled={pending}
+        className="btn-primary"
+        aria-label="Email me both documents"
+      >
+        <MailIcon size={16} aria-hidden />
+        <span>{pending ? "Sending…" : "Email me both documents"}</span>
+      </button>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setHintOpen((v) => !v)}
+        aria-label="About auto-email"
+        aria-haspopup="dialog"
+        aria-expanded={hintOpen}
+        className="btn-icon"
+        title="About auto-email"
+      >
+        <InfoIcon size={18} aria-hidden />
+      </button>
       {lastEmailedAt && (
-        <p className="text-meta text-muted-foreground">
+        <span className="text-meta text-muted-foreground">
           Emailed {formatRelative(lastEmailedAt)}.
-        </p>
+        </span>
       )}
+
+      {mounted &&
+        hintOpen &&
+        pos &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            role="dialog"
+            aria-label="About auto-email"
+            // Fixed positioning + portal to body sidesteps every
+            // parent stacking context. z-50 sits above the (app)
+            // shell's sticky topbar (z-30) and any other floating
+            // chrome.
+            style={{
+              position: "fixed",
+              top: pos.top,
+              left: pos.left,
+              width: POPOVER_WIDTH,
+            }}
+            className="z-50 rounded-2xl border border-border bg-dark4 p-4 text-sm leading-relaxed text-text shadow-lg backdrop-blur-md"
+          >
+            <p>
+              Want this automatically after every successful generation?
+            </p>
+            <p className="mt-2 text-muted-foreground">
+              Turn on{" "}
+              <Link
+                href="/settings"
+                className="btn-link-orange"
+                onClick={() => setHintOpen(false)}
+              >
+                Email me documents after generation
+              </Link>{" "}
+              in Settings.
+            </p>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

@@ -292,10 +292,10 @@ function SuccessView({
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {outputMissing.length > 0 && (
         <FadeUp mode="mount" as="section">
-          <div className="rounded-2xl border border-warn/30 bg-warn/10 p-5">
+          <div className="rounded-2xl border border-warn/30 bg-warn/10 p-4">
             <div className="flex flex-wrap items-start gap-3">
               <MissingFieldsBadge
                 fields={outputMissing}
@@ -312,82 +312,60 @@ function SuccessView({
         </FadeUp>
       )}
 
-      <FadeUp mode="mount" as="section" className="surface-card">
-        <p className="eyebrow">Fit</p>
-        <div className="mt-4 flex flex-wrap items-center gap-2.5">
+      {/* Hero action row + compact summary chips. Sits above the
+          previews so users can act (email) and skim the verdict
+          (fit / salary / considerations count) in one glance, then
+          drop straight into the documents. Per Decision Log [14]
+          2026-05-11 success-page redesign: DP-1 B + DP-3 A. Per-doc
+          downloads stay in the PreviewPanel headers (DP-2 B). */}
+      <FadeUp mode="mount" as="section" className="space-y-3">
+        <EmailMeButton
+          applicationId={applicationId}
+          lastEmailedAt={lastEmailedAt}
+        />
+        <div className="flex flex-wrap items-center gap-2">
           <span
-            className={`inline-flex items-center rounded-full border px-3.5 py-1 text-xs font-bold uppercase tracking-[0.08em] ${fitTone}`}
+            className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] ${fitTone}`}
+            title={`Fit: ${fit.score}`}
           >
-            {fit.score}
+            Fit · {fit.score}
           </span>
           {salary && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/15 px-3.5 py-1 text-xs font-medium text-success">
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/15 px-3 py-1 text-xs font-medium text-success"
+              title={`Estimated salary band — ${salary.confidence} confidence`}
+            >
               {salary.range}
               <span className="text-[11px] uppercase tracking-[0.08em] text-success/70">
                 · {salary.confidence}
               </span>
             </span>
           )}
-        </div>
-        <p className="mt-4 text-base leading-relaxed text-text">
-          {fit.reasoning}
-        </p>
-        {fit.warnings.length > 0 && (
-          <>
-            <p className="mt-6 eyebrow-muted">Considerations</p>
-            <ul className="mt-3 space-y-2 text-base text-text/80">
-              {fit.warnings.map((w, i) => (
-                <li key={i} className="flex gap-3">
-                  <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-warn" />
-                  <span>{w}</span>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </FadeUp>
-
-      <FadeUp mode="mount" delay={120} as="section" className="surface-card border-orange/30 bg-[var(--color-orange-subtle)]">
-        <p className="eyebrow">What we did</p>
-        <ul className="mt-4 space-y-2.5">
-          {success.what_we_did_checklist.map((item, i) => (
-            <li key={i} className="flex items-start gap-3 text-base text-text">
-              <CheckCircleIcon
-                size={18}
-                aria-hidden
-                className="mt-0.5 shrink-0 text-success"
-              />
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      </FadeUp>
-
-      <FadeUp mode="mount" delay={140} as="section" className="surface-card">
-        <p className="eyebrow">Send to inbox</p>
-        <p className="mt-3 text-base text-muted-foreground">
-          Email both tailored documents to your Distil account address as
-          DOCX attachments. Auto-send after every generation is opt-in —
-          tap the info button to see how.
-        </p>
-        <div className="mt-4">
-          <EmailMeButton
-            applicationId={applicationId}
-            lastEmailedAt={lastEmailedAt}
-          />
+          {fit.warnings.length > 0 && (
+            <a
+              href="#fit-detail"
+              className="inline-flex items-center gap-1.5 rounded-full border border-warn/40 bg-warn/10 px-3 py-1 text-xs font-medium text-warn transition-colors hover:bg-warn/20"
+            >
+              {fit.warnings.length}{" "}
+              {fit.warnings.length === 1 ? "consideration" : "considerations"}
+              <span aria-hidden className="text-warn/70">↓</span>
+            </a>
+          )}
         </div>
       </FadeUp>
 
-      {/* Side-by-side previews. The (app) layout caps content at 800px;
-          this section breaks out to ~viewport width via a 50vw negative-
-          margin trick so the CV and cover letter sit next to each other
-          on wide screens. Stacks vertically below 1024px. Each preview
-          panel renders inside PreviewPanel, which carries its own zoom
-          + download icon buttons in the card header (zoom opens a
-          full-viewport modal with the same preview). The CV preview
-          is a continuous scroll inside a max-height frame; the cover
-          letter is one A4 page (CoverLetterPreview's own min-height
-          fills the card naturally). */}
+      {/* Side-by-side previews — promoted to land directly under the
+          hero action row so documents are the first substantial thing
+          the user sees. The (app) layout caps content at 800px; this
+          section breaks out to ~viewport width via a 50vw negative-
+          margin trick so the CV and cover letter sit next to each
+          other on wide screens. Stacks vertically below 1024px. Each
+          preview panel renders inside PreviewPanel, which carries its
+          own zoom + download icon buttons in the card header (zoom
+          opens a full-viewport modal with the same preview). The CV
+          preview is a continuous scroll inside a max-height frame;
+          the cover letter is one A4 page (CoverLetterPreview's own
+          min-height fills the card naturally). */}
       <FadeUp mode="scroll" as="section" className="relative left-1/2 right-1/2 -mx-[50vw] w-screen px-6">
         <div className="mx-auto max-w-[1280px]">
           {/* `items-start` keeps each card at its content height so the
@@ -413,6 +391,48 @@ function SuccessView({
             </PreviewPanel>
           </div>
         </div>
+      </FadeUp>
+
+      {/* Full Fit reasoning + considerations. Lives below the previews
+          now (was at the top before the 2026-05-11 redesign). The
+          chip-strip above is the at-a-glance summary; this section is
+          the "why" for users who want the reasoning. Anchor id wires
+          the "{N} considerations" chip's scroll-jump. */}
+      <span id="fit-detail" aria-hidden className="block scroll-mt-24" />
+      <FadeUp mode="scroll" as="section" className="surface-card">
+        <p className="eyebrow">Why this fits</p>
+        <p className="mt-3 text-base leading-relaxed text-text">
+          {fit.reasoning}
+        </p>
+        {fit.warnings.length > 0 && (
+          <>
+            <p className="mt-5 eyebrow-muted">Considerations</p>
+            <ul className="mt-3 space-y-2 text-base text-text/80">
+              {fit.warnings.map((w, i) => (
+                <li key={i} className="flex gap-3">
+                  <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-warn" />
+                  <span>{w}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </FadeUp>
+
+      <FadeUp mode="scroll" as="section" className="surface-card border-orange/30 bg-[var(--color-orange-subtle)]">
+        <p className="eyebrow">What we did</p>
+        <ul className="mt-3 space-y-2">
+          {success.what_we_did_checklist.map((item, i) => (
+            <li key={i} className="flex items-start gap-3 text-base text-text">
+              <CheckCircleIcon
+                size={18}
+                aria-hidden
+                className="mt-0.5 shrink-0 text-success"
+              />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
       </FadeUp>
 
       {/* Warm sign-off. Sits at the very bottom of the success view; first
