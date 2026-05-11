@@ -10,50 +10,13 @@
 
 import { NextResponse } from "next/server";
 import { ApiError } from "@/lib/errors/api-error";
+import { asSuccessOutput, buildFilename, type DocKind } from "@/lib/docx/filename";
 import { withLogging } from "@/lib/logging/with-logging";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import type {
-  ApplicationOutput,
-  ApplicationOutputSuccess,
-} from "@/lib/llm/output-schema";
 
 const BUCKET = "generated";
 const SIGNED_URL_TTL_SECONDS = 60;
-
-type Kind = "cv" | "cover_letter";
-
-function safeFilenameSegment(s: string, max = 24): string {
-  return s
-    .normalize("NFKD")
-    .replace(/[^a-zA-Z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, max) || "Application";
-}
-
-function dateStamp(d: Date): string {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(d.getUTCDate()).padStart(2, "0");
-  return `${y}${m}${day}`;
-}
-
-function buildFilename(
-  kind: Kind,
-  output: ApplicationOutputSuccess | null,
-  fallbackDate: Date,
-): string {
-  const last =
-    output?.cv_content.contact_details.full_name?.split(/\s+/).pop() ??
-    "Candidate";
-  const company =
-    output?.cover_letter_content.header.company_name ?? "Application";
-  const stamp = dateStamp(fallbackDate);
-  const label = kind === "cv" ? "CV" : "CoverLetter";
-  return `${safeFilenameSegment(last)}_${label}_${safeFilenameSegment(
-    company,
-  )}_${stamp}.docx`;
-}
 
 type RouteCtx = { params: Promise<{ id: string; kind: string }> };
 
@@ -90,10 +53,8 @@ export async function GET(req: Request, ctxArg: RouteCtx) {
     if (!path) throw new ApiError("files_expired");
 
     const filename = buildFilename(
-      kind as Kind,
-      (app.llm_response_json as ApplicationOutput | null)?.status === "success"
-        ? (app.llm_response_json as ApplicationOutputSuccess)
-        : null,
+      kind as DocKind,
+      asSuccessOutput(app.llm_response_json),
       app.completed_at ? new Date(app.completed_at) : new Date(),
     );
 
