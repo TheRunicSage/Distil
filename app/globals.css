@@ -598,9 +598,20 @@
   will-change: opacity, transform;
 }
 
+/* Visible state: drop transform back to `none` and clear will-change.
+   Both `transform: translateY(0)` and `will-change: transform` create
+   a stacking context per CSS spec, which traps z-index inside the
+   FadeUp wrapper — popovers and tooltips emitted by children (e.g.
+   MissingFieldsBadge on /dashboard) end up painted behind sibling
+   FadeUps' content. Dropping to `transform: none` releases the
+   stacking context so absolutely-positioned children at z-40+ can
+   float above siblings as the markup intends. Transition still tweens
+   smoothly because `translateY(8px) → none` is interpolated as
+   `translateY(0)` by the browser. */
 .fade-up[data-fade-state="visible"] {
   opacity: 1;
-  transform: translateY(0);
+  transform: none;
+  will-change: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {

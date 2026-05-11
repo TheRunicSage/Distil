@@ -76,10 +76,12 @@ export function MissingFieldsBadge({
       </span>
       {/* Popover — pure-CSS hover/focus reveal. Sits below the chip
           left-aligned, max-w-[20rem] so the body copy stays readable
-          on narrow screens. z-40 so it floats above sibling cards. */}
+          on narrow screens. z-50 so it floats above sibling cards
+          even when parent FadeUps briefly establish a stacking
+          context during reveal. */}
       <span
         role="tooltip"
-        className="pointer-events-none invisible absolute left-0 top-full z-40 mt-2 w-[20rem] max-w-[calc(100vw-2rem)] translate-y-1 rounded-xl border border-warn/30 bg-dark4 p-4 text-left opacity-0 shadow-[0_12px_32px_rgba(0,0,0,0.28)] transition-[opacity,transform] duration-150 ease-out group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:visible group-focus-visible:translate-y-0 group-focus-visible:opacity-100"
+        className="pointer-events-none invisible absolute left-0 top-full z-50 mt-2 w-[20rem] max-w-[calc(100vw-2rem)] translate-y-1 rounded-xl border border-warn/30 bg-dark4 p-4 text-left opacity-0 shadow-[0_12px_32px_rgba(0,0,0,0.28)] transition-[opacity,transform] duration-150 ease-out group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:visible group-focus-visible:translate-y-0 group-focus-visible:opacity-100"
       >
         <p className="text-sm font-semibold text-text">{copy.headline}</p>
         <ul className="mt-3 space-y-1.5">

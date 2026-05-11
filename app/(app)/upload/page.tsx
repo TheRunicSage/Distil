@@ -99,6 +99,11 @@ export default async function UploadPage() {
             ? "Include every project, certification, and skill you can think of. We'll pick the ones that matter for each role."
             : "Replacements supersede the previous CV; queued applications keep their original snapshot."}
         </ProTip>
+        <ProTip className="mt-3" label="DOCX preferred">
+          DOCX parses more reliably than PDF and survives ATS systems
+          best. PDFs work too — just stick to text-based ones; scanned
+          or image-only PDFs won&apos;t extract.
+        </ProTip>
       </FadeUp>
     </div>
   );
