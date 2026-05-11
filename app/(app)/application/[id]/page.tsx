@@ -34,6 +34,7 @@ import { EmailMeButton } from "@/components/application/EmailMeButton";
 import { PreviewPanel } from "@/components/application/PreviewPanel";
 import { RetryAbandonControls } from "@/components/application/RetryAbandonControls";
 import { RetryFailedButton } from "@/components/application/RetryFailedButton";
+import { HoverHint } from "@/components/ui/HoverHint";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -312,34 +313,51 @@ function SuccessView({
         </FadeUp>
       )}
 
-      {/* Hero action row + compact summary chips. Sits above the
-          previews so users can act (email) and skim the verdict
-          (fit / salary / considerations count) in one glance, then
-          drop straight into the documents. Per Decision Log [14]
-          2026-05-11 success-page redesign: DP-1 B + DP-3 A. Per-doc
-          downloads stay in the PreviewPanel headers (DP-2 B). */}
-      <FadeUp mode="mount" as="section" className="space-y-3">
-        <EmailMeButton
-          applicationId={applicationId}
-          lastEmailedAt={lastEmailedAt}
-        />
+      {/* Hero action row — Email CTA + Fit/Salary/Considerations chips
+          collapsed into a single flex-wrap row. On mobile they stack;
+          on desktop everything sits in one band. Fit + Salary chips
+          carry HoverHint tooltips with what-this-means copy. Per Decision
+          Log [14] 2026-05-12 success-row consolidation. */}
+      <FadeUp mode="mount" as="section">
         <div className="flex flex-wrap items-center gap-2">
-          <span
-            className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] ${fitTone}`}
-            title={`Fit: ${fit.score}`}
-          >
-            Fit · {fit.score}
-          </span>
-          {salary && (
-            <span
-              className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/15 px-3 py-1 text-xs font-medium text-success"
-              title={`Estimated salary band — ${salary.confidence} confidence`}
-            >
-              {salary.range}
-              <span className="text-[11px] uppercase tracking-[0.08em] text-success/70">
-                · {salary.confidence}
+          <EmailMeButton
+            applicationId={applicationId}
+            lastEmailedAt={lastEmailedAt}
+          />
+          <HoverHint
+            title={`Fit · ${fit.score}`}
+            trigger={
+              <span
+                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] ${fitTone}`}
+              >
+                Fit · {fit.score}
               </span>
-            </span>
+            }
+          >
+            How well the role's must-haves align with your evidenced
+            experience. <strong>Strong</strong> — close match across the
+            board. <strong>Moderate</strong> — most align, with one or
+            two real gaps. <strong>Weak</strong> — a stretch (often a
+            domain or seniority pivot). Descriptive only: Distil still
+            tailors the full application either way.
+          </HoverHint>
+          {salary && (
+            <HoverHint
+              title={`Salary · ${salary.confidence} confidence`}
+              trigger={
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/15 px-3 py-1 text-xs font-medium text-success">
+                  {salary.range}
+                  <span className="text-[11px] uppercase tracking-[0.08em] text-success/70">
+                    · {salary.confidence}
+                  </span>
+                </span>
+              }
+            >
+              Estimated band for this role + seniority + region, pulled
+              from public listings via live web search at generation
+              time. Confidence reflects how many sources agreed — treat
+              it as a sense-check, not a binding number.
+            </HoverHint>
           )}
           {fit.warnings.length > 0 && (
             <a
@@ -352,6 +370,33 @@ function SuccessView({
             </a>
           )}
         </div>
+      </FadeUp>
+
+      {/* Sign-off block — moved above the previews (was at the very
+          bottom before the 2026-05-12 redesign). User asked for it
+          verbatim right above the files preview so the warm framing
+          frames the documents instead of trailing after them. */}
+      <FadeUp mode="mount" as="section" className="pt-2 text-center">
+        <p className="font-serif text-3xl font-light leading-snug text-text sm:text-4xl">
+          {firstName
+            ? `Good luck with your application, ${firstName}.`
+            : "Good luck with your application."}
+        </p>
+        <p className="mt-3 font-serif text-lg italic text-orange sm:text-xl">
+          Kia kaha — you&apos;ve got this.
+        </p>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Send it through and back yourself.
+        </p>
+        {filesExpireAt && (
+          <p className="mt-4 text-xs text-muted-foreground/70">
+            Files available until{" "}
+            {new Date(filesExpireAt).toLocaleDateString("en-NZ", {
+              timeZone: "Pacific/Auckland",
+            })}
+            .
+          </p>
+        )}
       </FadeUp>
 
       {/* Side-by-side previews — promoted to land directly under the
@@ -435,32 +480,6 @@ function SuccessView({
         </ul>
       </FadeUp>
 
-      {/* Warm sign-off. Sits at the very bottom of the success view; first
-          name is extracted from contact_details.full_name. Tone matches the
-          NZ register of the cover letter (Kia ora / Nga mihi) — explicit
-          "good luck" because the user expects to see it as a closing line. */}
-      <FadeUp mode="scroll" as="section" className="pt-4 text-center">
-        <p className="font-serif text-3xl font-light leading-snug text-text sm:text-4xl">
-          {firstName
-            ? `Good luck with your application, ${firstName}.`
-            : "Good luck with your application."}
-        </p>
-        <p className="mt-3 font-serif text-lg italic text-orange sm:text-xl">
-          Kia kaha — you've got this.
-        </p>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Send it through and back yourself.
-        </p>
-        {filesExpireAt && (
-          <p className="mt-6 text-xs text-muted-foreground/70">
-            Files available until{" "}
-            {new Date(filesExpireAt).toLocaleDateString("en-NZ", {
-              timeZone: "Pacific/Auckland",
-            })}
-            .
-          </p>
-        )}
-      </FadeUp>
     </div>
   );
 }
