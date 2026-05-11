@@ -313,17 +313,13 @@ function SuccessView({
         </FadeUp>
       )}
 
-      {/* Hero action row — Email CTA + Fit/Salary/Considerations chips
-          collapsed into a single flex-wrap row. On mobile they stack;
-          on desktop everything sits in one band. Fit + Salary chips
-          carry HoverHint tooltips with what-this-means copy. Per Decision
-          Log [14] 2026-05-12 success-row consolidation. */}
+      {/* Verdict chips — Fit + Salary at the top of the success view
+          with HoverHint tooltips for the what-this-means copy. Email
+          CTA was de-coupled from this row per user request (2026-05-12)
+          and now sits directly above the previews further down the
+          page. */}
       <FadeUp mode="mount" as="section">
         <div className="flex flex-wrap items-center gap-2">
-          <EmailMeButton
-            applicationId={applicationId}
-            lastEmailedAt={lastEmailedAt}
-          />
           <HoverHint
             title={`Fit · ${fit.score}`}
             trigger={
@@ -362,10 +358,8 @@ function SuccessView({
         </div>
       </FadeUp>
 
-      {/* Sign-off block — moved above the previews (was at the very
-          bottom before the 2026-05-12 redesign). User asked for it
-          verbatim right above the files preview so the warm framing
-          frames the documents instead of trailing after them. */}
+      {/* Sign-off block — warm framing immediately above the documents.
+          User-requested placement (verbatim copy). */}
       <FadeUp mode="mount" as="section" className="pt-2 text-center">
         <p className="font-serif text-3xl font-light leading-snug text-text sm:text-4xl">
           {firstName
@@ -387,6 +381,16 @@ function SuccessView({
             .
           </p>
         )}
+      </FadeUp>
+
+      {/* Email CTA — sits directly above the previews per user request
+          (2026-05-12). Single-action row; "Emailed X ago" rendered
+          inline by EmailMeButton when the row's last_emailed_at is set. */}
+      <FadeUp mode="mount" as="section" className="flex justify-center">
+        <EmailMeButton
+          applicationId={applicationId}
+          lastEmailedAt={lastEmailedAt}
+        />
       </FadeUp>
 
       {/* Side-by-side previews — promoted to land directly under the
