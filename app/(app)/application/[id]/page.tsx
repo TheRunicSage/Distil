@@ -30,6 +30,7 @@ import {
 import { ApplicationLiveView } from "@/components/application/ApplicationLiveView";
 import { CoverLetterPreview } from "@/components/application/CoverLetterPreview";
 import { CvPreview } from "@/components/application/CvPreview";
+import { EmailMeButton } from "@/components/application/EmailMeButton";
 import { PreviewPanel } from "@/components/application/PreviewPanel";
 import { RetryAbandonControls } from "@/components/application/RetryAbandonControls";
 import { RetryFailedButton } from "@/components/application/RetryFailedButton";
@@ -92,7 +93,7 @@ export default async function ApplicationPage({ params }: RouteCtx) {
   const { data: app } = await supabase
     .from("applications")
     .select(
-      "id, user_id, status, attempt_number, queue_position, parent_application_id, job_description, user_notes, region, insufficient_input_reason, error_message, llm_response_json, files_expire_at, files_deleted_at, created_at, started_at, completed_at",
+      "id, user_id, status, attempt_number, queue_position, parent_application_id, job_description, user_notes, region, insufficient_input_reason, error_message, llm_response_json, files_expire_at, files_deleted_at, created_at, started_at, completed_at, last_emailed_at",
     )
     .eq("id", id)
     .maybeSingle();
@@ -178,6 +179,7 @@ export default async function ApplicationPage({ params }: RouteCtx) {
           applicationId={id}
           json={app.llm_response_json as ApplicationOutput}
           filesExpireAt={app.files_expire_at}
+          lastEmailedAt={app.last_emailed_at}
         />
       )}
 
@@ -260,10 +262,12 @@ function SuccessView({
   applicationId,
   json,
   filesExpireAt,
+  lastEmailedAt,
 }: {
   applicationId: string;
   json: ApplicationOutput;
   filesExpireAt: string | null;
+  lastEmailedAt: string | null;
 }) {
   if (json.status !== "success") return null;
   const success = json as ApplicationOutputSuccess;
@@ -357,6 +361,21 @@ function SuccessView({
             </li>
           ))}
         </ul>
+      </FadeUp>
+
+      <FadeUp mode="mount" delay={140} as="section" className="surface-card">
+        <p className="eyebrow">Send to inbox</p>
+        <p className="mt-3 text-base text-muted-foreground">
+          Email both tailored documents to your Distil account address as
+          DOCX attachments. Auto-send after every generation is opt-in —
+          tap the info button to see how.
+        </p>
+        <div className="mt-4">
+          <EmailMeButton
+            applicationId={applicationId}
+            lastEmailedAt={lastEmailedAt}
+          />
+        </div>
       </FadeUp>
 
       {/* Side-by-side previews. The (app) layout caps content at 800px;
