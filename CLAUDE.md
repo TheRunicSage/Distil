@@ -1354,6 +1354,23 @@ Test path: trigger `llm_invalid_output` (today's three identical failures will r
 
 Rollback: single `git revert`. The codes-table additions are additive (new optional-shape fields); the page changes are scoped to the error branch. The new `ErrorRecoverySection` component is inline so removal is a single-block delete.
 
+[14] Public-but-auth-aware topbar primitive (2026-05-11). User-reported: clicking FAQ from the UserMenu dropdown navigated to /faq but showed the LandingTopbar (with "Sign in" + "Get started") instead of the authenticated (app)-style topbar — read as "I've been signed out."
+
+Root cause: `app/faq/page.tsx` lives outside the `(app)` group (so anonymous visitors can reach it) and hard-coded `<LandingTopbar />` regardless of session state. The LandingTopbar's right-hand cluster is unconditional Sign in + Get started, so a signed-in user landing there sees public chrome with no awareness of their auth state.
+
+Two new server-component primitives in `components/app/`:
+
+- **`AuthedTopbar.tsx`** — the authenticated topbar JSX (wordmark + nav with `<TopbarNav>`), extracted from `app/(app)/layout.tsx` so there's one canonical source for "what the authenticated topbar looks like". (app) layout now imports it; the inline header JSX is gone.
+- **`AuthAwareTopbar.tsx`** — server component that reads the session and renders either `<LandingTopbar />` (anon) or `<AuthedTopbar email hasCv isAdmin />` (signed in). Fetches `master_cvs` + `profiles.is_admin` in parallel, same shape as `(app)/layout.tsx`. Doesn't redirect — anon visitors still see the page, just with the public chrome.
+
+`app/faq/page.tsx` now uses `<AuthAwareTopbar />`. Behaviour: signed-in user clicks FAQ → lands on /faq with their UserMenu in the corner + primary CTA still visible; anonymous visitor hits /faq → sees the public Sign in + Get started chrome.
+
+**Convention going forward (binding):** any page outside the `(app)` route group that should serve both anonymous and signed-in visitors MUST use `<AuthAwareTopbar />` instead of `<LandingTopbar />` directly. The latter is only correct for pages that are explicitly anonymous-only (the landing page itself; future Sign up / Sign in flow). Future Pricing / Terms / Privacy etc. fall under the same rule as FAQ — public reachability, auth-aware chrome.
+
+What was *not* changed: `LandingTopbar` itself (still the right component for the landing page); `(app)/layout.tsx`'s data-fetch block (already fetches the same fields, just delegates rendering); FAQ content; root layout. The `AuthAwareTopbar` does a small extra round-trip on every /faq render — same query shape as the (app) layout, so cost is negligible (`maybeSingle` on indexed user_id).
+
+Rollback: single `git revert`. Both primitives are additive; reverting restores the previous `<LandingTopbar />` + inline (app) header JSX.
+
 ---
 
 ## Known Gaps to Watch

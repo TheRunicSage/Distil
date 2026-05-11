@@ -9,9 +9,10 @@
 //      follow. High-level posture, not a recipe.
 //
 // Lives outside the (app) shell so unauthenticated visitors hit it.
-// Uses the LandingTopbar / Footer / AmbientBackground from the
-// existing landing-page composition for visual continuity. No
-// Supabase, no auth check — pure server-rendered static content.
+// Topbar is rendered via <AuthAwareTopbar /> so signed-in visitors
+// get the (app)-style topbar (with their UserMenu + primary CTA) and
+// anonymous visitors get the LandingTopbar — without /faq itself
+// needing to know about auth. The content body is pure static.
 //
 // Disclosure discipline: keep the "what" (you get a CV + cover
 // letter, ATS-safe, tailored to the JD, generated quickly), keep
@@ -23,8 +24,8 @@
 // implementation does it stay internal.
 
 import { AmbientBackground } from "@/components/app/AmbientBackground";
+import { AuthAwareTopbar } from "@/components/app/AuthAwareTopbar";
 import { Footer } from "@/components/landing/Footer";
-import { LandingTopbar } from "@/components/landing/LandingTopbar";
 
 export const metadata = {
   title: "FAQ — Distil",
@@ -237,7 +238,7 @@ export default function FaqPage() {
     <>
       <AmbientBackground />
       <div className="relative z-10 flex min-h-screen flex-col">
-        <LandingTopbar />
+        <AuthAwareTopbar />
         <main className="flex-1 px-6 py-16">
           <div className="mx-auto max-w-[760px] space-y-16">
             <header className="text-center">

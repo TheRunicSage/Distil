@@ -9,12 +9,11 @@
 // with a context-appropriate label rather than dead-ending on a
 // "you need to upload first" message.
 
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AmbientBackground } from "@/components/app/AmbientBackground";
 import { AppShell } from "@/components/app/AppShell";
+import { AuthedTopbar } from "@/components/app/AuthedTopbar";
 import { MagneticDots } from "@/components/app/MagneticDots";
-import { TopbarNav } from "@/components/app/TopbarNav";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({
@@ -48,22 +47,7 @@ export default async function AppLayout({
       <AmbientBackground />
       <MagneticDots />
       <div className="relative z-10 flex flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-[56px] shrink-0 items-center justify-between border-b border-border/50 bg-dark/70 px-4 backdrop-blur-md sm:h-[64px] sm:px-6">
-          <Link
-            href="/dashboard"
-            className="flex items-baseline gap-3 outline-none focus-visible:opacity-80"
-          >
-            <span className="font-serif text-xl font-light tracking-tight text-text sm:text-3xl">
-              Distil
-            </span>
-            <span className="hidden text-xs font-semibold uppercase tracking-[0.18em] text-orange sm:inline">
-              Curiosum.ai
-            </span>
-          </Link>
-          <nav className="flex items-center gap-1.5 sm:gap-2.5">
-            <TopbarNav hasCv={hasCv} email={email} isAdmin={isAdmin} />
-          </nav>
-        </header>
+        <AuthedTopbar hasCv={hasCv} email={email} isAdmin={isAdmin} />
         <main className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 sm:py-12">
           <div className="mx-auto max-w-[760px]">{children}</div>
         </main>
