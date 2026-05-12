@@ -8,6 +8,12 @@
 // so the header reads at the same visual weight as the CV's header
 // while the body carries one preset above the CV's 10pt for breathing
 // room on a one-page document.
+//
+// Spacing uses SPACING_COVER_LETTER (2026-05-12): the structural gaps
+// around the date, recipient block, salutation, and sign-off are
+// expanded from 9pt to 14pt so the letter fills the A4 page as a
+// balanced unit rather than top-anchoring on a half-empty page. Body
+// paragraph rhythm and bullet rhythm are unchanged. See styles.ts.
 
 import {
   AlignmentType,
@@ -29,12 +35,13 @@ import {
   FONTS,
   PAGE,
   SIZES_COVER_LETTER,
-  SPACING,
+  SPACING_COVER_LETTER,
 } from "./styles";
 
 type CoverLetterContent = ApplicationOutputSuccess["cover_letter_content"];
 
 const SIZES = SIZES_COVER_LETTER;
+const SPACING = SPACING_COVER_LETTER;
 
 export async function renderCoverLetter(
   content: CoverLetterContent,
@@ -104,29 +111,46 @@ export async function renderCoverLetter(
     }),
   );
 
-  // 5. Body paragraphs (locked at 4 by Zod). Left-aligned, not justified
-  // — recruiters in NZ expect ragged-right body copy in cover letters.
-  for (const para of content.paragraphs) {
+  // 5. Body paragraphs (4-6 per Zod, prompt §5.1 targets exactly 5).
+  // Left-aligned, not justified — recruiters expect ragged-right body
+  // copy in cover letters. Between-body gaps use `body_paragraph_after`
+  // (9pt) for a tight, coherent letter rhythm; the gap above the
+  // sign-off uses `section_after` (14pt) so the signature lands as
+  // a distinct closing block rather than running on from the last
+  // body paragraph.
+  content.paragraphs.forEach((para, i) => {
+    const isLast = i === content.paragraphs.length - 1;
     children.push(
       bodyParagraph(para, {
-        afterTwips: SPACING.section_after,
+        afterTwips: isLast
+          ? SPACING.section_after
+          : SPACING.body_paragraph_after,
         sizes: SIZES,
       }),
     );
-  }
+  });
 
   // 6. Sign-off. The string contains "\n"; split into one paragraph per
-  // line. "Nga mihi," then full name on the next line is the canonical
-  // shape; we render whatever the LLM emitted.
-  for (const line of content.signoff.split("\n")) {
+  // line. "Kind regards," then full name on the next line is the
+  // canonical shape; we render whatever the LLM emitted. Between
+  // sign-off lines we apply `signoff_between` (4pt) so the signature
+  // reads as a single unit with a touch of breath rather than mashing
+  // the two lines together (was 0pt).
+  const signoffLines = content.signoff.split("\n");
+  signoffLines.forEach((line, i) => {
+    const isLast = i === signoffLines.length - 1;
     children.push(
       new Paragraph({
         children: [plainRun(line, { sizes: SIZES })],
         alignment: AlignmentType.LEFT,
-        spacing: { after: 0, line: SPACING.line_115, lineRule: "auto" },
+        spacing: {
+          after: isLast ? 0 : SPACING.signoff_between,
+          line: SPACING.line_115,
+          lineRule: "auto",
+        },
       }),
     );
-  }
+  });
 
   const section: ISectionOptions = {
     properties: {

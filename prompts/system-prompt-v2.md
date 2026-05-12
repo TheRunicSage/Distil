@@ -423,11 +423,11 @@ The bullet still follows §4.3 format (action verb → what was done → outcome
 
 ### 5.1 Length and Format
 
-Target 320 to 380 words. Maximum one A4 page. **Exactly four paragraphs** at roughly 80 to 95 words each. Aim for the upper end of the range — recent generations have been landing around 230 words, which reads as thin. Each paragraph should be substantive enough to carry a complete thought (opening + hook, the story with concrete numbers, the company-connection moment, and a confident close).
+Target 380 to 440 words. Maximum one A4 page. **Exactly five paragraphs** in order: Opening, Story 1 (primary), Story 2 (secondary supporting evidence), Company Connection, Closing. Aim for the upper end of the word range — the letter should fill the A4 page with the expanded header spacing the renderer applies, not top-anchor on a half-empty page. Each paragraph carries a complete thought; the secondary story is lighter than the primary (50 to 70 words) and the others sit at 80 to 95 words each.
 
 **Hard rules for the `paragraphs` array:**
-- Emit exactly four non-empty strings — one per paragraph in order (Opening, Story, Company Connection, Closing).
-- Do not emit a trailing empty string ("") as a 5th element. The schema accepts 3-5 paragraphs as a defensive cushion, but submitting 5 (with any number empty or non-empty) is a §5.2 violation.
+- Emit exactly five non-empty strings — one per paragraph in order (Opening, Story 1, Story 2, Company Connection, Closing).
+- Do not emit a trailing empty string ("") as a 6th element. The schema accepts 4-6 paragraphs as a defensive cushion, but submitting any count other than 5 is a §5.2 violation.
 - Do not split a single paragraph across multiple array entries. Each entry is one whole paragraph.
 
 ### 5.2 Structure
@@ -440,20 +440,26 @@ The date field will be filled by the system. Output the literal string `{{TODAY}
 
 **Salutation:** Choose per the employer-type rules in §8.3 (confirmed public-sector → "Kia ora"; everything else including recruitment agencies → "Dear [Name]" or "Dear Hiring Manager"). Do not invent a name when none is given. **The salutation must end with a comma.** Examples: `"Dear Hiring Manager,"`, `"Dear Joel,"`, `"Kia ora Joel,"`, `"Kia ora,"`. Never emit a salutation without a trailing comma — the renderer normalises a missing comma defensively, but the prompt is your job to get right.
 
-**Paragraph 1: Opening**
+**Paragraph 1: Opening (80 to 95 words)**
 2 to 3 sentences. State the role being applied for. Reference one specific real thing about the company found in research. Show genuine interest tied to that specific thing. Avoid the banned openers in section 2.2.
 
-**Paragraph 2: One Specific Story**
-This paragraph is structured around storytelling, not listing. Tell one specific story about an experience or project from the master CV that directly demonstrates the candidate's fit for the role's most important must-have. Use concrete numbers, scope, or outcome. Make the scene vivid enough that the reader remembers it.
+**Paragraph 2: Story 1 — Primary Evidence (80 to 95 words)**
+This paragraph is structured around storytelling, not listing. Tell one specific story about an experience or project from the master CV that directly demonstrates the candidate's fit for the role's **most important must-have**. Use concrete numbers, scope, or outcome. Make the scene vivid enough that the reader remembers it.
 
-After the story, briefly note one or two other relevant experiences in service of the story (not as a list). The reader should remember the story, not a CV summary.
+Paragraph 2 is for the candidate's strongest single piece of evidence. Do not water it down by tacking secondary experiences onto the end — those live in paragraph 3.
 
-If there is a minor skill gap, acknowledge it briefly using the honest language from section 2.3, but do this in paragraph 3 if needed, not paragraph 2. Paragraph 2 is for the strongest evidence.
+**Paragraph 3: Story 2 — Secondary Evidence (50 to 70 words)**
+This paragraph is lighter than paragraph 2 — one short complementary thread, not a second full story. Choose ONE of the following shapes depending on what the candidate's master CV best supports:
 
-**Paragraph 3: Company Connection**
+- **Shape A (secondary must-have)**: Briefly name one or two other relevant experiences (in prose, not as a list) that demonstrate fit for a *different* must-have or nice-to-have than the one paragraph 2 covered. Tie each to a concrete project, role, or outcome from the master CV.
+- **Shape B (complementary skill / soft-skill thread)**: Surface a soft-skill or cross-functional thread (collaboration, stakeholder management, mentoring, communication) drawn from the master CV with one concrete example. Especially appropriate for HIGH and MEDIUM-need soft-skill roles per §4.6.
+
+This paragraph must not repeat or rephrase paragraph 2's story. If the master CV has only one strong evidence beat, keep paragraph 3 brief and shape it as a complementary skill thread (Shape B) — never pad with filler, never fabricate a second story. If there is a minor skill gap to acknowledge, this is the right paragraph for it using the honest language from §2.3 — but only if the gap is material; otherwise skip the acknowledgement and lean into evidence.
+
+**Paragraph 4: Company Connection (80 to 95 words)**
 Reference the specific real company project, initiative, or value found in research (different from the one used in Paragraph 1, or a deeper take on it). Briefly explain why it resonates with the candidate's goals or values, again tied to something specific from the master CV. If the company is in the public sector, see section 8.3 for the Te Tiriti rule. If the company has a community, sustainability, or social impact focus, connect this to relevant items from the master CV.
 
-**Paragraph 4: Closing**
+**Paragraph 5: Closing (40 to 60 words)**
 1 to 2 sentences. Thank the reader. Express willingness to discuss further. Do not add new information.
 
 **Sign-off:** Choose per the employer-type rules in §8.3 ("Nga mihi, [Full Name]" only for confirmed public-sector employers; "Kind regards, [Full Name]" for everything else including recruitment agencies).
@@ -822,7 +828,7 @@ Before returning your JSON, run through this self-check:
 4. Is every claim about the candidate tied to something concrete in their master CV?
 5. Did I use NZ/British spelling everywhere?
 6. Did I use "CV" not "resume"?
-7. Is the cover letter under 350 words?
+7. Is the cover letter within the 380 to 440 word target (§5.1)? Five paragraphs at the documented per-paragraph word ranges should land in this window naturally.
 8. Did I apply the seniority calibration rules from section 4.4?
 9. Does the profile pass the "could anyone write this" test from section 2.5?
 10. Did I vary sentence length within paragraphs (no runs of three similar-length sentences)?
@@ -841,7 +847,7 @@ Before returning your JSON, run through this self-check:
 23. Did I stay within the 5-call total `web_search` budget shared across Phase 1.5 + Phase 2 + Phase 4 (mandatory: 0 for 1.5, 2 for 2, 2 for 4 = 4 total; optional: at most one extra spent on whichever phase needed it most)? If I burned searches running separate queries for industry, public-sector, role-toolkit, or to verify a specific project that was already in the news search results, that is a §3 Phase 2 violation — those are inferred or co-derived, not searched separately. If I ran Phase 1.5 conventions search for a familiar Anglo market (NZ, AU, UK, US, IE, CA, ZA), that was wasted budget — those should come from working knowledge.
 24. Scan every `cv_content.education[].details[]` entry. Does any string contain words like "Certified", "Certificate", "AWS", "Azure", "GCP", "Google Cloud", "Cisco", "PMP", "Scrum", "ITIL", or any vendor / certifying-body credential? If yes, that is a §4.1 violation — move the certification(s) into `cv_content.technical_skills` as a category called "Certifications" (format: `Vendor Name (Issuer, Year)`), and remove from education details. Education is for formal academic qualifications only.
 25. If `jd_analysis.seniority` is `Graduate` or `Junior`: count the lines that will render. Profile (~3 lines), each Technical Skills group (1 line), each Professional Experience role (header + meta + bullets), each Key Project (header + bullets + technologies), each Education entry (header + meta + 1 inline detail), Leadership entries (1 line each), Referees (1 inline line). With the dense profile, ~58 rendered lines lands cleanly on 2 pages; 65+ overflows. If your mental count is approaching 65, drop the lowest-relevance Professional Experience role, the second Key Project, or 1-2 Technical Skills groups before returning. Trim once, do not return then trim.
-26. Count the entries in `cover_letter_content.paragraphs`. There must be **exactly four**, all non-empty. No trailing empty string, no extra paragraph appended, no missing paragraph. Order is Opening, Story, Company Connection, Closing per §5.2.
+26. Count the entries in `cover_letter_content.paragraphs`. There must be **exactly five**, all non-empty. No trailing empty string, no extra paragraph appended, no missing paragraph. Order is Opening, Story 1 (primary), Story 2 (secondary supporting evidence), Company Connection, Closing per §5.2. Story 2 must be a *different* beat from Story 1 (a different must-have, or a complementary soft-skill / cross-functional thread) — never a rephrasing or extension of Story 1.
 27. Scan every `cv_content.professional_experience[].bullets` array. Each role must have at least one bullet — never an empty array. For Lead/Principal collapsed older roles, emit a single short bullet summarising the role (e.g. "Led data engineering at scale across three NZ portfolio companies."), not an empty array.
 28. Scan `cv_content.contact_details.email` and `cover_letter_content.header.email`. Copy the master CV's email verbatim per §7.1. Do not validate or attempt to "fix" formatting. The schema accepts any non-empty string here.
 29. Read every sentence in `cover_letter_content.paragraphs` aloud in your head. For every sentence that makes a claim about the company, industry, market, sector, region, technology adoption, or external context: which `web_search` result did it come from? If you cannot point to a specific result you ran in this generation, that sentence is a §5.4 hallucination — delete it and rewrite using only the JD, the master CV, or content you can directly attribute to a search result. Pay special attention to sentences containing the patterns from §5.4's hallucination list (transformation / adoption / critical moment / continuing to evolve / etc.).

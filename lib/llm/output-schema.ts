@@ -503,6 +503,16 @@ const CoverLetterHeaderSchema = z.object({
 // the array bounds are checked, then accepts 3-5 paragraphs as a
 // content cushion. The cover-letter renderer iterates whatever count
 // it receives; the prompt rule is the primary quality lever.
+//
+// 2026-05-12 cover-letter density pass. System prompt §5 reworked to
+// target exactly five paragraphs (Opening / Story 1 / Story 2 /
+// Company Connection / Closing) so the cover letter fills an A4 page
+// rather than top-anchoring at ~230 words. Schema bumped to
+// .min(4).max(6) — drift cushion on both sides of the new target,
+// mirroring the established [7] strictness-audit shape (prompt rule
+// primary, schema as runaway-prose guard with cushion). min(4) keeps
+// a graceful fallback below the target; max(6) catches the trailing-
+// empty drift that 2026-05-01 originally fixed.
 const CoverLetterParagraphsSchema = z.preprocess((val) => {
   if (Array.isArray(val)) {
     return val.filter(
@@ -510,7 +520,7 @@ const CoverLetterParagraphsSchema = z.preprocess((val) => {
     );
   }
   return val;
-}, z.array(z.string().min(1).max(2000)).min(3).max(5));
+}, z.array(z.string().min(1).max(2000)).min(4).max(6));
 
 const CoverLetterContentSchema = z.object({
   header: CoverLetterHeaderSchema,

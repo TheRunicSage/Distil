@@ -146,6 +146,52 @@ export const SPACING_DENSE: SpacingProfile = {
   line_15: 360,
 } as const;
 
+// Cover-letter spacing profile (2026-05-12). Cover letters with four
+// paragraphs at ~230 words were top-anchoring on a half-empty A4 page
+// — visually thin even when the content was strong. Two coupled
+// remedies: bump the prompt to target five paragraphs (Opening /
+// Story 1 / Story 2 / Company Connection / Closing, ~380-440 words)
+// AND expand the structural gaps in the renderer so the letter fills
+// the page as a balanced unit.
+//
+// Two distinct gap classes are now modelled:
+//   - Structural air (between major sections — header→date,
+//     date→recipient, recipient→salutation, salutation→first body
+//     paragraph, last body paragraph→sign-off): expanded to 14pt
+//     via `section_after`. Was 9pt; was the same value the body
+//     paragraphs also used, which is why the letter read as
+//     uniformly cramped at the structural seams.
+//   - Body-paragraph rhythm (between body paragraphs of the
+//     cover letter): unchanged at 9pt via new `body_paragraph_after`
+//     field. Renderer uses this between body paragraphs and
+//     switches to `section_after` only for the gap above the
+//     sign-off. Keeps the body reading as one coherent letter
+//     while the surrounding structure breathes.
+//
+// Magnitudes vs canonical SPACING:
+//   section_after          180 → 280 (9pt → 14pt)  — structural air
+//   body_paragraph_after   N/A → 180 (9pt)         — new field
+//   paragraph_after         80 →  80 (4pt unchanged)
+//   signoff_between          0 →  80 (0pt → 4pt)   — new field
+//   bullet_after / bullet_indent: unused by cover letter, kept
+//                                 for type completeness.
+//   line_115 / line_15:    unchanged — line-height stays at 1.15.
+export const SPACING_COVER_LETTER: SpacingProfile & {
+  readonly body_paragraph_after: number;
+  readonly signoff_between: number;
+} = {
+  paragraph_after: 80, // 4pt
+  section_after: 280, // 14pt — structural air (was 9pt)
+  heading_before: 180,
+  heading_after: 60,
+  bullet_after: 40,
+  bullet_indent: 360,
+  line_115: 276,
+  line_15: 360,
+  body_paragraph_after: 180, // 9pt — between body paragraphs only
+  signoff_between: 80, // 4pt — between sign-off lines
+} as const;
+
 type SeniorityLike =
   | "Graduate"
   | "Junior"
