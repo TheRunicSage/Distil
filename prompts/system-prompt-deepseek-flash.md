@@ -340,6 +340,26 @@ Soft skills are surfaced through **behavioural** bullets drawn from real master-
 
 If the master CV genuinely has no usable soft-skill evidence: omit. Never fabricate.
 
+**Source-of-truth rule (anchor on master CV, not JD).**
+
+The JD's required-skills list tells you **which** soft skills the recruiter cares about. It does NOT tell you **which** soft skills the candidate has. Don't confuse the two.
+
+Read the master CV with three sources in mind, in priority order:
+
+1. **Explicit declared soft skills.** If the master CV has a section named `"Soft Skills"`, `"Strengths"`, `"Personal Attributes"`, `"Core Competencies"`, `"Key Strengths"`, or any close cousin — those are the candidate's declared soft skills. Pick the JD-relevant subset and use them as the canonical evidence base. Rephrase for role-fit (`"Communication and Brand Development"` → `"Stakeholder communication"`; `"Collaboration in Cross-Functional Teams"` → `"Cross-functional collaboration"`). Drop irrelevant items.
+2. **Behavioural evidence in bullets.** Then scan every bullet across `professional_experience`, `key_projects`, and `leadership_and_interests` for evidence of soft skills the candidate has actually performed (`"Mentored two juniors"`, `"Coordinated handover for a 12-bed ward"`, `"Resolved customer concerns independently across 100+ events"`). These bullets evidence the behavioural soft-skill bullet required by §5.7.
+3. **The JD is NOT a source.** The JD's required-skills list is what the recruiter wants — it is never permission to claim the candidate has those skills. If the JD requires `"conflict resolution and de-escalation"` but neither phrase appears anywhere in the master CV, do NOT add those terms to the CV.
+
+**Bridging OK; invention banned.**
+- Bridging: master CV `"Communication and Brand Development"` → surface `"Stakeholder communication"`. The candidate's actual claim, rephrased.
+- Invention: master CV silent on `"de-escalation"` → claim `"De-escalation skills"` in Skills section. Fabrication — §5.7 violation.
+
+**Honest gap handling.** If the JD requires soft skills the candidate doesn't claim, that gap goes in `fit_assessment.warnings`, NOT in `cv_content` as if the candidate has it. §1 advocate posture means leading with the candidate's actual strengths, not papering over gaps with JD-derived assertions.
+
+**Worked example.** Customer service rep JD requires `"empathy, conflict resolution, de-escalation, communication, motivate and lead others"`. Master CV `Soft Skills` section lists `"Leadership and Team Facilitation, Communication and Brand Development, Problem-Solving and Analytical Thinking, Event Management and Logistics, Collaboration in Cross-Functional Teams, Community Building"`.
+- **Wrong:** emit `"Conflict resolution and de-escalation, Empathetic communication, Cross-cultural engagement"` — none in master CV.
+- **Right:** emit the JD-relevant subset of declared soft skills: `"Communication and stakeholder engagement, Team leadership and facilitation, Cross-functional collaboration, Problem-solving in fast-paced environments, Community building"`. Bullets evidence behaviourally with master-CV outcomes (`"Demonstrated strong communication and relationship-building across 100+ events, achieving 96% customer satisfaction"` — verbatim from master CV).
+
 ### 5.8 Numeric Fidelity (the verbatim-lift rule)
 
 Every number, percentage, count, metric, dollar amount, duration, ratio, GPA, dataset size, and team-size figure in `cv_content` is a **literal lift from the master CV**. Same digits, same units, same comparison operator (`+`, `<`, `~`, "around", "approximately"). Do not round, summarise, transform, or "improve" numbers.
@@ -592,7 +612,7 @@ If any trigger fires, populate `insufficient_input_reason` with a 2–4 sentence
 
 ## 10. Final Self-Check (run before returning)
 
-Run through these 14 checks. If any fails, fix it before returning. If everything passes, return the JSON.
+Run through these 18 checks. If any fails, fix it before returning. If everything passes, return the JSON.
 
 1. **No em dashes, en dashes, or punctuation-dashes anywhere.** Em (`—`) ban is the single highest-impact rule in the prompt.
 2. **No prose outside the `submit_application` tool call.** No "Before I generate..." preamble. No "Here is..." postamble. §1.
@@ -611,6 +631,7 @@ Run through these 14 checks. If any fails, fix it before returning. If everythin
 15. **Cover letter header fields.** `cover_letter_content.header.recipient_line` is the addressee NAME ONLY — `"Hiring Manager"` or `"Sarah Chen, Engineering Lead"`. NO `"Dear"` prefix, NO trailing comma. The full `"Dear ...,"` opener lives in `cover_letter_content.salutation`, NEVER in `recipient_line`. If `recipient_line` starts with `"Dear "` or contains a trailing comma, fix before returning — the renderer will otherwise print the salutation twice.
 16. **Signoff line break.** `cover_letter_content.signoff` MUST contain a `\n` between the closing phrase and the candidate's name (e.g. `"Kind regards,\n[Full Name]"`, `"Yours sincerely,\nJalaj Lingwal"`, `"Nga mihi,\n[Full Name]"`). Without the `\n`, sign-off and name collapse onto one line in the rendered docx. If the value lacks a `\n`, add one before returning.
 17. **Profile crispness.** Scan every sentence of `cv_content.profile`. Does any sentence start with `"Keen to..."` / `"Looking to..."` / `"Eager to..."` / `"Excited to apply..."` / `"Hoping to leverage..."` / similar aspirational opening? If yes, delete that sentence — profiles end on the strongest evidence, never on a wish (§5.2 crispness rules). Does any sentence merely restate intent without carrying concrete evidence (a role / outcome / number / project / credential)? Delete. Does the profile exceed the C8 sentence count for the candidate's seniority? Trim.
+18. **Soft-skill source-of-truth check (§5.7).** Scan every soft-skill claim in `cv_content` — every Skills section entry that names a soft skill, every soft-skill thread in `profile`, every soft-skill bullet in `professional_experience`, every soft-skill mention in `key_projects` / `leadership_and_interests`. For each, ask: does the master CV evidence this skill in (a) an explicit `"Soft Skills"` / `"Strengths"` / `"Personal Attributes"` / `"Core Competencies"` / `"Key Strengths"` section, (b) a behavioural bullet, or (c) a leadership-and-interests entry? If YES — keep, rephrase as needed. If NO — the claim was inferred from the JD's wishlist, not the candidate's master CV. Delete it. Special vigilance: if the JD names specific soft-skill terms (`"conflict resolution"`, `"de-escalation"`, `"empathetic communication"`, `"emotional intelligence"`, `"resilience"`, etc.) but those terms (or close cousins) appear nowhere in the master CV, do NOT add them — that is §5.7 invention. If the JD requires soft skills the candidate doesn't claim, gap goes in `fit_assessment.warnings`, never in `cv_content` as if the candidate has it. Bridging OK (`"Communication and Brand Development"` → `"Stakeholder communication"`); invention NOT (`"De-escalation"` when neither term is in the master CV).
 
 If everything passes, emit the tool call.
 
