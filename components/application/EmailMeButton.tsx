@@ -153,15 +153,26 @@ export function EmailMeButton({ applicationId, lastEmailedAt }: Props) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-1.5">
+      {/* Tier-2 ghost-pill style: subtle orange-tinted background with a
+          soft border + hover lift. The canonical actions on this view
+          are the per-document Download buttons inside each preview
+          card; this CTA is one tier down. Compact text-sm sizing,
+          rounded-lg pill, soft orange ring on hover for a modern
+          Linear / Vercel-style feel without competing with the
+          downloads. */}
       <button
         type="button"
         onClick={send}
         disabled={pending}
-        className="btn-primary"
         aria-label="Email me both documents"
+        className="group inline-flex items-center gap-2 rounded-lg border border-orange/25 bg-orange/10 px-3.5 py-1.5 text-sm font-medium text-orange transition-all hover:border-orange/50 hover:bg-orange/15 hover:shadow-md hover:shadow-orange/15 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:shadow-none"
       >
-        <MailIcon size={16} aria-hidden />
+        <MailIcon
+          size={14}
+          aria-hidden
+          className="transition-transform group-hover:-translate-y-px"
+        />
         <span>{pending ? "Sending…" : "Email me both documents"}</span>
       </button>
       <button
@@ -171,14 +182,14 @@ export function EmailMeButton({ applicationId, lastEmailedAt }: Props) {
         aria-label="About auto-email"
         aria-haspopup="dialog"
         aria-expanded={hintOpen}
-        className="btn-icon"
         title="About auto-email"
+        className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-dark3 hover:text-text"
       >
-        <InfoIcon size={18} aria-hidden />
+        <InfoIcon size={14} aria-hidden />
       </button>
       {lastEmailedAt && (
-        <span className="text-meta text-muted-foreground">
-          Emailed {formatRelative(lastEmailedAt)}.
+        <span className="ml-1 text-xs text-muted-foreground">
+          Emailed {formatRelative(lastEmailedAt)}
         </span>
       )}
 
