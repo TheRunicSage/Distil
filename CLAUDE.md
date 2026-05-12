@@ -1471,6 +1471,29 @@ Test path: re-submit the AT Customer Service Rep generation on a preview deploym
 
 Rollback: single `git revert`. The §4.6.5 subsection is additive; the §10 items are append-only; the §4.6 intro anchor sentence is one-line.
 
+[18] Soft-skill source-of-truth framing correction (2026-05-13, same-day follow-up to the entry above). User pushback on the previous commit's framing: `"JD is a source. Fix it."` The framing `"the JD is NOT a source"` overshot — the JD IS a source, for *which* soft skills the recruiter wants to see, what language to mirror for ATS, which master-CV claims to prioritise and rephrase. What the JD is *not* a source for is **evidence of what the candidate has**. Two different jobs; the previous commit conflated them.
+
+Reframed both prompts (§4.6.5 Claude / §5.7 Flash) around a two-input model:
+
+| Source | Job (its source-of-truth role) | Not its job |
+|---|---|---|
+| **JD** | The *target list*: which soft skills the recruiter wants; ATS framing language; which master-CV claims to prioritise and rephrase. | Evidence of which soft skills the candidate has. |
+| **Master CV** | The *evidence list*: which soft skills the candidate can credibly claim; verbatim self-descriptions; behavioural outcomes. | Filtering for role-relevance — the JD does that. |
+
+Output's soft-skill claims live in the **intersection**: master-CV-evidenced claims framed using JD language when the underlying skill matches. The previous commit's three-source priority list rewrote rule 3 from `"The JD is NOT a source."` (over-strong) to `"JD-only terms — verify against the master CV before claiming."` (accurate). The bridging-vs-invention distinction stayed: bridging means using JD framing for a skill the master CV claims (`"Communication and Brand Development"` → `"Stakeholder communication"`, allowed); invention means asserting a skill the master CV is silent on regardless of JD framing (`"De-escalation"` when neither term is in the master CV, banned).
+
+Edits in this commit:
+* Claude §4.6 intro: anchor sentence rewritten — `"The JD tells you which soft skills the recruiter wants (the target list); the master CV tells you which soft skills the candidate can credibly claim (the evidence list). Output lives in the intersection."` Calls out `"Never claim a soft skill the master CV is silent on, even when the JD names it explicitly."` to keep the invention guard explicit.
+* Claude §4.6.5: header changed from `"anchor on the master CV, never on the JD"` → `"two inputs, two different jobs"`. Replaced the three-rule list's rule 3 (`"The JD is NOT a source"`) with a corrected version (`"JD-only terms — verify against the master CV before claiming"`). Added the two-input source-vs-job table at the top so the model can't miss the framing. Worked example updated to make explicit that the wrong-output failure mode was the model using the JD as evidence-list instead of target-list, and the right output uses JD framing while sourcing claims from the master CV's declared seven soft skills.
+* Flash §5.7: same source-vs-job table at the top, same three-rule list with corrected rule 3, same worked example treatment with the same "target list / evidence list" framing.
+* §10 self-check items (Claude item 42, Flash item 18): rewritten lead sentence — `"The JD is the *target list* (what the recruiter wants); the master CV is the *evidence list* (what the candidate can claim). Output lives in the intersection."` Body unchanged in shape — scan every soft-skill claim, trace to one of three master-CV sources, delete if the claim was inferred from the JD with no master-CV evidence. Added one explicit line — `"The JD being a source for *which skills to look for* never authorises claiming a skill the master CV is silent on."` — so the rule's *spirit* is unambiguous even when applied to edge cases.
+
+What was *not* changed: the rubric (§4.6.1–§4.6.4 / §5.7 buckets), the seniority layer, the behavioural-not-declarative rule, the honest-gap-handling routing to `fit_assessment.warnings`, the bridging-vs-invention distinction itself (just better-framed now), the schema, the LLM provider layer, the renderer.
+
+Test path: same as the entry above — re-submit the AT Customer Service Rep generation. Expected output identical to the previous entry's "right" example: Skills section uses the JD-relevant subset of the declared 7 soft skills rephrased with JD framing (`"Communication and stakeholder engagement, Team leadership and facilitation, Cross-functional collaboration, Problem-solving in fast-paced environments, Event coordination and logistics, Community building"`); no `"conflict resolution"` / `"de-escalation"` / `"empathetic communication"` in `cv_content`; `fit_assessment.warnings` carries the honest line about the gap; behavioural bullet evidences soft skills from real master-CV outcomes.
+
+Rollback: single `git revert` — this commit reverts cleanly, restoring the previous "JD is not a source" framing. Reverting the previous commit too restores the pre-source-rule state.
+
 ---
 
 ## Known Gaps to Watch
