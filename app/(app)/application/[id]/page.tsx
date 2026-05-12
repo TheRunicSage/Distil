@@ -19,6 +19,7 @@ import {
   BanIcon,
   PauseIcon,
   PencilIcon,
+  SparklesIcon,
 } from "lucide-react";
 import { CopyId } from "@/components/app/CopyId";
 import { FadeUp } from "@/components/app/FadeUp";
@@ -469,31 +470,48 @@ function SuccessView({
         </div>
       </FadeUp>
 
-      {/* "Behind this application" — combined fit-reasoning + what-we-did
-          card (2026-05-13 redesign). Previously two stacked surface-cards
-          eating a lot of vertical real-estate; the chip-strip above
-          already conveys the at-a-glance fit / salary, so this section
-          is the curated narrative for users who want the why + the what.
-          Zone 1: fit reasoning paragraph + inline warn chips for
-          considerations. Zone 2: numbered orange chips for tailoring
-          moves, laid out in a 2-column grid at sm+ so 5–7 items fit in
-          ~2-3 rows instead of a long vertical list. Group-hover lifts
-          the chip for a subtle curious micro-interaction. */}
-      <FadeUp mode="scroll" as="section" className="surface-card">
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="eyebrow">Behind this application</p>
+      {/* "Behind this application" — dimensional card (2026-05-13 v2).
+          Was too uniform / boring previously; now built around three
+          visual moves:
+          (1) Ambient orange glow in the top-right corner ties the card
+              into the brand palette and breaks up the flat surface.
+          (2) Fit reasoning rendered as a serif italic quote with an
+              orange left-rule — reads as a verdict / curator's note,
+              not narration. Visually distinct hero element.
+          (3) Tailoring moves zone has its own tinted-orange inset panel
+              inside the card (bg-orange/[0.04] + ring-orange/15), so
+              the "what we did" reads as a distinct surface from the
+              reasoning above. Numbered chips beefed up: size-6, orange
+              gradient, ring, shadow-sm at rest, scale + brighter glow
+              on hover. */}
+      <FadeUp mode="scroll" as="section" className="surface-card relative overflow-hidden">
+        {/* Ambient brand-orange glow in the top-right corner. Pure
+            decoration — pointer-events-none so it doesn't steal clicks. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-orange/[0.08] blur-3xl"
+        />
+
+        <div className="relative flex items-baseline justify-between gap-3">
+          <p className="eyebrow flex items-center gap-1.5">
+            <SparklesIcon size={12} aria-hidden className="text-orange" />
+            Behind this application
+          </p>
           <span className="text-xs text-muted-foreground">
             {success.what_we_did_checklist.length} tailoring{" "}
             {success.what_we_did_checklist.length === 1 ? "move" : "moves"}
           </span>
         </div>
 
-        <p className="mt-3 text-base leading-relaxed text-text">
-          {fit.reasoning}
-        </p>
+        {/* Hero verdict — serif italic quote with brand left rule. */}
+        <blockquote className="relative mt-5 border-l-2 border-orange/60 pl-4">
+          <p className="font-serif text-lg italic leading-relaxed text-text sm:text-xl">
+            {fit.reasoning}
+          </p>
+        </blockquote>
 
         {fit.warnings.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
+          <div className="relative mt-4 flex flex-wrap gap-1.5">
             {fit.warnings.map((w, i) => (
               <span
                 key={i}
@@ -506,17 +524,23 @@ function SuccessView({
           </div>
         )}
 
-        <div className="mt-6 border-t border-border/40 pt-5">
-          <p className="eyebrow-muted">Tailoring moves</p>
-          <ul className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2">
+        {/* Tailoring moves — distinct tinted-orange inset zone. */}
+        <div className="relative mt-6 rounded-xl bg-orange/[0.04] p-5 ring-1 ring-orange/15">
+          <div className="flex items-center justify-between gap-3">
+            <p className="eyebrow-muted">Tailoring moves</p>
+            <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-orange/70">
+              {success.what_we_did_checklist.length} steps
+            </span>
+          </div>
+          <ul className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
             {success.what_we_did_checklist.map((item, i) => (
               <li
                 key={i}
-                className="group flex items-start gap-2.5 text-sm leading-relaxed text-text/90 transition-colors hover:text-text"
+                className="group flex items-start gap-3 text-sm leading-relaxed text-text/90 transition-colors hover:text-text"
               >
                 <span
                   aria-hidden
-                  className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-md bg-orange/15 text-[11px] font-bold text-orange transition-all duration-200 group-hover:scale-110 group-hover:bg-orange/25 group-hover:shadow-[0_0_12px_rgba(232,90,46,0.25)]"
+                  className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange/35 to-orange/15 text-xs font-bold text-orange shadow-sm ring-1 ring-orange/30 transition-all duration-200 group-hover:scale-110 group-hover:from-orange/50 group-hover:to-orange/25 group-hover:shadow-[0_0_16px_rgba(232,90,46,0.4)]"
                 >
                   {i + 1}
                 </span>
