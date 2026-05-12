@@ -21,6 +21,17 @@ function pipe(parts: ReadonlyArray<string | null | undefined>): string {
   return parts.filter((p): p is string => Boolean(p && p.trim())).join(" | ");
 }
 
+// Mirrors lib/docx/render-cv.ts:formatRoleDates — keep in sync.
+function formatRoleDates(
+  start: string | null,
+  end: string | null,
+): string {
+  if (!start && !end) return "";
+  if (start && end) return `${start} to ${end}`;
+  if (start) return `from ${start}`;
+  return `to ${end}`;
+}
+
 export function CvPreview({ content }: Props) {
   return (
     <article className="overflow-hidden rounded-lg border border-l-border bg-l-bg font-sans text-l-text leading-[1.15] shadow-card">
@@ -87,7 +98,7 @@ export function CvPreview({ content }: Props) {
                 {role.role_title}, {role.company}
               </p>
               <p className="text-xs text-l-mid">
-                {pipe([role.location, `${role.start_date} to ${role.end_date}`])}
+                {pipe([role.location, formatRoleDates(role.start_date, role.end_date)])}
               </p>
               <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm">
                 {role.bullets.map((b, j) => (

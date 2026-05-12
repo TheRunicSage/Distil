@@ -84,8 +84,8 @@ export function sanitiseOutput(
         role_title: stripDashes(r.role_title),
         company: stripDashes(r.company),
         location: stripDashes(r.location),
-        start_date: stripDashes(r.start_date),
-        end_date: stripDashes(r.end_date),
+        start_date: r.start_date === null ? null : stripDashes(r.start_date),
+        end_date: r.end_date === null ? null : stripDashes(r.end_date),
         bullets: r.bullets.map(stripDashes),
       })),
       key_projects: cv.key_projects.map((p) => ({

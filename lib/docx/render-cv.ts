@@ -36,6 +36,19 @@ import {
 type CvContent = ApplicationOutputSuccess["cv_content"];
 type Seniority = ApplicationOutputSuccess["jd_analysis"]["seniority"];
 
+// Format role dates accepting null on either end (per output-schema.ts
+// 2026-05-12 audit). Both null → empty string (pipeJoin then omits the
+// segment entirely). One null → one-sided phrasing.
+function formatRoleDates(
+  start: string | null,
+  end: string | null,
+): string {
+  if (!start && !end) return "";
+  if (start && end) return `${start} to ${end}`;
+  if (start) return `from ${start}`;
+  return `to ${end}`;
+}
+
 export async function renderCV(
   content: CvContent,
   seniority: Seniority,
@@ -114,7 +127,7 @@ export async function renderCV(
     );
     const meta = pipeJoin([
       role.location,
-      `${role.start_date} to ${role.end_date}`,
+      formatRoleDates(role.start_date, role.end_date),
     ]);
     if (meta) children.push(metaLine(meta, spacing, sizes));
     for (const b of role.bullets) {

@@ -651,6 +651,8 @@ Do not infer "NZ Citizen" or "Permanent Resident" from context. Do not infer "Im
 
 This rule overrides the §2.3 Honesty Rules for contact-detail cosmetics. §2.3 prevents fabrication of *substantive* career claims (employers, dates, projects, skills, certifications). Omitting a missing phone or LinkedIn is not a fabrication — it's the most honest possible representation.
 
+**Role dates (`professional_experience[].start_date` / `.end_date`) — same omit-when-missing rule.** When the master CV lists a role with no dates at all, emit `null` for the missing fields rather than inventing a range. The schema accepts null on either or both. The renderer omits the date segment cleanly when both are null and produces one-sided phrasing ("from 2022", "to 2024") when only one is. Inventing a start year or padding to "Present" when the master CV is silent on dates is a §5.4 numeric-fidelity violation — null is the correct value.
+
 ### 7.2 Worked Example
 
 **Input:** master CV has full career history, projects, education. First line shows only "Hamish" (no surname visible in the parsed body). Contact line shows: email, phone "+64 0220293753", location "Auckland". No LinkedIn URL. No "Work Rights:" line. No "Availability:" line.

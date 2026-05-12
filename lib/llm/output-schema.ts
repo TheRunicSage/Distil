@@ -321,8 +321,14 @@ const ProfessionalExperienceItemSchema = z.object({
   role_title: z.string().min(1).max(200),
   company: z.string().min(1).max(200),
   location: z.string().min(1).max(120),
-  start_date: z.string().min(1).max(40),
-  end_date: z.string().min(1).max(40),
+  // 2026-05-12 strictness audit (DP 11 from the prompt audit).
+  // Both date fields nullable: a master CV missing role dates would
+  // otherwise force the model to either invent dates (§5.4 numeric
+  // fidelity violation) or trip the schema. Renderer omits the
+  // date string entirely when both are null; renders one-sided
+  // ("from 2022" or "to 2024") when only one is null.
+  start_date: z.string().min(1).max(40).nullable(),
+  end_date: z.string().min(1).max(40).nullable(),
   // v6 had min(2). Lowered 2 → 1 (2026-05-01) — system prompt §4.4
   // Lead/Principal explicitly says "older roles (10+ years ago)
   // collapse to one line each: role, company, dates, no bullets".
