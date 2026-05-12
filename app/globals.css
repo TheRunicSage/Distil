@@ -419,8 +419,26 @@
      - btn-icon: size-10 → size-11 (40→44px).
      - btn-link-orange: text-base → text-lg.
      - status-pill: text-[11px] → text-xs (12px); px-2.5 → px-3. */
+  /* btn-primary — hero CTA. Modernised 2026-05-13 after user
+     reported the button felt "visually expired" with no visible
+     click feedback. Resting state now carries a subtle vertical
+     gradient (top ~7% lighter than base, simulates light from
+     above), an inner top-edge highlight (1px luminous line for
+     a polished feel), and a low-intensity ambient lift so the
+     button reads as raised even before hover. The :active rule
+     below darkens the gradient, swaps the highlight for an inset
+     shadow (physical depression), and drops the outer shadows
+     — combined with the existing scale(0.97), clicks land with
+     real weight. Light mode shares the same treatment since the
+     button surface is orange in both modes; only the ambient
+     drop tint uses warm-near-black for paper-style depth. */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-orange px-5 py-2.5 text-base font-semibold text-white transition-colors hover:bg-orange-light disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-base font-semibold text-white disabled:pointer-events-none disabled:opacity-50;
+    background-image: linear-gradient(180deg, #ec6a45 0%, var(--color-orange) 100%);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+      0 1px 2px 0 rgba(226, 97, 59, 0.32),
+      0 2px 6px 0 rgba(15, 14, 8, 0.18);
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-dark3/60 px-5 py-2.5 text-base font-medium text-text transition-colors hover:border-orange/40 hover:bg-dark3 disabled:pointer-events-none disabled:opacity-50;
@@ -502,9 +520,21 @@
 }
 
 .btn-primary:hover {
+  background-image: linear-gradient(180deg, #f17a55 0%, var(--color-orange-light) 100%);
   box-shadow:
-    0 0 0 1px rgba(226, 97, 59, 0.18),
-    0 6px 18px rgba(226, 97, 59, 0.22);
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.28),
+    0 2px 4px 0 rgba(226, 97, 59, 0.42),
+    0 8px 20px 0 rgba(226, 97, 59, 0.28);
+}
+/* Press feedback ships outside the prefers-reduced-motion gate
+   below — the colour darken + inner-shadow swap aren't motion,
+   they're appearance. Reduced-motion users get this press state
+   too; only the scale(0.97) kickback is motion-gated. */
+.btn-primary:active {
+  background-image: linear-gradient(180deg, #c95228 0%, #b54520 100%);
+  box-shadow:
+    inset 0 2px 4px 0 rgba(0, 0, 0, 0.28),
+    0 0 0 0 transparent;
 }
 .btn-secondary:hover {
   box-shadow: 0 6px 16px rgba(226, 97, 59, 0.10);
