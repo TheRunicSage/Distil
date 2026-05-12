@@ -321,17 +321,39 @@ function SuccessView({
           balanced under the centred trigger). */}
       <FadeUp mode="mount" as="section" className="text-center">
         {applicationTitle && (
-          // Frosted-glass title pill — translucent dark2 surface with
-          // backdrop-blur for the modern "glass" feel, a faint brand-
-          // orange tinted border on the left so the pill carries a
-          // brand signature without fighting the ambient orange/violet
-          // blobs behind. `mx-auto w-fit` hugs the text inside the
-          // centred parent. Subtle inset highlight + drop shadow give
-          // the pill a sense of elevation without committing to a
-          // solid card surface.
-          <div className="mx-auto w-fit rounded-2xl border border-border/60 bg-dark2/50 px-6 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_8px_24px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-            <h2 className="font-serif text-2xl font-light leading-snug text-text sm:text-3xl">
-              {applicationTitle}
+          // Frosted-glass title pill — modernised 2026-05-13:
+          // 1. Background opacity lifted dark2/50 → dark2/85 so the pill
+          //    reads as a confident elevated surface instead of a faint
+          //    overlay on the ambient blob layer behind.
+          // 2. Border tinted to brand orange at 25% alpha (was neutral
+          //    border/60), so the pill carries an unmistakable brand
+          //    signature.
+          // 3. Stacked shadow with a subtle outer orange glow
+          //    (0_0_36px_rgba(232,90,46,0.10)) — picks up the ambient
+          //    orange blob colour without committing to a hard outline.
+          // 4. backdrop-blur-2xl (was xl) deepens the frosted feel
+          //    against the background blobs.
+          // 5. Padding bumped to px-7 py-3.5 for more visual presence
+          //    against the rest of the page hierarchy.
+          // Company name rendered in brand orange so the eye lands on
+          // it first; role archetype stays in default text colour; the
+          // " @ " separator drops to muted so it reads as a delimiter,
+          // not a word.
+          <div className="mx-auto w-fit rounded-2xl border border-orange/25 bg-dark2/85 px-7 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_12px_32px_rgba(0,0,0,0.32),0_0_36px_rgba(232,90,46,0.10)] backdrop-blur-2xl">
+            <h2 className="font-serif text-2xl font-light leading-snug sm:text-3xl">
+              {roleArchetype && companyName ? (
+                <>
+                  <span className="text-text">{roleArchetype}</span>
+                  <span className="text-muted-foreground/70"> @ </span>
+                  <span className="font-normal text-orange">
+                    {companyName}
+                  </span>
+                </>
+              ) : (
+                <span className="text-text">
+                  {roleArchetype || companyName}
+                </span>
+              )}
             </h2>
           </div>
         )}
