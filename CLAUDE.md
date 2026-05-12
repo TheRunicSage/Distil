@@ -1521,6 +1521,19 @@ Test path: same AT Customer Service Rep generation as the previous two entries. 
 
 Rollback: single `git revert` of this commit reverts cleanly to the previous "two inputs, two different jobs" framing (which itself reverted the earlier "JD is not a source" framing). Two `git revert`s restore the pre-source-rule state. All three commits are bisect-clean.
 
+[7] Strictness audit 6: what_we_did_checklist tight cushion + key_projects.context shape (2026-05-13). Real failures via the [10] observability pipeline: three `llm_invalid_output` attempts on a Colliers Assistant Systems Analyst submission across 2026-05-12, two distinct Zod paths:
+
+  - `what_we_did_checklist` `too_big >8 items` (twice). Prompt §6 / C14 says `"5 to 7 items"`; schema was `.min(5).max(8)` (cushion of 1). Exact-match shape with the 2026-04-30 ats_keywords audit: prompt upper bound matched the schema cap with no drift cushion, model overshot, generation tanked. Relaxed schema to `.max(10)` (cushion of 3 above the prompt's upper bound). Prompt stays primary at 5-7 via §6 + new §10 item 43 (Claude) / item 19 (Flash) enforcing trim before return.
+  - `cv_content.key_projects[0].context` `too_big >120 chars` (twice). Different shape — the schema cap was already ~7x the prompt example (`"Master's Thesis"`, ~16 chars), but the prompt never said `context` is a category tag. The word "context" naturally invites a sentence-length description in English, so the model emits one. Two-layer fix: schema relaxed `.max(120)` → `.max(200)` as tail safety; prompt clarified at the schema example line (Claude line 889, Flash schema-example line 98) that `context` is a short category tag (≤ 6 words) and NOT a description sentence, with explicit examples (`"Master's Thesis"`, `"Personal Project"`, `"University Coursework"`, `"Hackathon"`, `"Open Source Contribution"`). The descriptive content belongs in `bullets`. Self-check item 43 / 19 also enforces the tag shape pre-return.
+
+  Three failures, two paths, one commit. Targeted-fix-per-surfaced-failure discipline maintained; no other caps touched in this audit. Schema caps not hit in these failures (paragraphs cushion already raised 2026-05-12, profile, fit_assessment.warnings each item) stay put — re-audit if real failures land.
+
+  Schema audit-history comment block at the top of `lib/llm/output-schema.ts` gains a `2026-05-13` entry documenting both fixes alongside the previous five audits.
+
+  Test path: re-submit the Colliers JD. Expected: schema accepts the model's natural emission (10 checklist items OK at the schema level, 6-word context tag OK at the schema level); prompt-side §10 item 43 forces trim to 7 items before return AND reshapes any sentence-context emission to a short tag with content moved to bullets. `request_logs.metadata.zod_issues` should no longer show these two paths.
+
+  Rollback: single `git revert`. Each change is additive (cap bumps + prompt clarifications + new self-check items); no schema migration, no API surface change.
+
 ---
 
 ## Known Gaps to Watch

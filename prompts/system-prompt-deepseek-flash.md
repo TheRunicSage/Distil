@@ -95,7 +95,7 @@ Your tool call carries this JSON object. Field-by-field requirements live in §5
       "end_date": "string or null or 'Present'",
       "bullets": ["string"]
     }],
-    "key_projects": [{ "name", "context", "bullets", "technologies" }],
+    "key_projects": [{ "name", "context" (short tag ≤ 6 words like "Master's Thesis" / "Personal Project" / "Hackathon"; NOT a description sentence), "bullets", "technologies" }],
     "education": [{ "qualification", "institution", "location", "dates", "details" }],
     "leadership_and_interests": [{ "title", "description" }],
     "referees": "string, default 'Available on request'"
@@ -616,7 +616,7 @@ If any trigger fires, populate `insufficient_input_reason` with a 2–4 sentence
 
 ## 10. Final Self-Check (run before returning)
 
-Run through these 18 checks. If any fails, fix it before returning. If everything passes, return the JSON.
+Run through these 19 checks. If any fails, fix it before returning. If everything passes, return the JSON.
 
 1. **No em dashes, en dashes, or punctuation-dashes anywhere.** Em (`—`) ban is the single highest-impact rule in the prompt.
 2. **No prose outside the `submit_application` tool call.** No "Before I generate..." preamble. No "Here is..." postamble. §1.
@@ -636,6 +636,7 @@ Run through these 18 checks. If any fails, fix it before returning. If everythin
 16. **Signoff line break.** `cover_letter_content.signoff` MUST contain a `\n` between the closing phrase and the candidate's name (e.g. `"Kind regards,\n[Full Name]"`, `"Yours sincerely,\nJalaj Lingwal"`, `"Nga mihi,\n[Full Name]"`). Without the `\n`, sign-off and name collapse onto one line in the rendered docx. If the value lacks a `\n`, add one before returning.
 17. **Profile crispness.** Scan every sentence of `cv_content.profile`. Does any sentence start with `"Keen to..."` / `"Looking to..."` / `"Eager to..."` / `"Excited to apply..."` / `"Hoping to leverage..."` / similar aspirational opening? If yes, delete that sentence — profiles end on the strongest evidence, never on a wish (§5.2 crispness rules). Does any sentence merely restate intent without carrying concrete evidence (a role / outcome / number / project / credential)? Delete. Does the profile exceed the C8 sentence count for the candidate's seniority? Trim.
 18. **Soft-skill labels vs factual scaffolding (per §5.7).** Soft-skill *labels* are candidate-owned — mirror JD terminology liberally even when master CV doesn't use the same words (`"empathy"`, `"de-escalation"`, `"emotional intelligence"`, `"resilience"`, `"cross-cultural engagement"`, etc. all fine). Factual *scaffolding* around any soft-skill claim is master-CV-bound per §5.8. Scan every soft-skill bullet in `cv_content.professional_experience[].bullets`, every soft-skill thread in `profile`, every story / specific event in `cover_letter_content.paragraphs`. Verify: (a) every NUMBER (`100+`, `96%`, `8`, `200+`, etc.) traces verbatim to master CV; (b) every DATE / DURATION / TENURE traces verbatim; (c) every NAMED EMPLOYER, ROLE TITLE, PROJECT NAME traces verbatim; (d) every SPECIFIC EVENT / ANECDOTE in cover letter (`"during a large conference"`, `"at the central depot during the December 2024 rush"`, `"twenty minutes before their session"`) comes from a real master-CV bullet, not invented to dramatise a soft-skill point. If any factual element fails (a)-(d), it is a §5.8 fabrication regardless of how strong the soft-skill point — rewrite without the invented specific or remove. Soft-skill *label* on the rewritten bullet can stay (`"de-escalated customer concerns"`); the *story* must be real.
+19. **`what_we_did_checklist` count + `key_projects.context` shape.** Count `what_we_did_checklist` entries — must be **5 to 7** per C14, never 8+. Schema permits up to 10 as runaway-prose guard but 8+ is a C14 violation; trim weakest items down to 7 before returning. Separately, scan every `cv_content.key_projects[].context`. `context` is a SHORT CATEGORY TAG (≤ 6 words) — `"Master's Thesis"`, `"Personal Project"`, `"University Coursework"`, `"Hackathon"`, `"Open Source Contribution"`. NOT a description sentence about the project. If you wrote a sentence about what the project does, that content belongs in `bullets`. Replace the context value with a tag, move the description into `bullets` if not already there. Schema cap is 200 chars as runaway guard; a tag is under 50.
 
 If everything passes, emit the tool call.
 

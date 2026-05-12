@@ -113,6 +113,30 @@
 // fix-per-surfaced-failure discipline. Re-audit if any surface in
 // future request_logs.metadata.zod_issues.
 //
+// 2026-05-13 strictness audit (what_we_did + key_projects.context tight-cap pass).
+// Real failures on a Colliers Assistant Systems Analyst submission:
+// three attempts dropped to llm_invalid_output across 2026-05-12,
+// two distinct Zod paths:
+//   1. what_we_did_checklist too_big >8 items (twice). Prompt §6 / C14
+//      says "5 to 7 items"; schema was .max(8) (cushion of 1). Same
+//      exact-match shape as the 2026-04-30 ats_keywords audit
+//      (prompt 8-12, schema 12, model emits 13+). Relaxed to .max(10)
+//      (cushion of 3 above the prompt's upper bound). Prompt rule
+//      stays primary at 5 to 7 via §6 + the new §10 item 43.
+//   2. cv_content.key_projects[0].context too_big >120 chars (twice).
+//      Different shape — schema cushion was already 7x the prompt's
+//      "'Master's Thesis'" example, but the prompt never said
+//      `context` is a category tag (the word "context" naturally
+//      invites a sentence-length description). Schema relaxed to
+//      .max(200); prompt clarified at the line-889 example and via
+//      new §10 item 43 that context is a short category tag
+//      (≤ 6 words), not a description sentence.
+// Other still-strict caps (paragraphs.max(6) — already relaxed via
+// the 2026-05-12 commit; profile.max(1400); fit_assessment.warnings
+// each item max(600)) were NOT hit in these failures so stay put.
+// Re-audit if real failures land per the targeted-fix-per-surfaced-
+// failure discipline.
+//
 // 2026-05-03 strictness audit (research_summary metadata pass).
 // Real failure: model emitted explicit null on
 // research_summary.company_reference_note, tripping the schema's
@@ -349,7 +373,7 @@ const ProfessionalExperienceItemSchema = z.object({
 
 const KeyProjectSchema = z.object({
   name: z.string().min(1).max(120),
-  context: z.string().min(1).max(120),
+  context: z.string().min(1).max(200),
   bullets: z.array(z.string().min(1).max(600)).min(1).max(6),
   technologies: z.array(z.string().min(1).max(100)).max(15),
 });
@@ -552,7 +576,7 @@ const SuccessSchema = z.object({
   salary_band: SalaryBandSchema,
   cv_content: CvContentSchema,
   cover_letter_content: CoverLetterContentSchema,
-  what_we_did_checklist: z.array(z.string().min(1).max(500)).min(5).max(8),
+  what_we_did_checklist: z.array(z.string().min(1).max(500)).min(5).max(10),
 });
 
 const InsufficientInputSchema = z.object({
