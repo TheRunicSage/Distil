@@ -316,9 +316,19 @@ function SuccessView({
           balanced under the centred trigger). */}
       <FadeUp mode="mount" as="section" className="text-center">
         {applicationTitle && (
-          <h2 className="font-serif text-2xl font-light leading-snug text-text sm:text-3xl">
-            {applicationTitle}
-          </h2>
+          // Frosted-glass title pill — translucent dark2 surface with
+          // backdrop-blur for the modern "glass" feel, a faint brand-
+          // orange tinted border on the left so the pill carries a
+          // brand signature without fighting the ambient orange/violet
+          // blobs behind. `mx-auto w-fit` hugs the text inside the
+          // centred parent. Subtle inset highlight + drop shadow give
+          // the pill a sense of elevation without committing to a
+          // solid card surface.
+          <div className="mx-auto w-fit rounded-2xl border border-border/60 bg-dark2/50 px-6 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_8px_24px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+            <h2 className="font-serif text-2xl font-light leading-snug text-text sm:text-3xl">
+              {applicationTitle}
+            </h2>
+          </div>
         )}
         {outputMissing.length > 0 && (
           <div className="mt-3 flex justify-center">
