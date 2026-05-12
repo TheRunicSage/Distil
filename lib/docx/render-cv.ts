@@ -71,9 +71,14 @@ export async function renderCV(
   children.push(sectionHeading("Profile", spacing, sizes));
   children.push(bodyParagraph(content.profile, { spacing, sizes }));
 
-  // 4. Technical Skills (omit entirely if empty)
+  // 4. Skills (display label was "Technical Skills" prior to 2026-05-13;
+  //    renamed to "Skills" so the heading is honest about housing both
+  //    technical-stack categories AND Certifications, and to align with
+  //    the most-universally-recognised ATS heading. Schema field name
+  //    `cv_content.technical_skills` is kept as-is to avoid a cascade
+  //    rename across every consumer). Omit entirely if empty.
   if (content.technical_skills.length > 0) {
-    children.push(sectionHeading("Technical Skills", spacing, sizes));
+    children.push(sectionHeading("Skills", spacing, sizes));
     for (const group of content.technical_skills) {
       children.push(
         new Paragraph({

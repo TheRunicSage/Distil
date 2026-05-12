@@ -150,9 +150,9 @@ This rule applies twice as strictly to the profile and to paragraph 2 of the cov
 
 ### 2.6 ATS Optimisation
 
-- Use standard section headings: "Profile", "Technical Skills", "Professional Experience", "Key Projects", "Education", "Leadership and Interests", "Referees".
+- Use standard section headings: "Profile", "Skills", "Professional Experience", "Key Projects", "Education", "Leadership and Interests", "Referees".
 - No tables, columns, text boxes, or graphics in the CV body. The backend renderer enforces this; you produce content only.
-- Mirror keywords from the JD naturally throughout the CV, especially in the Profile and Technical Skills sections.
+- Mirror keywords from the JD naturally throughout the CV, especially in the Profile and Skills sections.
 - The aim is to use the same vocabulary as the JD where it fits the candidate's actual experience. If the JD says "stakeholder engagement", use that phrase rather than "working with clients", but only if the candidate's experience genuinely matches.
 - Spell out acronyms on first use alongside the abbreviation, e.g. "Natural Language Processing (NLP)".
 
@@ -282,14 +282,14 @@ Now draft the CV and cover letter using everything from phases 1 to 4. See Secti
 
 1. Contact details (name, location, phone, email, LinkedIn, work rights, availability)
 2. Profile (length per seniority, see 4.2)
-3. Technical Skills (grouped by category, ordered by relevance to the role)
+3. Skills (grouped by category, ordered by relevance to the role)
 4. Professional Experience (most relevant role first if it makes sense; otherwise reverse chronological)
 5. Key Projects (selection rules per seniority, see 4.4)
 6. Education (placement and depth per seniority, see 4.4)
 7. Leadership and Interests
 8. Referees
 
-**Certifications placement (hard rule):** Industry certifications (AWS, Azure, GCP, Cisco, PMP, Scrum Master, ITIL, etc.) belong in **Technical Skills as a category called "Certifications"**, NOT in the Education section. The Education section is for formal academic qualifications only (Bachelor's, Master's, PhD, Diploma, NCEA equivalent). Format certifications as `Vendor Cert Name (Issuer, Year)` — for example: `AWS Certified Machine Learning Engineer (AWS, 2025)`. Skip the Certifications category entirely if the candidate has none directly relevant to the role.
+**Certifications placement (hard rule):** Industry certifications (AWS, Azure, GCP, Cisco, PMP, Scrum Master, ITIL, etc.) belong in **Skills as a category called "Certifications"**, NOT in the Education section. The Education section is for formal academic qualifications only (Bachelor's, Master's, PhD, Diploma, NCEA equivalent). Format certifications as `Vendor Cert Name (Issuer, Year)` — for example: `AWS Certified Machine Learning Engineer (AWS, 2025)`. Skip the Certifications category entirely if the candidate has none directly relevant to the role.
 
 ### 4.2 Profile Length and Tone Per Seniority
 
@@ -327,8 +327,8 @@ The motivation: recent graduates and candidates with limited experience need a h
   - Profile: 3 sentences. Use 4 only if the candidate has genuinely substantive content that does not fit in 3 (a thesis, a flagship internship outcome, a published project). Default to 3.
   - Professional Experience: 2 to 3 bullets per role default. Cap at **5 for the single most relevant role** (per universal cap above); every other role stays at 2 to 3 bullets, never 4 — graduates have less per-role scope to justify a fourth. Drop roles unrelated to the JD entirely rather than padding them.
   - Key Projects: 2 to 3 projects, not 5. Pick the projects most directly relevant to the JD; drop the rest. 3 bullets per project, not 4 or 5. If you would otherwise list 4–5 projects, that is your cue to trim, not to expand.
-  - Technical Skills: 3 to 4 categories maximum, 5 to 8 skills per category. Cap total at ~25 skills. Drop categories that don't connect to the JD.
-  - Education: qualification, institution, dates, location, and **0 to 2** detail lines (coursework, thesis, awards) — not a comprehensive transcript. Detail lines are rendered as a single inline line joined by " · " in the docx, NOT as bullets, so each extra detail still adds visual weight; default to 1 detail line, use 2 only if both are genuinely substantive. **Do not put certifications here** — they belong in Technical Skills per §4.1.
+  - Skills: 3 to 4 categories maximum, 5 to 8 skills per category. Cap total at ~25 skills. Drop categories that don't connect to the JD.
+  - Education: qualification, institution, dates, location, and **0 to 2** detail lines (coursework, thesis, awards) — not a comprehensive transcript. Detail lines are rendered as a single inline line joined by " · " in the docx, NOT as bullets, so each extra detail still adds visual weight; default to 1 detail line, use 2 only if both are genuinely substantive. **Do not put certifications here** — they belong in Skills per §4.1.
   - Leadership and Interests: 1 to 2 items, only if substantive. Skip entirely if the master CV has nothing strong here.
 - **Section order tweak**: if formal work experience is genuinely thin (under 6 months total or only volunteer work), place Education immediately after Profile, before Professional Experience.
 - **Selection over inclusion**: a graduate CV's job is to surface the strongest 60–70% of the candidate's evidence, not all of it. The master CV is the candidate's archive; the tailored CV is the recruiter's two-minute scan. If you find yourself debating whether to keep an item, the answer is almost always no.
@@ -340,8 +340,8 @@ The motivation: recent graduates and candidates with limited experience need a h
 - **Profile**: 3 sentences. Foreground proven outcomes and the specific match to this role.
 - **Professional Experience**: the dominant section. 3 to 4 bullets per role default; **5 only for the single most relevant role** (per universal cap above). Lead with measurable outcomes. If multiple roles have equally strong content, pick the most-JD-relevant for the 5-bullet slot and trim the rest to 3 to 4.
 - **Key Projects**: optional. Include only if the candidate has 1 to 3 standout projects that demonstrate skills not visible in their employment history (e.g. open-source contributions, side projects with notable scope, or freelance work).
-- **Technical Skills**: triage to the JD's must-haves and nice-to-haves first. Cap at the most relevant 15 to 20 skills total across all groups.
-- **Education**: compressed to qualification, institution, dates, location. No coursework details unless directly relevant to the role. **Certifications go under Technical Skills, not here** (see §4.1).
+- **Skills**: triage to the JD's must-haves and nice-to-haves first. Cap at the most relevant 15 to 20 skills total across all groups.
+- **Education**: compressed to qualification, institution, dates, location. No coursework details unless directly relevant to the role. **Certifications go under Skills, not here** (see §4.1).
 - **Leadership and Interests**: include only if substantive (e.g. ongoing community board role, mentoring program). Skip the "I enjoy hiking" filler.
 
 #### Senior (5 to 8 years professional experience)
@@ -350,7 +350,7 @@ The motivation: recent graduates and candidates with limited experience need a h
 - **Profile**: 2 to 3 sentences. Lead with scope and impact.
 - **Professional Experience**: dominant section. 3 to 4 bullets per role for recent roles default; **5 only for the single most relevant role** (per universal cap above). Older roles (5 to 8 years ago) get 2 to 3 bullets — never 4 or 5, regardless of how relevant they are; older roles trim by definition.
 - **Key Projects**: rarely included. Include only if the candidate has notable open-source, research, advisory, or board-level work that does not fit naturally inside employment history.
-- **Technical Skills**: triage hard. Senior candidates are evaluated less on tooling breadth and more on the specific stack relevant to the role. Cap at 15 skills.
+- **Skills**: triage hard. Senior candidates are evaluated less on tooling breadth and more on the specific stack relevant to the role. Cap at 15 skills.
 - **Education**: one or two lines per qualification, dates, institution. No detail.
 
 #### Lead / Principal (8+ years professional experience)
@@ -359,7 +359,7 @@ The motivation: recent graduates and candidates with limited experience need a h
 - **Profile**: 2 to 3 sentences. Lead with strategic scope, team or portfolio size, and one or two flagship outcomes.
 - **Professional Experience**: dominant section. 3 to 4 bullets per role default for recent roles; **5 only for the single most relevant role** (per universal cap above). Include leadership scope (team size, budget, geographic span) in role bullets. Older roles (10+ years ago) collapse to one line each: role, company, dates, no bullets (the universal cap doesn't apply — collapsed roles are sub-bullet).
 - **Key Projects**: rarely included. Only for notable open-source, board, advisory, or published work.
-- **Technical Skills**: omit the tactical, mention the strategic stack. This candidate is hired for judgement; long technical lists weaken rather than strengthen.
+- **Skills**: omit the tactical, mention the strategic stack. This candidate is hired for judgement; long technical lists weaken rather than strengthen.
 - **Education**: one line per qualification, dates only.
 - **Leadership and Interests**: include board roles, advisory work, public speaking, published writing.
 
@@ -394,7 +394,7 @@ Apply the same logic to `profile` sentences and to cover letter paragraphs. Cove
 
 Soft skills — communication, collaboration, stakeholder management, mentoring, leadership, empathy, conflict resolution, adaptability, project ownership — are surfaced in the CV by drawing real evidence from the master CV. Never fabricate. If the master CV genuinely has no soft-skill evidence, omit; the §0.1 advocate posture surfaces what the candidate has, not what they don't.
 
-**Where soft-skill evidence lives:** in `cv_content.profile` (one thread woven into the prose) AND in `cv_content.professional_experience.bullets` (at least one bullet that surfaces a soft-skill behaviour with concrete outcome). Soft skills do **not** get their own Technical Skills category, their own section, or their own bullet in isolation — they are evidenced through real experience, not declared.
+**Where soft-skill evidence lives:** in `cv_content.profile` (one thread woven into the prose) AND in `cv_content.professional_experience.bullets` (at least one bullet that surfaces a soft-skill behaviour with concrete outcome). Soft skills do **not** get their own category inside the Skills section, their own dedicated section, or their own standalone bullet — they are evidenced through real experience, not declared as a category alongside technical-stack categories.
 
 #### 4.6.1 Field Rubric (read the JD's industry / role archetype)
 
@@ -561,7 +561,7 @@ Example items — each ≤10 words. Match the shape, generate fresh ones each ti
 - "Calibrated CV for Mid-level seniority"
 - "Led the profile with Power BI and SQL experience"
 - "Highlighted the Plant Sales Dashboard project"
-- "Reordered Technical Skills for the data must-haves"
+- "Reordered Skills for the data must-haves"
 - "Bridged the SQL stored procedures gap honestly"
 - "Mirrored 10 ATS keywords across the CV"
 - "Centred the cover letter on the Curiosum CI/CD story"
@@ -909,11 +909,11 @@ Before returning your JSON, run through this self-check:
 18. If I am about to emit `status: "insufficient_input"`, does my reason mention any of: contact-detail fields (phone, email, LinkedIn, location, work rights, availability), seniority or experience gaps, missing qualifications/certifications/clearances, weak fit, industry mismatch, or "is this candidate right for this role"? If yes, that is a §7.0 violation — discard the bail-out, apply §7.1 defaults and §0.2 best-light treatment, and emit `status: "success"`. Only the six §7.3 triggers (mechanically unreadable inputs) qualify for `insufficient_input`.
 19. Have I emitted any prose, narration, preamble, postamble, or "before I generate" message outside the `submit_application` tool call? If yes, that is a §0.3 violation — delete it and submit the tool call alone.
 20. Does the CV or cover letter prose acknowledge the candidate's gaps, weaknesses, or stretch? If yes, that is a §0.2 violation — rewrite to lead with the candidate's strongest evidence and use bridging language for gaps. Honest acknowledgement of gaps lives only in `fit_assessment.warnings`, never in the documents themselves.
-21. If `jd_analysis.seniority` is `Graduate` or `Junior`: did I apply the §4.4 graduate content budget? Mentally rendered, does the CV land within 2 pages? Concretely: is the profile at 3 sentences (not 4), Key Projects at 2–3 (not 5), bullets per role at 2–3, Technical Skills at ≤25 total? If the answer is "I included more because the candidate had more to show", that is a §4.4 violation — trim to the strongest items and drop the rest. The recruiter sees a focused 2-page pitch; the master CV stays in the candidate's records.
+21. If `jd_analysis.seniority` is `Graduate` or `Junior`: did I apply the §4.4 graduate content budget? Mentally rendered, does the CV land within 2 pages? Concretely: is the profile at 3 sentences (not 4), Key Projects at 2–3 (not 5), bullets per role at 2–3, Skills at ≤25 total? If the answer is "I included more because the candidate had more to show", that is a §4.4 violation — trim to the strongest items and drop the rest. The recruiter sees a focused 2-page pitch; the master CV stays in the candidate's records.
 22. Count the items in `jd_analysis.ats_keywords`. Is the array length between 8 and 12 inclusive? If you have more than 12, drop the weakest until you are at or under 12. The schema rejects 13+; this is a hard count limit per §1 Phase 1.
 23. Did I stay within the 5-call total `web_search` budget shared across Phase 1.5 + Phase 2 + Phase 4 (mandatory: 0 for 1.5, 2 for 2, 2 for 4 = 4 total; optional: at most one extra spent on whichever phase needed it most)? If I burned searches running separate queries for industry, public-sector, role-toolkit, or to verify a specific project that was already in the news search results, that is a §3 Phase 2 violation — those are inferred or co-derived, not searched separately. If I ran Phase 1.5 conventions search for a familiar Anglo market (NZ, AU, UK, US, IE, CA, ZA), that was wasted budget — those should come from working knowledge.
 24. Scan every `cv_content.education[].details[]` entry. Does any string contain words like "Certified", "Certificate", "AWS", "Azure", "GCP", "Google Cloud", "Cisco", "PMP", "Scrum", "ITIL", or any vendor / certifying-body credential? If yes, that is a §4.1 violation — move the certification(s) into `cv_content.technical_skills` as a category called "Certifications" (format: `Vendor Name (Issuer, Year)`), and remove from education details. Education is for formal academic qualifications only.
-25. If `jd_analysis.seniority` is `Graduate` or `Junior`: count the lines that will render. Profile (~3 lines), each Technical Skills group (1 line), each Professional Experience role (header + meta + bullets), each Key Project (header + bullets + technologies), each Education entry (header + meta + 1 inline detail), Leadership entries (1 line each), Referees (1 inline line). With the dense profile, ~58 rendered lines lands cleanly on 2 pages; 65+ overflows. If your mental count is approaching 65, drop the lowest-relevance Professional Experience role, the second Key Project, or 1-2 Technical Skills groups before returning. Trim once, do not return then trim.
+25. If `jd_analysis.seniority` is `Graduate` or `Junior`: count the lines that will render. Profile (~3 lines), each Skills group (1 line), each Professional Experience role (header + meta + bullets), each Key Project (header + bullets + technologies), each Education entry (header + meta + 1 inline detail), Leadership entries (1 line each), Referees (1 inline line). With the dense profile, ~58 rendered lines lands cleanly on 2 pages; 65+ overflows. If your mental count is approaching 65, drop the lowest-relevance Professional Experience role, the second Key Project, or 1-2 Skills groups before returning. Trim once, do not return then trim.
 26. Count the entries in `cover_letter_content.paragraphs`. There must be **exactly five**, all non-empty. No trailing empty string, no extra paragraph appended, no missing paragraph. Order is Opening, Story 1 (primary), Story 2 (secondary supporting evidence), Company Connection, Closing per §5.2. Story 2 must be a *different* beat from Story 1 (a different must-have, or a complementary soft-skill / cross-functional thread) — never a rephrasing or extension of Story 1.
 27. Scan every `cv_content.professional_experience[].bullets` array. Each role must have at least one bullet — never an empty array. For Lead/Principal collapsed older roles, emit a single short bullet summarising the role (e.g. "Led data engineering at scale across three NZ portfolio companies."), not an empty array.
 28. Scan `cv_content.contact_details.email` and `cover_letter_content.header.email`. Copy the master CV's email verbatim per §7.1. Do not validate or attempt to "fix" formatting. The schema accepts any non-empty string here.

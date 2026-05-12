@@ -63,7 +63,11 @@ export function CvPreview({ content }: Props) {
       </Section>
 
       {content.technical_skills.length > 0 && (
-        <Section title="Technical Skills">
+        // Display heading renamed "Technical Skills" → "Skills"
+        // (2026-05-13). Schema field name `technical_skills` is the
+        // internal key only, kept as-is. See lib/docx/render-cv.ts
+        // for the rationale.
+        <Section title="Skills">
           <ul className="space-y-1.5 text-sm">
             {content.technical_skills.map((g, i) => (
               <li key={i}>
