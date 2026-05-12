@@ -385,14 +385,16 @@ function SuccessView({
       </FadeUp>
 
       {/* Sign-off block — warm framing immediately above the documents.
-          User-requested placement (verbatim copy). */}
-      <FadeUp mode="mount" as="section" className="pt-2 text-center">
-        <p className="font-serif text-3xl font-light leading-snug text-text sm:text-4xl">
+          User-requested placement (verbatim copy). Sized so the title
+          pill above stays the dominant element; sign-off reads as a
+          quieter warm aside, not a billboard. */}
+      <FadeUp mode="mount" as="section" className="pt-1 text-center">
+        <p className="font-serif text-lg font-light leading-snug text-text sm:text-xl">
           {firstName
             ? `Good luck with your application, ${firstName}.`
             : "Good luck with your application."}
         </p>
-        <p className="mt-3 font-serif text-lg italic text-orange sm:text-xl">
+        <p className="mt-2 font-serif text-sm italic text-orange sm:text-base">
           Kia kaha — you&apos;ve got this.
         </p>
       </FadeUp>
