@@ -17,7 +17,6 @@ import {
   AlarmClockOffIcon,
   ArrowLeftIcon,
   BanIcon,
-  CheckCircleIcon,
   PauseIcon,
   PencilIcon,
 } from "lucide-react";
@@ -372,7 +371,7 @@ function SuccessView({
             title={`Fit · ${fit.score}`}
             trigger={
               <span
-                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] ${fitTone}`}
+                className={`inline-flex cursor-help items-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] shadow-sm transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] hover:shadow-md hover:brightness-110 ${fitTone}`}
               >
                 Fit · {fit.score}
               </span>
@@ -389,7 +388,7 @@ function SuccessView({
             <HoverHint
               title={`Salary · ${salary.confidence} confidence`}
               trigger={
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/15 px-3 py-1 text-xs font-medium text-success">
+                <span className="inline-flex cursor-help items-center gap-1.5 rounded-full border border-success/30 bg-success/15 px-3 py-1 text-xs font-medium text-success shadow-sm transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] hover:shadow-md hover:brightness-110">
                   {salary.range}
                   <span className="text-[11px] uppercase tracking-[0.08em] text-success/70">
                     · {salary.confidence}
@@ -470,45 +469,62 @@ function SuccessView({
         </div>
       </FadeUp>
 
-      {/* Full Fit reasoning + considerations. Lives below the previews
-          now (was at the top before the 2026-05-11 redesign). The
-          chip-strip above is the at-a-glance summary; this section is
-          the "why" for users who want the reasoning. Anchor id wires
-          the "{N} considerations" chip's scroll-jump. */}
+      {/* "Behind this application" — combined fit-reasoning + what-we-did
+          card (2026-05-13 redesign). Previously two stacked surface-cards
+          eating a lot of vertical real-estate; the chip-strip above
+          already conveys the at-a-glance fit / salary, so this section
+          is the curated narrative for users who want the why + the what.
+          Zone 1: fit reasoning paragraph + inline warn chips for
+          considerations. Zone 2: numbered orange chips for tailoring
+          moves, laid out in a 2-column grid at sm+ so 5–7 items fit in
+          ~2-3 rows instead of a long vertical list. Group-hover lifts
+          the chip for a subtle curious micro-interaction. */}
       <FadeUp mode="scroll" as="section" className="surface-card">
-        <p className="eyebrow">Why this fits</p>
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="eyebrow">Behind this application</p>
+          <span className="text-xs text-muted-foreground">
+            {success.what_we_did_checklist.length} tailoring{" "}
+            {success.what_we_did_checklist.length === 1 ? "move" : "moves"}
+          </span>
+        </div>
+
         <p className="mt-3 text-base leading-relaxed text-text">
           {fit.reasoning}
         </p>
-        {fit.warnings.length > 0 && (
-          <>
-            <p className="mt-5 eyebrow-muted">Considerations</p>
-            <ul className="mt-3 space-y-2 text-base text-text/80">
-              {fit.warnings.map((w, i) => (
-                <li key={i} className="flex gap-3">
-                  <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-warn" />
-                  <span>{w}</span>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </FadeUp>
 
-      <FadeUp mode="scroll" as="section" className="surface-card border-orange/30 bg-[var(--color-orange-subtle)]">
-        <p className="eyebrow">What we did</p>
-        <ul className="mt-3 space-y-2">
-          {success.what_we_did_checklist.map((item, i) => (
-            <li key={i} className="flex items-start gap-3 text-base text-text">
-              <CheckCircleIcon
-                size={18}
-                aria-hidden
-                className="mt-0.5 shrink-0 text-success"
-              />
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
+        {fit.warnings.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {fit.warnings.map((w, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-2 rounded-md border border-warn/30 bg-warn/10 px-2.5 py-1 text-xs text-warn"
+              >
+                <span aria-hidden className="size-1 rounded-full bg-warn" />
+                {w}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-6 border-t border-border/40 pt-5">
+          <p className="eyebrow-muted">Tailoring moves</p>
+          <ul className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2">
+            {success.what_we_did_checklist.map((item, i) => (
+              <li
+                key={i}
+                className="group flex items-start gap-2.5 text-sm leading-relaxed text-text/90 transition-colors hover:text-text"
+              >
+                <span
+                  aria-hidden
+                  className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-md bg-orange/15 text-[11px] font-bold text-orange transition-all duration-200 group-hover:scale-110 group-hover:bg-orange/25 group-hover:shadow-[0_0_12px_rgba(232,90,46,0.25)]"
+                >
+                  {i + 1}
+                </span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </FadeUp>
 
     </div>
