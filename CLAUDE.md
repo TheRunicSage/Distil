@@ -1090,6 +1090,37 @@ What was not changed: helpers' canonical defaults (still SPACING / SIZES, so cov
 
   Rollback: single `git revert`.
 
+[8] Dual-prompt arrangement — provider-keyed system prompt selection (2026-05-12). The Sonnet-tuned prompt was running on both Anthropic and DeepSeek paths since the original 2026-05-02 migration. After a full audit against the documented [18] failure-mode history (13 DPs in the 2026-05-12 audit, all picked + applied across commits 1-5), the prompt fell into two distinct shapes — one for Sonnet's prose-rich tolerance, one for Flash's directive-density preference. Split into two files behind a runtime selector.
+
+  **Files:**
+  - `prompts/system-prompt-claude.md` (renamed from `system-prompt-v2.md`) — the Sonnet-tuned prompt, ~16K tokens. Battle-tested across two months of [18] failure-mode patches. Loaded on the Anthropic path.
+  - `prompts/system-prompt-deepseek-flash.md` — NEW, ~9K tokens, fresh design for Flash. Not a port. Loaded on the DeepSeek path.
+
+  **Selection mechanism:** both files load at module scope in `inngest/functions/generate-application.ts` (~100KB combined memory cost, negligible). New `pickSystemPrompt()` reads `process.env.LLM_PROVIDER` per invocation: `"deepseek"` → Flash prompt, else Claude prompt. Mirrors the existing `pickProvider()` switch in `lib/llm/index.ts`. Cold-start scoped — a Vercel env-var flip takes effect on the next Inngest cold boot, no redeploy.
+
+  **Flash prompt design choices** (10 internal DPs decided in one round before any code, all picked + locked):
+
+  - **F-1 layout → C (hybrid).** Tight Mission first (advocate posture is the load-bearing rule across all [18] failures), then Constants (§0), then Schema (§2, early), then Inputs / Process / Rules / Self-check. Flash benefits from schema-first framing per the Lightrains + codersera community guidance ("define output format in JSON/tables"). Claude's Mission → Inputs → Rules → Process → Schema order preserved on the Claude path.
+  - **F-2 self-check → B (12-15 items).** Trimmed 37 → 14 high-impact items. Schema-shape items dropped (Zod preprocesses cover them per the [7] strictness audits). Behavioural items (em-dash ban, advocate posture, hallucination check, voice rules, numeric fidelity, UK pairing, cultural-ack tests) kept. Order: highest-impact first (em-dash → status decision → numeric → JD salary → hallucination → bullet caps → grad page count → archetype dedup → null discipline → 5 paragraphs → voice → region → cultural ack), descending.
+  - **F-3 banned phrases → B (research-backed condensation).** Em / en dash bans kept verbatim — DeepSeek V4 research (deepseekai.guide, deepseeksguides.com) confirms Flash's default voice is "flat / stiff / repetitive without explicit priming", so em-dash detection by recruiters compounds. Phrase / verb / adjective / structural bans condensed to 8-10 examples per class grouped by purpose. Lost ~50 specific phrase entries from the Claude prompt's §2.2, kept the high-signal categories.
+  - **F-4 strict-mode tool → C (deferred test commit).** DeepSeek's beta endpoint (`https://api.deepseek.com/beta`) supports `strict: true` on function tools — server-side JSON-Schema validation before the response returns. Would structurally prevent the empty-array-padding class the five [7] strictness audits have patched reactively. Defer to a separate preview-deployment test commit; ship the Flash prompt with the current Zod safety net first, evaluate strict mode on a known-failing JD before flipping prod.
+  - **F-5 thinking mode → A (kept disabled).** Re-enabling at low effort technically fits under Vercel Hobby 300s ceiling (worst case 5 search iters × +20s reasoning + 50s base = 150-200s, inside the 270s `TOTAL_LOOP_BUDGET_MS`). AUTO / high effort risks blowing the 60s `FINAL_ITERATION_TIMEOUT_MS` on the submit emission. Decision deferred to post-prompt-ship quality data; current `thinking: { type: "disabled" }` + `temperature: 0.4` stay.
+  - **F-6 heading style → B (strict hierarchy).** `## section / ### subsection`, `**bold**` reserved for rule statements only — no mid-paragraph bolding for emphasis. Flash parses predictable markdown structure more reliably than Sonnet handles mixed-emphasis prose.
+  - **F-7 worked examples → B (5-7 highest-impact).** Kept §5.7 soft-skill rubric examples (Mid / Senior / Graduate HIGH), §5.6 contact-detail null table, §5.8 + §5.9 widow tighten / extend examples, §7.4 honesty ladder examples, plus a new §6.3 cover-letter voice example (bad flat AI prose + good target prose, 6 reasons it works). The §6.3 example is the single most load-bearing addition for "fun sociable human" cover-letter output per the user's explicit emphasis.
+  - **F-8 cross-refs → A (§-notation).** Same `§4.4` / `§0 C2` style as Claude prompt. Compact, Flash trained on Markdown-style anchors. Saves tokens.
+  - **F-9 Constants block → B (compressed table).** Same C1-C18 IDs as Claude prompt (cross-reference discipline matches both prompts), but compressed from prose-rich table to 18 single-line rows. Same canonical values; same authoritative status downstream.
+  - **F-10 anti-AI-prose section → B (single source).** Claude prompt's §2.2 + §5.3 + §5.4 + §2.5 (four sections all about avoiding AI-sounding prose) collapsed into one §7 section. User meta-rule: "ensure there are single instances of each thing that covers their respective scopes completely." Applied throughout — advocate posture lives only at §1, bail-out gate only at §9.1, null-emit only at §5.6, banned phrases only at §7.2.
+
+  **Voice priming for cover letters (the user-emphasised piece):** F-3 research surfaced that Flash's default voice is "flat / stiff / generic" without explicit voice instruction. Two prompt levers applied:
+  - §6.1 Voice rules: 5 concrete directives covering "concrete details over hype", "one conversational beat per paragraph if anchored to research", "vary sentence rhythm deliberately", "curiosity beats enthusiasm", and the "Could anyone write this" test.
+  - §6.3 worked example: bad flat AI prose vs good target prose for a Mid Data Engineer Paragraph 2. The good example uses specific project names, specific numbers, varied sentence rhythm, and one honest "the hard part was X" beat — the things that make the prose sound human.
+
+  Temperature: kept at `0.4` (locked in `lib/deepseek/provider.ts`). DeepSeek's own creative-writing guidance recommends 1.5 for prose flair, but at 1.5 we lose the §5.8 numeric-fidelity discipline. Per the user's standing "no hallucinations" priority, 0.4 holds. The voice priming in §6.1 + §6.3 substitutes for the temperature lever.
+
+  **Out-of-scope follow-ups (flagged in commit 7's message):** DP F-4 strict-mode tool test, DP F-5 thinking re-enable, the master-CV upload-side validation pivot from the original DP-12, the pre-cost-cap mis-keying fixed inline during commit 7 (was already keyed to Pro, corrected to Flash).
+
+  Rollback: single `git revert` of commit 7 restores the single-prompt loader. The two prompt files stay readable in the tree; reverting just the loader code restores the Claude prompt for both providers.
+
 [18] Region detection on the fly + universal-floor §8 rewrite (2026-05-08). User-reported: an Australian-visa job came through and the system applied NZ rules (the runtime hardcoded `region: "NZ"` at insert and the prompt's §8 was a NZ-only block). User asked for "research how to cleanly implement that it searches for best practices for that country research on the fly. No region boundation."
 
   Five DPs decided before edits:
