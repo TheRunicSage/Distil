@@ -292,34 +292,45 @@ function SuccessView({
     linkedin: success.cv_content.contact_details.linkedin,
   });
 
+  // Application title — mirrors the dashboard / ChainCard derivation
+  // (lib/applications/chains.ts deriveTitle). The success view already
+  // has the structured JSON in scope, so derive inline rather than
+  // hop through the chain helpers.
+  const roleArchetype = success.jd_analysis?.role_archetype?.trim() ?? "";
+  const companyName =
+    success.cover_letter_content?.header?.company_name?.trim() ?? "";
+  const applicationTitle =
+    roleArchetype && companyName
+      ? `${roleArchetype} @ ${companyName}`
+      : roleArchetype || companyName || null;
+
   return (
     <div className="space-y-5">
-      {outputMissing.length > 0 && (
-        <FadeUp mode="mount" as="section">
-          <div className="rounded-2xl border border-warn/30 bg-warn/10 p-4">
-            <div className="flex flex-wrap items-start gap-3">
-              <MissingFieldsBadge
-                fields={outputMissing}
-                variant="output"
-                label={`${outputMissing.length} ${outputMissing.length === 1 ? "detail" : "details"} missing`}
-              />
-              <p className="text-sm text-text/85 sm:flex-1">
-                We couldn&apos;t find these in your master CV, so we left
-                them blank. Update your master CV (or fill them into the
-                downloaded docx) to send the most complete application.
-              </p>
-            </div>
+      {/* Top stack — title, missing-detail pill (hover-reveal popover
+          on the badge itself), and Fit/Salary verdict chips. All
+          centred per user request (2026-05-13). Order top to bottom:
+          title → missing pill → fit/salary pills. The wordy "we
+          couldn't find these" paragraph was collapsed into the
+          badge's hover popover since the badge already explains
+          itself on hover (popoverAlign="center" so the popover sits
+          balanced under the centred trigger). */}
+      <FadeUp mode="mount" as="section" className="text-center">
+        {applicationTitle && (
+          <h2 className="font-serif text-2xl font-light leading-snug text-text sm:text-3xl">
+            {applicationTitle}
+          </h2>
+        )}
+        {outputMissing.length > 0 && (
+          <div className="mt-3 flex justify-center">
+            <MissingFieldsBadge
+              fields={outputMissing}
+              variant="output"
+              label={`${outputMissing.length} ${outputMissing.length === 1 ? "detail" : "details"} missing`}
+              popoverAlign="center"
+            />
           </div>
-        </FadeUp>
-      )}
-
-      {/* Verdict chips — Fit + Salary at the top of the success view
-          with HoverHint tooltips for the what-this-means copy. Email
-          CTA was de-coupled from this row per user request (2026-05-12)
-          and now sits directly above the previews further down the
-          page. */}
-      <FadeUp mode="mount" as="section">
-        <div className="flex flex-wrap items-center gap-2">
+        )}
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
           <HoverHint
             title={`Fit · ${fit.score}`}
             trigger={

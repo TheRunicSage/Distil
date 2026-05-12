@@ -31,6 +31,18 @@ type Props = {
   label?: string;
   /** Extra Tailwind classes on the outer wrapper. */
   className?: string;
+  /**
+   * Hover popover horizontal alignment relative to the chip trigger.
+   *   "start"  (default) — popover left edge anchored to the trigger's
+   *                       left edge. Use when the chip sits in a left-
+   *                       aligned row (dashboard topbar, settings,
+   *                       upload).
+   *   "center"            — popover horizontally centred under the
+   *                       trigger. Use when the chip itself is
+   *                       horizontally centred on its parent (e.g.
+   *                       application success view's title stack).
+   */
+  popoverAlign?: "start" | "center";
 };
 
 const VARIANT_COPY: Record<
@@ -54,12 +66,23 @@ export function MissingFieldsBadge({
   variant = "parse",
   label,
   className = "",
+  popoverAlign = "start",
 }: Props) {
   if (fields.length === 0) return null;
   const copy = VARIANT_COPY[variant];
   const chipLabel =
     label ??
     `${fields.length} ${fields.length === 1 ? "detail" : "details"} missing`;
+
+  // Popover horizontal anchor. start = trigger's left edge (the
+  // historical default — works for left-aligned chip rows). center =
+  // horizontally centred under the trigger, used by the success view's
+  // centred title stack. Both clamp width via max-w-[calc(100vw-2rem)]
+  // so a centred popover near the viewport edge degrades gracefully.
+  const popoverAnchor =
+    popoverAlign === "center"
+      ? "left-1/2 -translate-x-1/2"
+      : "left-0";
 
   return (
     <span
@@ -75,13 +98,14 @@ export function MissingFieldsBadge({
         {chipLabel}
       </span>
       {/* Popover — pure-CSS hover/focus reveal. Sits below the chip
-          left-aligned, max-w-[20rem] so the body copy stays readable
-          on narrow screens. z-50 so it floats above sibling cards
-          even when parent FadeUps briefly establish a stacking
+          per the popoverAlign prop. max-w-[20rem] keeps body copy
+          readable on narrow screens; max-w-[calc(100vw-2rem)] is the
+          viewport-edge degrader. z-50 so it floats above sibling
+          cards even when parent FadeUps briefly establish a stacking
           context during reveal. */}
       <span
         role="tooltip"
-        className="pointer-events-none invisible absolute left-0 top-full z-50 mt-2 w-[20rem] max-w-[calc(100vw-2rem)] translate-y-1 rounded-xl border border-warn/30 bg-dark4 p-4 text-left opacity-0 shadow-[0_12px_32px_rgba(0,0,0,0.28)] transition-[opacity,transform] duration-150 ease-out group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:visible group-focus-visible:translate-y-0 group-focus-visible:opacity-100"
+        className={`pointer-events-none invisible absolute ${popoverAnchor} top-full z-50 mt-2 w-[20rem] max-w-[calc(100vw-2rem)] translate-y-1 rounded-xl border border-warn/30 bg-dark4 p-4 text-left opacity-0 shadow-[0_12px_32px_rgba(0,0,0,0.28)] transition-[opacity,transform] duration-150 ease-out group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:visible group-focus-visible:translate-y-0 group-focus-visible:opacity-100`}
       >
         <p className="text-sm font-semibold text-text">{copy.headline}</p>
         <ul className="mt-3 space-y-1.5">
