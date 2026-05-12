@@ -58,9 +58,13 @@ import { injectDate } from "../steps/inject-date";
 import { loadContext } from "../steps/load-context";
 import { renderAndUpload } from "../steps/render-and-upload";
 
-// Module-scope load: file read happens once per cold start.
+// Module-scope load: file read happens once per cold start. Renamed
+// 2026-05-12 from system-prompt-v2.md → system-prompt-claude.md as
+// the Sonnet-tuned prompt; the DeepSeek path will load
+// system-prompt-deepseek-flash.md instead (provider-keyed selection
+// added in the next commit).
 const SYSTEM_PROMPT = readFileSync(
-  join(process.cwd(), "prompts", "system-prompt-v2.md"),
+  join(process.cwd(), "prompts", "system-prompt-claude.md"),
   "utf-8",
 );
 

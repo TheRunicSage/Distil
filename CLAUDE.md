@@ -46,7 +46,7 @@ Decision Point. Do not invent behaviour, default values, or UX copy.
 **Spec Files**
 - `CLAUDE.md` (this file): live state, interfaces, decisions, build status
 - `app_handoff_v8.md`: complete architecture reference, DB schema, error codes, Zod schema, env vars
-- `prompts/system-prompt-v2.md`: the LLM system prompt loaded at module scope
+- `prompts/system-prompt-claude.md`: the Claude-targeting system prompt loaded at module scope on the Anthropic path. (The DeepSeek path loads `prompts/system-prompt-deepseek-flash.md` instead per the dual-prompt arrangement — see Decision Log [8].)
 
 ---
 
@@ -181,7 +181,8 @@ Decision Point. Do not invent behaviour, default values, or UX copy.
 │       ├── render-and-upload.ts
 │       └── finalize.ts
 ├── prompts/
-│   └── system-prompt-v2.md            # loaded at module scope in generate-application.ts
+│   ├── system-prompt-claude.md        # Sonnet-tuned; loaded on Anthropic path
+│   └── system-prompt-deepseek-flash.md # Flash-tuned; loaded on DeepSeek path
 ├── supabase/
 │   └── migrations/
 │       └── 0001_initial.sql           # full SQL in app_handoff_v8.md §6.2
