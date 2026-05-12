@@ -58,15 +58,30 @@ import { injectDate } from "../steps/inject-date";
 import { loadContext } from "../steps/load-context";
 import { renderAndUpload } from "../steps/render-and-upload";
 
-// Module-scope load: file read happens once per cold start. Renamed
-// 2026-05-12 from system-prompt-v2.md → system-prompt-claude.md as
-// the Sonnet-tuned prompt; the DeepSeek path will load
-// system-prompt-deepseek-flash.md instead (provider-keyed selection
-// added in the next commit).
-const SYSTEM_PROMPT = readFileSync(
+// Module-scope load: both prompt files read once per cold start. The
+// active prompt is picked at function-invocation time from LLM_PROVIDER
+// so a Vercel env-var flip takes effect on the next cold boot — no
+// redeploy needed. Total memory cost is ~25K tokens × 4B ≈ 100KB
+// across both files; negligible.
+//
+// system-prompt-claude.md is the Sonnet-tuned prompt (~16K tokens),
+// stable since the 2026-05-12 audit. system-prompt-deepseek-flash.md
+// is the Flash-tuned prompt (~9K tokens), purpose-built for Flash's
+// schema-first, directive, condensed-self-check shape — fresh design,
+// not a port of the Claude prompt. See Decision Log [8] dual-prompt
+// entry for the design rationale.
+const CLAUDE_PROMPT = readFileSync(
   join(process.cwd(), "prompts", "system-prompt-claude.md"),
   "utf-8",
 );
+const FLASH_PROMPT = readFileSync(
+  join(process.cwd(), "prompts", "system-prompt-deepseek-flash.md"),
+  "utf-8",
+);
+
+function pickSystemPrompt(): string {
+  return process.env.LLM_PROVIDER === "deepseek" ? FLASH_PROMPT : CLAUDE_PROMPT;
+}
 
 export const generateApplication = inngest.createFunction(
   {
@@ -185,16 +200,17 @@ export const generateApplication = inngest.createFunction(
     // it explicitly. The model id flows from llm.callLLM's result so
     // we use a static lookup keyed on the env-selected provider.
     //
-    // DeepSeek path is locked to Pro — see lib/deepseek/provider.ts.
-    // No env-var path can route to Flash; the variant is a code
-    // decision, not a config flip. If you ever swap the line below
-    // to "deepseek-v4-flash", you must also flip the MODEL constant
-    // in the provider for the two to stay in sync.
+    // DeepSeek path is locked to Flash (lib/deepseek/provider.ts:106,
+    // 2026-05-04 hard-lock). The MODEL constant in the provider and
+    // the activeModel here must stay in sync — if you ever flip the
+    // provider to Pro, also flip this string to "deepseek-v4-pro" so
+    // the right pre-cap threshold applies (Pro $0.30, Flash $0.05).
     const activeModel = process.env.LLM_PROVIDER === "deepseek"
-      ? "deepseek-v4-pro"
+      ? "deepseek-v4-flash"
       : "claude-sonnet-4-6";
+    const systemPrompt = pickSystemPrompt();
     await withInngestStep(step, "cost-cap-check", stepCtx, () =>
-      checkCostCapPre(activeModel, userMessage.length, SYSTEM_PROMPT.length),
+      checkCostCapPre(activeModel, userMessage.length, systemPrompt.length),
     );
 
     // 6. The LLM call. retries: 0 because every call costs money;
@@ -217,7 +233,7 @@ export const generateApplication = inngest.createFunction(
       async () => {
         try {
           return await llm.callLLM({
-            system: SYSTEM_PROMPT,
+            system: systemPrompt,
             userMessage,
             // Provider-internal: Anthropic appends its own
             // web_search server tool; DeepSeek appends its own
