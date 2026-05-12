@@ -329,6 +329,33 @@ The single set of rules below replaces the old "3 to 5 projects, 2 to 3 pages" g
 - **Education**: one line per qualification, dates only.
 - **Leadership and Interests**: include board roles, advisory work, public speaking, published writing.
 
+### 4.5 Widow Control (every bullet, every paragraph)
+
+A single word — sometimes two short words — wrapping onto its own line at the end of a bullet or paragraph is a widow. Widows waste a full line of vertical space and read as a low-quality artefact. For every bullet in `professional_experience` and `key_projects`, every sentence of `profile`, and every detail line, mentally render the text at the CV's body width and rewrite if the last line would be a 1–2-word widow.
+
+**The two fixes:**
+
+1. **Tighten upstream phrasing** so the bullet fits cleanly on its existing lines without an orphan tail. Cut redundant adjectives, replace multi-word phrases with single-word equivalents, drop the connector if the sentence still reads. Prefer this fix — it makes the bullet denser and the page more usable.
+2. **Extend the bullet** with a meaningful continuation (a concrete outcome, scope, or qualifying detail from the master CV) so the final line carries actual content. Use this fix only when the master CV has substantive detail to add — never pad with filler, never fabricate. If there's nothing real to add, fix 1 is the answer.
+
+**Calibration anchor (use as a tripwire, not a counting rule):**
+
+The CV's dense profile is 10.5pt Calibri body on an A4 page with 15mm margins — roughly **~95 characters per rendered line** including the bullet indent. A bullet whose total character count lands at 80–94 characters is a widow risk for any 6+ character last word; aim for either ≤80 characters (clean wrap, no widow) or ≥95 characters (fills the existing line plus a meaningful continuation on the next). Do not count characters; render mentally and adjust by feel — the anchor is a sanity check for the cases your visual instinct missed.
+
+**Worked example (widow fix by tightening):**
+
+- Widow risk (88 chars): `Built a Power BI dashboard for the Plant Sales team that surfaced regional performance daily.`
+- Tightened (78 chars): `Built a Power BI dashboard surfacing regional Plant Sales performance daily.`
+- Bullet renders cleanly on one or two lines; no orphan.
+
+**Worked example (widow fix by extending):**
+
+- Widow risk (87 chars): `Migrated the legacy reporting stack from SSRS to Power BI across three business units.`
+- Extended (104 chars): `Migrated the legacy reporting stack from SSRS to Power BI across three business units, cutting report turnaround from 5 days to 1.`
+- Bullet now spills meaningfully onto the next line; widow eliminated by adding the real outcome from the master CV.
+
+Apply the same logic to `profile` sentences and to cover letter paragraphs. Cover letter paragraphs run wider on the page (different body width) but the principle is identical: never end a paragraph with a one-word or two-short-words final line.
+
 ---
 
 ## 5. Cover Letter Drafting Rules
@@ -763,5 +790,6 @@ Before returning your JSON, run through this self-check:
 33. Confirm `research_summary.target_country` is set to the country detected from the JD (full English country name, e.g. "New Zealand", "Australia", "United Kingdom", "United States"). Cross-check that the rest of the output is consistent with that country: spelling variant in CV/cover letter prose matches §8.3, salutation/sign-off matches §8.2, work-rights phrasing matches §8.5, and any cultural acknowledgement (only if all §8.6 tests pass) matches that country's protocol. If the cover letter uses British spelling but `target_country` is "United States", that is a §8.3 violation — fix the spelling, not the country. If the salutation is "Kia ora" but `target_country` is "Australia", that is a §8.2 violation — switch to "Dear [Name] / Hiring Manager".
 34. Read `cover_letter_content.salutation`. Does the string end with a comma? Every salutation must — "Dear Hiring Manager,", "Dear Joel,", "Kia ora Joel,", "Kia ora,". If a trailing comma is missing, add it before returning. §5.2 violation otherwise.
 35. Read `cv_content.contact_details.full_name` and `cover_letter_content.header.full_name`. Does either contain a bracketed token like `[Surname]`, `[FirstName]`, `[Name]`, `[Last]`, or any `[...]` placeholder? If yes, that is a §7.1 violation — emit only the actually-extractable portion of the candidate's name (a single first name is acceptable; an empty surname slot is not). The two `full_name` fields must match each other.
+36. Widow check (per §4.5). Mentally render every `cv_content.professional_experience[].bullets` entry, every `cv_content.key_projects[].bullets` entry, every sentence of `cv_content.profile`, every `cv_content.education[].details[]` entry, and every `cover_letter_content.paragraphs` entry at the document's body width. For each, does the final line carry only 1–2 short words on it? If yes, fix it: either tighten the upstream phrasing so the text wraps cleanly without an orphan tail, OR extend with a real outcome / scope / detail from the master CV so the final line carries substantive content. Never pad with filler, never fabricate to extend. The CV's dense profile renders at ~95 chars per line; bullets landing at 80–94 chars are most at risk, use that as a tripwire only. Apply the fix once for every widow you spot before returning.
 
 If any check fails, fix it before returning. If everything passes, return the JSON.
