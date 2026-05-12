@@ -163,6 +163,14 @@ export default async function ApplicationPage({ params }: RouteCtx) {
               retry of {app.parent_application_id.slice(0, 8)}
             </span>
           )}
+          {app.status === "success" && app.files_expire_at && (
+            <span className="text-sm text-muted-foreground">
+              Files available until{" "}
+              {new Date(app.files_expire_at).toLocaleDateString("en-NZ", {
+                timeZone: "Pacific/Auckland",
+              })}
+            </span>
+          )}
         </div>
       </header>
 
@@ -179,7 +187,6 @@ export default async function ApplicationPage({ params }: RouteCtx) {
         <SuccessView
           applicationId={id}
           json={app.llm_response_json as ApplicationOutput}
-          filesExpireAt={app.files_expire_at}
           lastEmailedAt={app.last_emailed_at}
         />
       )}
@@ -262,12 +269,10 @@ export default async function ApplicationPage({ params }: RouteCtx) {
 function SuccessView({
   applicationId,
   json,
-  filesExpireAt,
   lastEmailedAt,
 }: {
   applicationId: string;
   json: ApplicationOutput;
-  filesExpireAt: string | null;
   lastEmailedAt: string | null;
 }) {
   if (json.status !== "success") return null;
@@ -390,18 +395,6 @@ function SuccessView({
         <p className="mt-3 font-serif text-lg italic text-orange sm:text-xl">
           Kia kaha — you&apos;ve got this.
         </p>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Send it through and back yourself.
-        </p>
-        {filesExpireAt && (
-          <p className="mt-4 text-xs text-muted-foreground/70">
-            Files available until{" "}
-            {new Date(filesExpireAt).toLocaleDateString("en-NZ", {
-              timeZone: "Pacific/Auckland",
-            })}
-            .
-          </p>
-        )}
       </FadeUp>
 
       {/* Email CTA — sits directly above the previews per user request

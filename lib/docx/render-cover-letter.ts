@@ -62,6 +62,22 @@ export async function renderCoverLetter(
     children.push(contactLine(senderContact, true, SPACING, SIZES));
   }
 
+  // 1.5. One blank paragraph between the header (contact line) and the
+  // date, per user request 2026-05-12. The contactLine helper applies
+  // its own minor `paragraph_after`, but the visual gap before the date
+  // was too tight for letter convention. An empty paragraph at body
+  // line-height gives the date room to breathe as its own block.
+  children.push(
+    new Paragraph({
+      children: [],
+      spacing: {
+        after: 0,
+        line: SPACING.line_115,
+        lineRule: "auto",
+      },
+    }),
+  );
+
   // 2. Date — already resolved server-side (Pacific/Auckland today).
   children.push(
     new Paragraph({
