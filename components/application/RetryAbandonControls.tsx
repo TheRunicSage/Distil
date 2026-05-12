@@ -12,20 +12,16 @@ type Props = {
   applicationId: string;
   attemptNumber: number;
   parentJd: string;
-  parentNotes: string | null;
 };
 
 export function RetryAbandonControls({
   applicationId,
   attemptNumber,
   parentJd,
-  parentNotes,
 }: Props) {
   const router = useRouter();
   const isFinalAttempt = attemptNumber >= 3;
   const [jd, setJd] = useState(parentJd);
-  const [notes, setNotes] = useState(parentNotes ?? "");
-  const [useNewCv, setUseNewCv] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,8 +60,6 @@ export function RetryAbandonControls({
       `/api/applications/${applicationId}/retry`,
       {
         job_description: jd,
-        user_notes: notes.trim() || undefined,
-        use_new_master_cv: useNewCv,
       },
     );
     if (ok) {
@@ -124,27 +118,6 @@ export function RetryAbandonControls({
           className="mt-2 block w-full resize-y rounded-sm border border-border bg-dark3 p-3 text-sm text-text focus:border-orange focus:outline-none"
         />
       </label>
-      <label className="block">
-        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange">
-          Notes (optional)
-        </span>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={3}
-          className="mt-2 block w-full resize-y rounded-sm border border-border bg-dark3 p-3 text-sm text-text focus:border-orange focus:outline-none"
-        />
-      </label>
-      <label className="flex items-center gap-2 text-sm text-text">
-        <input
-          type="checkbox"
-          checked={useNewCv}
-          onChange={(e) => setUseNewCv(e.target.checked)}
-          className="h-4 w-4 accent-orange"
-        />
-        Use my new master CV for this retry?
-      </label>
-
       {error && <p className="text-sm text-danger">{error}</p>}
 
       <div className="flex items-center gap-3">

@@ -207,7 +207,6 @@ export default async function ApplicationPage({ params }: RouteCtx) {
               applicationId={id}
               attemptNumber={app.attempt_number}
               parentJd={app.job_description}
-              parentNotes={app.user_notes}
             />
           </div>
         </section>
@@ -251,7 +250,6 @@ export default async function ApplicationPage({ params }: RouteCtx) {
           recovery={recovery}
           attemptNumber={app.attempt_number}
           parentJd={app.job_description}
-          parentNotes={app.user_notes}
           rawErrorMessage={app.error_message}
         />
       )}
@@ -557,8 +555,7 @@ function SuccessView({
 
 // ErrorRecoverySection — guided UX for the four recovery shapes:
 //   - input_fixable: warn-tone banner + headline/hint, then the same
-//     RetryAbandonControls form Screen 9 uses (JD editor + notes + use-
-//     new-cv toggle + Retry/Abandon).
+//     RetryAbandonControls form Screen 9 uses (JD editor + Retry / Abandon).
 //   - transient: danger-tone banner + soft "we've been notified" hint
 //     + same RetryFailedButton.
 //   - non_recoverable: muted banner with no retry — only "back to
@@ -573,14 +570,12 @@ function ErrorRecoverySection({
   recovery,
   attemptNumber,
   parentJd,
-  parentNotes,
   rawErrorMessage,
 }: {
   applicationId: string;
   recovery: { kind: RecoveryKind; headline: string; hint: string | null };
   attemptNumber: number;
   parentJd: string;
-  parentNotes: string | null;
   rawErrorMessage: string | null;
 }) {
   const palette =
@@ -646,7 +641,6 @@ function ErrorRecoverySection({
                 applicationId={applicationId}
                 attemptNumber={attemptNumber}
                 parentJd={parentJd}
-                parentNotes={parentNotes}
               />
             </div>
           )}
