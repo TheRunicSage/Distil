@@ -1494,6 +1494,33 @@ Test path: same as the entry above — re-submit the AT Customer Service Rep gen
 
 Rollback: single `git revert` — this commit reverts cleanly, restoring the previous "JD is not a source" framing. Reverting the previous commit too restores the pre-source-rule state.
 
+[18] Soft-skill labels are candidate-owned (2026-05-13, same-day second walk-back of the source-of-truth rule). User direction: `"invention is fine. the user can back it up."` The premise of the previous two commits — that JD-derived soft-skill labels not present in the master CV are *fabrication* — was wrong for soft skills as a class. Soft skills are character traits and ways of working that the candidate owns and backs up at interview and on the job. The model is the candidate's advocate (§0.1), not their soft-skill fact-checker. The previous commits' insistence on master-CV evidence for every soft-skill *label* was over-policing.
+
+New framing in both prompts (Claude §4.6.5 / Flash §5.7 + Claude §4.6 intro + §10 items 42/18):
+
+- **Soft-skill labels are candidate-owned.** Mirror the JD's terminology liberally — `"empathy"`, `"conflict resolution"`, `"de-escalation"`, `"interpersonal skills"`, `"emotional intelligence"`, `"resilience"`, `"positive attitude"`, `"adaptability"`, `"cross-cultural engagement"` all permitted in `cv_content.technical_skills`, `cv_content.profile`, and behavioural bullets even when the master CV does not use the same words. ATS keyword alignment is the model's job.
+- **Behavioural bullets: master-CV facts + JD labels.** A behavioural bullet's *action and outcome* must come from a real master-CV bullet (real role, real number, real date); the *soft-skill label* attached to the action can be the JD's term. Example: master CV `"Demonstrated strong communication and relationship-building skills across 100+ events, achieving 96% customer satisfaction"` + JD asks for `"empathy and de-escalation"` → bullet `"Built rapport with diverse customers across 100+ events, empathising with concerns and de-escalating issues to maintain 96% satisfaction"`. Numbers and scope from master CV; labels from JD.
+- **No `fit_assessment.warnings` entry needed for soft-skill labels missing from master CV.** Warnings flag verifiable gaps a recruiter can confirm and the candidate cannot improvise — technical-skill gaps, years-of-experience gaps, certification gaps, formal qualification gaps. Soft-skill labels are not in that class.
+- **What still requires master-CV fidelity (§5.4 / §5.8 unchanged):** every NUMBER, every DATE / DURATION / TENURE, every NAMED EMPLOYER / ROLE TITLE / PROJECT NAME, and every SPECIFIC EVENT or ANECDOTE in the cover letter. The cover letter's fabricated anecdote in the original AT failure (`"a speaker's presentation materials went missing twenty minutes before their session"`) is still a §5.4 violation — the candidate did not tell us this story, can't easily back up a specific event they never lived. Story 1 / Story 2 / Company Connection paragraphs all draw their specific events from real master-CV experience.
+
+The line: soft-skill *labels* are candidate-owned and JD-derived freely. Factual *scaffolding* (numbers, employers, dates, specific events) is master-CV-owned. §5.4 / §5.8 fidelity rules unchanged in shape and scope; the §4.6.5 / §5.7 source rule no longer covers labels.
+
+Edits in this commit:
+* Claude §4.6 intro: rewritten to the candidate-owned framing; explicit `"the model is the candidate's advocate, not their soft-skill fact-checker"`; pointer to §4.6.5 for permitted JD-derived labels.
+* Claude §4.6.5: subsection retitled `"Soft-Skill Claims Are Candidate-Owned (use JD labels liberally)"`. Body rewritten as a four-point permitted list (mirror JD terminology / anchor bullets in master-CV experience / no warnings needed / what's still master-CV-bound). Worked example shows three lines: Skills section OK with JD labels mixed; behavioural bullet OK with master-CV facts + JD labels; cover letter NOT OK with fabricated specific anecdote. Bridging-vs-invention table removed (no longer the right framing); replaced with labels-vs-facts framing.
+* Flash §5.7: same shape, compact Flash style. Same worked example. Replaced the table and the three-priority rule list with the permitted/not-permitted/worked-example structure.
+* §10 self-check items (Claude 42 / Flash 18): rewritten as the labels-vs-scaffolding check. Body scans every soft-skill bullet, profile thread, and cover-letter story for the four factual classes (numbers / dates / employers / specific events) and fails on the *fact* not the *label*. The soft-skill label test is dropped entirely — labels are not a fact-check class.
+
+What was *not* changed: the rubric (§4.6.1 – §4.6.4 / §5.7 buckets), the seniority layer, the behavioural-not-declarative shape rule, the honest-gap-handling routing for non-soft-skill gaps (technical / experience / certification / qualification gaps still go to `fit_assessment.warnings`), §5.4 / §5.8 numeric fidelity, the schema, the LLM provider layer, the renderer. Specifically: the cover-letter Story 1 / Story 2 / Company Connection requirement to anchor specific events in master-CV bullets is unchanged. Soft-skill labels are permitted to flow freely; specific events still need a master-CV source.
+
+Test path: same AT Customer Service Rep generation as the previous two entries. Expected output:
+- Skills section liberally uses JD labels (`"Empathy and de-escalation"`, `"Conflict resolution"`, `"Cross-cultural engagement"`) alongside the candidate's declared soft-skill themes. Both classes welcome.
+- Behavioural bullets in `professional_experience` use JD soft-skill labels but the actions / numbers / outcomes all trace to master-CV bullets verbatim.
+- `fit_assessment.warnings` is no longer required to flag soft-skill terms missing from master CV (the previous commits' flag is dropped). Warnings still surface technical / experience / certification / qualification gaps where applicable.
+- Cover letter Story 1 / Story 2 / Company Connection draw their specific events from real master-CV bullets (e.g. the 100+ AUT Events satisfaction story); no fabricated specific anecdotes like the original `"speaker's presentation materials went missing"`.
+
+Rollback: single `git revert` of this commit reverts cleanly to the previous "two inputs, two different jobs" framing (which itself reverted the earlier "JD is not a source" framing). Two `git revert`s restore the pre-source-rule state. All three commits are bisect-clean.
+
 ---
 
 ## Known Gaps to Watch
