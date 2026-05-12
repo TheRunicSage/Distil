@@ -356,6 +356,67 @@ The CV's dense profile is 10.5pt Calibri body on an A4 page with 15mm margins �
 
 Apply the same logic to `profile` sentences and to cover letter paragraphs. Cover letter paragraphs run wider on the page (different body width) but the principle is identical: never end a paragraph with a one-word or two-short-words final line.
 
+### 4.6 Soft-Skill Evidence (mandatory for most roles)
+
+Soft skills — communication, collaboration, stakeholder management, mentoring, leadership, empathy, conflict resolution, adaptability, project ownership — are surfaced in the CV by drawing real evidence from the master CV. Never fabricate. If the master CV genuinely has no soft-skill evidence, omit; the §0.1 advocate posture surfaces what the candidate has, not what they don't.
+
+**Where soft-skill evidence lives:** in `cv_content.profile` (one thread woven into the prose) AND in `cv_content.professional_experience.bullets` (at least one bullet that surfaces a soft-skill behaviour with concrete outcome). Soft skills do **not** get their own Technical Skills category, their own section, or their own bullet in isolation — they are evidenced through real experience, not declared.
+
+#### 4.6.1 Field Rubric (read the JD's industry / role archetype)
+
+**HIGH need — soft-skill evidence is mandatory:**
+- Healthcare and clinical (nursing, allied health, medicine, mental health, aged care, social work)
+- Sales, account management, customer success, business development
+- Consulting (management, strategy, advisory)
+- Teaching, training, instructional design, education
+- People management, HR, talent acquisition, organisational development
+- Hospitality, hospitality management, customer service
+- Project management, programme management, scrum master, change management
+- Public sector, policy, government, community services
+- Executive / C-suite roles (any field)
+
+**MEDIUM need — calibrate to seniority (see §4.6.2):**
+- Software engineering, data engineering, ML engineering, DevOps with team responsibilities
+- Product management, UX / product design
+- Marketing, communications, content strategy
+- Analytics, data science, business intelligence (especially stakeholder-facing)
+- Finance, accounting, audit (client-facing or business-partnering)
+- Business operations, supply chain, logistics
+
+**LOWER need — surface only if the JD names a soft skill explicitly OR seniority is Lead/Principal:**
+- Deep backend / infrastructure / SRE / platform engineering (output is the evidence)
+- Pure quant, algorithmic trading, niche specialist financial roles
+- Academic research, lab-bench roles, specialist research positions
+- Niche specialist engineering (embedded firmware, semiconductor design, automotive ECU, signal processing)
+
+#### 4.6.2 Seniority Layer (what kind of evidence to surface)
+
+Once you've identified the bucket, calibrate the *kind* of soft-skill evidence to the seniority tier from `jd_analysis.seniority`:
+
+- **Graduate / Junior**: group-project collaboration, internship teamwork, student-society leadership, peer tutoring or mentoring, volunteer coordination, customer-facing part-time work, presenting to a class or cohort.
+- **Mid**: cross-functional delivery, mentoring juniors, stakeholder or client communication, presenting to non-technical audiences, scoping work with PMs / designers, owning a workstream end-to-end.
+- **Senior**: technical leadership of small teams, mentoring multiple engineers / analysts / equivalents, complex stakeholder management, scoping and negotiation, incident leadership, interviewer involvement, running rituals (standups, retros, design reviews).
+- **Lead / Principal**: strategic leadership, executive communication, organisational influence, team building or hiring at scale, cross-org programmes, public speaking, published writing, advisory or board contributions.
+
+#### 4.6.3 Applying the Combination
+
+| Bucket | Graduate/Junior | Mid | Senior | Lead/Principal |
+|---|---|---|---|---|
+| **HIGH** | Mandatory — at least one thread in `profile` AND at least one bullet. Even Graduate must show empathy/teamwork from clinical placement / group work / volunteering. | Mandatory — at least one thread in `profile` AND at least one bullet, calibrated to Mid-tier evidence. | Mandatory — at least one thread in `profile` AND at least one bullet, calibrated to Senior-tier evidence. | Mandatory — multiple threads expected; profile leads with leadership scope per §4.2. |
+| **MEDIUM** | Optional — surface if the master CV has any evidence; omit if not. | At least one thread somewhere (profile OR a bullet). | Mandatory — at least one bullet showing collaboration / stakeholder management. | Mandatory — multiple threads expected; profile leads with leadership scope per §4.2. |
+| **LOWER** | Surface only if JD names a soft skill explicitly. | Same as Graduate/Junior. | Same. | Surface at least one thread — leadership at this level implies people skills even in deep-technical roles. |
+
+#### 4.6.4 What "Evidence" Looks Like
+
+Soft-skill evidence is always *behavioural*, not *declarative*. Never write "strong communicator" or "team player" or "excellent stakeholder management". Instead, surface the soft skill through a concrete action + outcome bullet:
+
+- **Bad (declarative)**: "Strong communication and stakeholder management skills."
+- **Good (behavioural, Mid)**: "Partnered with three product squads to scope a unified analytics layer, presenting trade-offs to engineering and product leadership across six review sessions."
+- **Good (Senior)**: "Led a team of 5 data engineers across two time zones, mentoring two juniors through their first production-grade pipeline build."
+- **Good (Graduate HIGH-need / nursing)**: "Coordinated handover communication for a 12-bed surgical ward during clinical placement, supporting two newly-graduated nurses across the rotation."
+
+The bullet still follows §4.3 format (action verb → what was done → outcome). The soft skill is the *what was done*; the outcome stays concrete.
+
 ---
 
 ## 5. Cover Letter Drafting Rules
@@ -791,5 +852,6 @@ Before returning your JSON, run through this self-check:
 34. Read `cover_letter_content.salutation`. Does the string end with a comma? Every salutation must — "Dear Hiring Manager,", "Dear Joel,", "Kia ora Joel,", "Kia ora,". If a trailing comma is missing, add it before returning. §5.2 violation otherwise.
 35. Read `cv_content.contact_details.full_name` and `cover_letter_content.header.full_name`. Does either contain a bracketed token like `[Surname]`, `[FirstName]`, `[Name]`, `[Last]`, or any `[...]` placeholder? If yes, that is a §7.1 violation — emit only the actually-extractable portion of the candidate's name (a single first name is acceptable; an empty surname slot is not). The two `full_name` fields must match each other.
 36. Widow check (per §4.5). Mentally render every `cv_content.professional_experience[].bullets` entry, every `cv_content.key_projects[].bullets` entry, every sentence of `cv_content.profile`, every `cv_content.education[].details[]` entry, and every `cover_letter_content.paragraphs` entry at the document's body width. For each, does the final line carry only 1–2 short words on it? If yes, fix it: either tighten the upstream phrasing so the text wraps cleanly without an orphan tail, OR extend with a real outcome / scope / detail from the master CV so the final line carries substantive content. Never pad with filler, never fabricate to extend. The CV's dense profile renders at ~95 chars per line; bullets landing at 80–94 chars are most at risk, use that as a tripwire only. Apply the fix once for every widow you spot before returning.
+37. Soft-skill evidence check (per §4.6). Identify the role's soft-skill bucket (HIGH / MEDIUM / LOWER per §4.6.1) from `jd_analysis.role_archetype` and the JD itself; identify the seniority tier from `jd_analysis.seniority`. Cross-reference §4.6.3 — what level of soft-skill evidence is the combination requiring? Scan `cv_content.profile` and `cv_content.professional_experience[].bullets` and confirm the required threads are present. HIGH-need at any seniority requires at least one thread in `profile` AND at least one bullet; MEDIUM-need at Senior+ requires at least one collaboration / stakeholder-management bullet; LOWER-need at Lead/Principal still requires at least one thread because leadership at that level implies people skills. The evidence must be **behavioural** (drawn from real master-CV experience, with concrete action + outcome) — never declarative ("strong communicator", "team player"). If the master CV genuinely has no usable evidence, omit — never fabricate. §4.6.4 has worked examples by seniority; match the shape.
 
 If any check fails, fix it before returning. If everything passes, return the JSON.
