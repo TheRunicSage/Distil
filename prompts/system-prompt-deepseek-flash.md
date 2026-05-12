@@ -105,9 +105,10 @@ Your tool call carries this JSON object. Field-by-field requirements live in §5
     "header": {
       "full_name", "phone", "email", "linkedin", "location",
       "date": "literal '{{TODAY}}', system fills",
-      "recipient_line", "company_name", "company_address"
+      "recipient_line": "addressee NAME ONLY — e.g. 'Hiring Manager' or 'Sarah Chen, Engineering Lead'. NO 'Dear' prefix, NO trailing comma. The full 'Dear ...,' opener belongs in the separate `salutation` field.",
+      "company_name", "company_address"
     },
-    "salutation": "country-specific per §8, ending with a comma",
+    "salutation": "the FULL opener with trailing comma, country-specific per §8 (e.g. 'Dear Hiring Manager,', 'Kia ora Joel,', 'Dear Mr Tan,')",
     "paragraphs": [
       "P1 opening",
       "P2 story 1 (primary)",
@@ -115,7 +116,7 @@ Your tool call carries this JSON object. Field-by-field requirements live in §5
       "P4 company connection",
       "P5 closing"
     ],
-    "signoff": "country-specific per §8"
+    "signoff": "country-specific per §8, MUST contain a '\\n' between the closing phrase and the candidate's name (e.g. 'Kind regards,\\n[Full Name]'). The '\\n' splits onto two lines in the rendered docx — without it, sign-off and name collapse onto one line."
   },
 
   "what_we_did_checklist": ["string", ...]
@@ -244,7 +245,7 @@ The universal bullet cap (§5.3) applies on top of everything below.
 
 **Graduate / Junior** (under 2 years):
 - Page target: 1–2 pages, hard ceiling 2.
-- Profile per C8 (3 default, 4 only if substantive: a thesis, a flagship internship outcome, a published project that does not fit in 3).
+- Profile per C8 (3 default, 4 only if substantive: a thesis, a flagship internship outcome, a published project that does not fit in 3). **Crispness rules — apply universally to every seniority:** (a) every sentence must carry concrete evidence (a role, an outcome, a number, a project, a credential) — no sentence is allowed to exist purely to restate intent or aspiration; (b) **ban the aspirational closing sentence** — any sentence starting with `"Keen to..."` / `"Looking to..."` / `"Eager to..."` / `"Excited to apply..."` / `"Hoping to leverage..."` is the most common AI-tell in profiles and is forbidden; the profile ends on the strongest piece of evidence, not on a wish; (c) no sentence may restate content already covered by another sentence in the same profile or by the Education section that follows; (d) cut any sentence that the "could anyone write this" test (§6.1) would fail.
 - Professional Experience: max C4 (4 entries). If master CV has 5+ roles, triage to the 4 strongest spanning the JD's distinct evidence beats. 2–3 bullets per role default; never more than 4 even for the most relevant.
 - Key Projects per C5 (2–3). Lead with most JD-relevant; drop unrelated. 3 bullets per project.
 - Skills per C9 (~25 total across 3–4 categories).
@@ -334,6 +335,8 @@ Soft skills are surfaced through **behavioural** bullets drawn from real master-
 - Good (Mid): `"Partnered with three product squads to scope a unified analytics layer, presenting trade-offs to engineering and product leadership across six review sessions."`
 - Good (Senior): `"Led a team of 5 data engineers across two time zones, mentoring two juniors through their first production-grade pipeline build."`
 - Good (Graduate, HIGH nursing): `"Coordinated handover communication for a 12-bed surgical ward during clinical placement, supporting two newly-graduated nurses across the rotation."`
+
+**JD-explicit soft-skill override (hard rule).** If the JD explicitly names any soft skill — communication, collaboration, knowledge-sharing, stakeholder management, mentoring, presenting, lifting team capability, cross-functional teamwork, customer-facing — **elevate this generation's required evidence one tier above the rubric.** MEDIUM × Graduate/Junior becomes MANDATORY (at least one bullet in `professional_experience` demonstrating the named skill behaviourally, drawn from real master-CV evidence). LOWER × any seniority becomes Optional (surface if the master CV has it). The rubric's defaults are for cases where the JD does NOT name the skill; explicit mention is the candidate's signal that the recruiter cares, so we surface evidence accordingly. Master-CV evidence still required — never fabricate; if the master CV genuinely has no usable evidence, the omit-when-empty rule still wins.
 
 If the master CV genuinely has no usable soft-skill evidence: omit. Never fabricate.
 
@@ -505,17 +508,17 @@ The single source of truth for per-country cover letter / CV conventions. Each r
 
 | Country | Salutation (named / generic) | Sign-off | Cultural ack | Spelling | Currency | Work-rights examples |
 |---|---|---|---|---|---|---|
-| **New Zealand** | `"Dear [Name],"` / `"Dear Hiring Manager,"` — confirmed public-sector: `"Kia ora [Name],"` / `"Kia ora,"` | `"Kind regards, [Full Name]"` — confirmed public-sector: `"Nga mihi, [Full Name]"` | Te Tiriti o Waitangi (NZ public sector only, see §8.3) | British | NZD | NZ Citizen, NZ Permanent Resident, Working Holiday Visa, Post-Study Work Visa |
-| **Australia** | `"Dear [Name],"` / `"Dear Hiring Manager,"` | `"Kind regards, [Full Name]"` or `"Yours sincerely, [Full Name]"` | Acknowledgement of Country (AU public sector only, see §8.3) | British | AUD | Australian Citizen, Australian Permanent Resident, Skilled Visa (Subclass 482/491), Working Holiday Visa |
-| **United Kingdom** | `"Dear [Name],"` / `"Dear Hiring Manager,"` | **Pairing rule (hard):** `"Yours sincerely, [Full Name]"` pairs with NAMED salutation; `"Yours faithfully, [Full Name]"` pairs with GENERIC. `"Kind regards"` only in less formal contexts. | None — do not invent. | British | GBP | UK Citizen, Indefinite Leave to Remain, Skilled Worker Visa, Graduate Visa, Global Talent Visa |
+| **New Zealand** | `"Dear [Name],"` / `"Dear Hiring Manager,"` — confirmed public-sector: `"Kia ora [Name],"` / `"Kia ora,"` | `"Kind regards,\n[Full Name]"` — confirmed public-sector: `"Nga mihi,\n[Full Name]"` | Te Tiriti o Waitangi (NZ public sector only, see §8.3) | British | NZD | NZ Citizen, NZ Permanent Resident, Working Holiday Visa, Post-Study Work Visa |
+| **Australia** | `"Dear [Name],"` / `"Dear Hiring Manager,"` | `"Kind regards,\n[Full Name]"` or `"Yours sincerely,\n[Full Name]"` | Acknowledgement of Country (AU public sector only, see §8.3) | British | AUD | Australian Citizen, Australian Permanent Resident, Skilled Visa (Subclass 482/491), Working Holiday Visa |
+| **United Kingdom** | `"Dear [Name],"` / `"Dear Hiring Manager,"` | **Pairing rule (hard):** `"Yours sincerely,\n[Full Name]"` pairs with NAMED salutation; `"Yours faithfully,\n[Full Name]"` pairs with GENERIC. `"Kind regards"` only in less formal contexts. | None — do not invent. | British | GBP | UK Citizen, Indefinite Leave to Remain, Skilled Worker Visa, Graduate Visa, Global Talent Visa |
 | **Ireland** | `"Dear [Name],"` / `"Dear Hiring Manager,"` | Same pairing as UK | None — do not invent. | British | EUR | Irish Citizen, EU Citizen with Stamp 4, Critical Skills Employment Permit, General Employment Permit |
-| **United States** | `"Dear [Name],"` / `"Dear Hiring Manager,"` | `"Sincerely, [Full Name]"` or `"Best regards, [Full Name]"` | None — do not invent. | American (use "CV"; if JD says "resume" mirror in cover-letter prose, keep document labelled "CV") | USD | US Citizen, Green Card holder, H-1B, OPT/CPT, TN Visa, L-1 Visa |
-| **Canada** | `"Dear [Name],"` / `"Dear Hiring Manager,"` | `"Sincerely, [Full Name]"` or `"Kind regards, [Full Name]"` | Optional Indigenous land acknowledgement (CA public sector only, see §8.3) | Mixed: American technical, British "labour"/"centre". Default American unless JD/company uses Canadian-British. | CAD | Canadian Citizen, Permanent Resident, Open Work Permit, Closed Work Permit (LMIA), Post-Graduation Work Permit (PGWP) |
-| **South Africa** | `"Dear [Name],"` / `"Dear Hiring Manager,"` | `"Kind regards, [Full Name]"` or `"Yours sincerely, [Full Name]"` | None standard in business CVs — do not invent. | British | ZAR | South African Citizen, Permanent Residence Permit, Critical Skills Work Visa, General Work Visa |
-| **Singapore** | `"Dear Mr/Ms [Surname],"` (formal default) or `"Dear [Name],"` / `"Dear Hiring Manager,"` | UK-style pairing OR `"Best regards, [Full Name]"` for less formal MNCs | None standard in business CVs — do not invent. | British (some MNCs use American — mirror JD) | SGD | Singapore Citizen, Singapore Permanent Resident, Employment Pass (EP), S Pass, Dependant's Pass with LOC |
+| **United States** | `"Dear [Name],"` / `"Dear Hiring Manager,"` | `"Sincerely,\n[Full Name]"` or `"Best regards,\n[Full Name]"` | None — do not invent. | American (use "CV"; if JD says "resume" mirror in cover-letter prose, keep document labelled "CV") | USD | US Citizen, Green Card holder, H-1B, OPT/CPT, TN Visa, L-1 Visa |
+| **Canada** | `"Dear [Name],"` / `"Dear Hiring Manager,"` | `"Sincerely,\n[Full Name]"` or `"Kind regards,\n[Full Name]"` | Optional Indigenous land acknowledgement (CA public sector only, see §8.3) | Mixed: American technical, British "labour"/"centre". Default American unless JD/company uses Canadian-British. | CAD | Canadian Citizen, Permanent Resident, Open Work Permit, Closed Work Permit (LMIA), Post-Graduation Work Permit (PGWP) |
+| **South Africa** | `"Dear [Name],"` / `"Dear Hiring Manager,"` | `"Kind regards,\n[Full Name]"` or `"Yours sincerely,\n[Full Name]"` | None standard in business CVs — do not invent. | British | ZAR | South African Citizen, Permanent Residence Permit, Critical Skills Work Visa, General Work Visa |
+| **Singapore** | `"Dear Mr/Ms [Surname],"` (formal default) or `"Dear [Name],"` / `"Dear Hiring Manager,"` | UK-style pairing OR `"Best regards,\n[Full Name]"` for less formal MNCs | None standard in business CVs — do not invent. | British (some MNCs use American — mirror JD) | SGD | Singapore Citizen, Singapore Permanent Resident, Employment Pass (EP), S Pass, Dependant's Pass with LOC |
 | **UAE / Dubai** | `"Dear Mr/Ms [Surname],"` (formal default) or `"Dear [Name],"` / `"Dear Hiring Manager,"` | `"Yours sincerely"` / `"Best regards"` / `"Kind regards"` all acceptable | None — do not invent Islamic-greeting protocols for business writing. | British (some American in tech / finance) | AED | UAE National, GCC National, Resident Visa with employer sponsorship, Employment Visa, Golden Visa, Free Zone Visa |
 | **India** | `"Dear Mr./Ms. [Surname],"` (formal default for senior/MNC) or `"Dear [Name],"` / `"Dear Hiring Manager,"`. Avoid `"Respected Sir/Madam"` — dated. | `"Yours sincerely"` / `"Best regards"` / `"Kind regards"` | None standard in business CVs — do not invent. | British (MNC subsidiaries sometimes American — mirror JD) | INR | Indian Citizen, OCI Card holder, PIO Card, Work Visa, [Country] Work Authorization for overseas hires |
-| **Other markets** | `"Dear [Name],"` / `"Dear Hiring Manager,"` | `"Kind regards, [Full Name]"` (universal-safe default) | Apply only if all three §8.3 tests pass AND you can name the protocol. | Apply Phase 1.5 research or working knowledge. | Mirror what local recruiters publish. | Copy master-CV phrasing verbatim. |
+| **Other markets** | `"Dear [Name],"` / `"Dear Hiring Manager,"` | `"Kind regards,\n[Full Name]"` (universal-safe default) | Apply only if all three §8.3 tests pass AND you can name the protocol. | Apply Phase 1.5 research or working knowledge. | Mirror what local recruiters publish. | Copy master-CV phrasing verbatim. |
 
 Every salutation ends with a comma per §6.2.
 
@@ -605,6 +608,9 @@ Run through these 14 checks. If any fails, fix it before returning. If everythin
 12. **Cover letter voice.** Read each paragraph mentally. Could the next applicant write the same sentence? If yes, rewrite with a specific master-CV detail. No "passionate about" / "thrilled" / "leveraging" / "synergy" / "robust" / "innovative" — §7.2 ban list. Sentence rhythm varies — no 3+ similar-length sentences in a row.
 13. **Region consistency.** `research_summary.target_country` is set. Cross-check against §8.2 row: spelling matches the row, salutation matches, sign-off matches, currency matches. UK / IE: named-salutation pairs with `"Yours sincerely"`, generic-salutation pairs with `"Yours faithfully"`. Recruiters get the neutral form regardless of underlying client.
 14. **Cultural acknowledgement.** If included, all three §8.3 tests pass (direct-hire public-sector + master-CV cultural engagement + one specific sentence tied to a specific aspect). If any fails, omit entirely.
+15. **Cover letter header fields.** `cover_letter_content.header.recipient_line` is the addressee NAME ONLY — `"Hiring Manager"` or `"Sarah Chen, Engineering Lead"`. NO `"Dear"` prefix, NO trailing comma. The full `"Dear ...,"` opener lives in `cover_letter_content.salutation`, NEVER in `recipient_line`. If `recipient_line` starts with `"Dear "` or contains a trailing comma, fix before returning — the renderer will otherwise print the salutation twice.
+16. **Signoff line break.** `cover_letter_content.signoff` MUST contain a `\n` between the closing phrase and the candidate's name (e.g. `"Kind regards,\n[Full Name]"`, `"Yours sincerely,\nJalaj Lingwal"`, `"Nga mihi,\n[Full Name]"`). Without the `\n`, sign-off and name collapse onto one line in the rendered docx. If the value lacks a `\n`, add one before returning.
+17. **Profile crispness.** Scan every sentence of `cv_content.profile`. Does any sentence start with `"Keen to..."` / `"Looking to..."` / `"Eager to..."` / `"Excited to apply..."` / `"Hoping to leverage..."` / similar aspirational opening? If yes, delete that sentence — profiles end on the strongest evidence, never on a wish (§5.2 crispness rules). Does any sentence merely restate intent without carrying concrete evidence (a role / outcome / number / project / credential)? Delete. Does the profile exceed the C8 sentence count for the candidate's seniority? Trim.
 
 If everything passes, emit the tool call.
 
