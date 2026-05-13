@@ -755,24 +755,30 @@ Every role in `cv_content.professional_experience` must correspond to a distinct
 
 ## 6. The "What We Did" Checklist
 
-Generate a checklist of 5 to 7 items reflecting what is actually visible in the final CV and cover letter. The frontend renders each item next to a green check icon — they read like accomplishments at a glance, scannable in two seconds.
+Generate a checklist of 5 to 7 items reflecting what is actually visible in the final CV and cover letter. The frontend renders each item next to a numbered orange chip inside a hover popover labelled **"Distilled"** — they read like a master craftsman's annotations, not a report. Scannable in two seconds.
 
 **Length and shape (hard rules — items that don't fit get cut):**
-- **Each item: max 10 words.** A single short sentence. No "and" joining two ideas. No nested ", which..." / " — ..." / " : ..." constructions. No enumerations after a colon. No parentheticals.
+- **Target 4 to 6 words. Hard cap 8 words.** A single short sentence fragment, NOT a full sentence. No "and" joining two ideas. No nested ", which..." / " — ..." / " : ..." constructions. No enumerations after a colon. No parentheticals. If your draft is 9+ words, trim — not by softening, but by deleting every word that doesn't change the meaning.
 - **Lead with a strong past-tense verb**: "Calibrated", "Led", "Highlighted", "Reordered", "Bridged", "Mirrored", "Selected", "Dropped", "Tightened", "Centred". Not "We", not "The CV was".
-- **One concrete noun.** Reference the role archetype, a project name, a section, or a count — exactly one. "Mirrored 10 ATS keywords across the CV" beats anything that lists them.
+- **One concrete noun.** Reference the role archetype, a project name, a section, or a count — exactly one. "Mirrored 10 ATS keywords" beats "Mirrored 10 ATS keywords across the entire CV".
 - **Confidence-building.** Focus on what was done. Never include items about things you tried but couldn't find. No hedge words ("attempted", "tried to").
-- **No parenthetical specifics.** "Calibrated CV for Mid-level seniority" beats "Calibrated CV for Mid-level seniority (3-sentence profile, 4 bullets per role)".
+- **No parenthetical specifics.** "Calibrated for Mid-level" beats "Calibrated CV for Mid-level seniority (3-sentence profile, 4 bullets per role)".
 
-Example items — each ≤10 words. Match the shape, generate fresh ones each time:
-- "Calibrated CV for Mid-level seniority"
-- "Led the profile with Power BI and SQL experience"
-- "Highlighted the Plant Sales Dashboard project"
-- "Reordered Skills for the data must-haves"
-- "Bridged the SQL stored procedures gap honestly"
-- "Mirrored 10 ATS keywords across the CV"
-- "Centred the cover letter on the Curiosum CI/CD story"
-- "Dropped 4 unrelated projects to fit two pages"
+**Trim worked examples (the over-draft → the right shape):**
+- ✗ "Reordered the Skills section so the role's must-haves come first" (10) → ✓ "Reordered Skills for must-haves" (4)
+- ✗ "Led the profile with Power BI and SQL experience from past roles" (12) → ✓ "Led the profile with Power BI" (6)
+- ✗ "Mirrored 10 ATS keywords across the CV and cover letter" (10) → ✓ "Mirrored 10 ATS keywords" (4)
+- ✗ "Highlighted the Plant Sales Dashboard project from the master CV" (10) → ✓ "Highlighted the Plant Sales Dashboard" (5)
+
+Generate fresh items each time — don't recycle these. Match the shape:
+- "Calibrated for Mid-level seniority" (4)
+- "Led the profile with Power BI" (6)
+- "Highlighted the Plant Sales Dashboard" (5)
+- "Reordered Skills for must-haves" (4)
+- "Bridged the SQL gap honestly" (5)
+- "Mirrored 10 ATS keywords" (4)
+- "Centred on the Curiosum CI/CD story" (6)
+- "Dropped 4 unrelated projects" (4)
 
 ---
 

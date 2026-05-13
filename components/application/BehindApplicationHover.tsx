@@ -128,7 +128,7 @@ export function BehindApplicationHover({ children, tailoringMoves }: Props) {
       >
         {pinned
           ? "Pinned — click title or press Esc to close"
-          : "Hover for what we did · click to pin"}
+          : "Hover for the tailoring notes · click to pin"}
       </p>
 
       {/* Panel — anchored below the title, no gap so cursor can move
@@ -151,30 +151,22 @@ export function BehindApplicationHover({ children, tailoringMoves }: Props) {
           className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-orange/[0.08] blur-3xl"
         />
 
-        <div className="relative flex items-baseline justify-between gap-3">
-          <p className="eyebrow flex items-center gap-1.5">
-            <SparklesIcon size={12} aria-hidden className="text-orange" />
-            What we did
-          </p>
-          <span className="text-xs text-muted-foreground">
-            {tailoringMoves.length}{" "}
-            {tailoringMoves.length === 1 ? "move" : "moves"}
-          </span>
-        </div>
-
-        <p className="relative mt-2 font-serif text-sm italic text-muted-foreground">
-          How we tailored your application to this role.
+        {/* Single eyebrow, no tagline, no counter — the brand pun is
+            the headline and the list does the rest. */}
+        <p className="relative eyebrow flex items-center gap-1.5">
+          <SparklesIcon size={12} aria-hidden className="text-orange" />
+          Distilled
         </p>
 
-        <ul className="relative mt-5 grid grid-cols-1 items-start gap-x-6 gap-y-3 sm:grid-cols-2">
+        <ul className="relative mt-4 grid grid-cols-1 items-start gap-x-5 gap-y-2.5 sm:grid-cols-2">
           {tailoringMoves.map((item, i) => (
             <li
               key={i}
-              className="group/move flex items-start gap-3 text-sm leading-relaxed text-text/90 transition-colors hover:text-text"
+              className="group/move flex items-start gap-2.5 text-[13px] leading-snug text-text/90 transition-colors hover:text-text"
             >
               <span
                 aria-hidden
-                className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange/40 to-orange/15 text-xs font-bold text-orange shadow-sm ring-1 ring-orange/30 transition-all duration-200 group-hover/move:scale-110 group-hover/move:from-orange/55 group-hover/move:to-orange/25 group-hover/move:shadow-[0_0_18px_rgba(232,90,46,0.45)]"
+                className="mt-px inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-orange/40 to-orange/15 text-[11px] font-bold text-orange shadow-sm ring-1 ring-orange/30 transition-all duration-200 group-hover/move:scale-110 group-hover/move:from-orange/55 group-hover/move:to-orange/25 group-hover/move:shadow-[0_0_14px_rgba(232,90,46,0.4)]"
               >
                 {i + 1}
               </span>

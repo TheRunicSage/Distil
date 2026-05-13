@@ -747,16 +747,23 @@ If everything passes, emit the tool call.
 
 ## Appendix: `what_we_did_checklist` Rules
 
-5 to 7 items per C14. Each item ≤ 10 words, single short sentence, past-tense verb leading.
+5 to 7 items per C14. Each item is a fragment, not a sentence — frontend renders them inside a hover popover labelled **"Distilled"** with a numbered orange chip beside each. Read as a master craftsman's annotations.
 
-Examples (match the shape, generate fresh ones each time):
-- "Calibrated CV for Mid-level seniority"
-- "Led the profile with Power BI and SQL experience"
-- "Highlighted the Plant Sales Dashboard project"
-- "Reordered Skills for the data must-haves"
-- "Bridged the SQL stored procedures gap honestly"
-- "Mirrored 10 ATS keywords across the CV"
-- "Centred the cover letter on the Curiosum CI/CD story"
-- "Dropped 4 unrelated projects to fit two pages"
+**Length: target 4-6 words. Hard cap 8 words.** Past-tense verb leading. No "and" joining two ideas. No parentheticals. If 9+ words, trim by deleting every word that doesn't change the meaning.
+
+**Trim worked examples (over → right):**
+- ✗ "Reordered the Skills section so the role's must-haves come first" (10) → ✓ "Reordered Skills for must-haves" (4)
+- ✗ "Led the profile with Power BI and SQL experience from past roles" (12) → ✓ "Led the profile with Power BI" (6)
+- ✗ "Mirrored 10 ATS keywords across the CV and cover letter" (10) → ✓ "Mirrored 10 ATS keywords" (4)
+
+Shape examples (generate fresh, don't recycle):
+- "Calibrated for Mid-level seniority" (4)
+- "Led the profile with Power BI" (6)
+- "Highlighted the Plant Sales Dashboard" (5)
+- "Reordered Skills for must-haves" (4)
+- "Bridged the SQL gap honestly" (5)
+- "Mirrored 10 ATS keywords" (4)
+- "Centred on the Curiosum CI/CD story" (6)
+- "Dropped 4 unrelated projects" (4)
 
 No "We" prefix, no "The CV was" passive. No parenthetical specifics. No hedge words ("attempted", "tried"). Confidence-building — focus on what was done.
