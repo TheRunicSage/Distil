@@ -1662,6 +1662,26 @@ Test path: re-submit any generation. Expected: identical output quality vs the p
 
 Rollback: single `git revert`. The pre-trim 45-item §10 is recoverable; reverting restores the redundant enforcement of items now covered by schema/sanitiser.
 
+[18] Flash parity pass — three exemplar / depth backports from Claude (2026-05-13). User asked whether the two prompts are now at the same level after the 4-commit end-goal audit work. Honest answer was: much closer but not identical, with three remaining gaps (audit R7 + two new findings that emerged from today's commits). User picked Option A — ship the parity now.
+
+Three Flash additions in one commit:
+
+* **§1 cross-domain advocate exemplar (R7 from the audit).** Backported the `"doctor → construction"` worked example from Claude §0.2 point 6. The example illustrates the `"transferable spine"` framing: every career has one, the model's job is to find it and build the application around it. Flash had the rule (`"never editorialise about career pivots"`) but no exemplar; without the worked example, Flash on a far-stretch JD lacked the same concrete framing model Claude has. ~150 words added to Flash §1.
+* **§6.3 second cover-letter worked example.** Flash had one BAD/GOOD pair (Story 1 — Mid Data Engineer Power BI migration). Claude §5.3.1 (from Commit 1 today) added a BAD/GOOD Opening example (Airflow migration). Brought both examples to Flash: §6.3 now has Example 1 (Opening, BAD/GOOD pair, Airflow migration) and Example 2 (Story 1, BAD/GOOD pair, Power BI migration). Two paragraph types covered with worked exemplars in both prompts. ~30 lines added.
+* **§8.4 inferred-client gate expansion.** Flash had the 4 tests but compressed: no named recruiter agencies, no worked examples in the tests, no pass/fail/explicit-naming handling breakdown. Expanded to match Claude §8.3: named recruiter list per country (Absolute IT, Hays, Robert Walters, Frog, etc. for NZ; Seek, Hudson, Robert Half for AU; Reed for UK; etc.); worked examples in tests 1 and 3 (NDIA charter, KiwiRail mandate, NDIS scheme name, ACC); three explicit handling sections (when inference passes / fails / when JD names explicitly); the reasoning about miss-case being unrecoverable. ~30 lines added.
+
+Net effect: Claude and Flash now genuinely at parity on the principles user named — best-foot-forward (P1), refined selection (P2), JD-relevant skills/certs (P3), honest intent without fabrication (P4), universal applicability (P5). Voice rules, worked exemplars, soft-skill source-of-truth, cert-gap honesty branch, within-role bullet selection, tech-skill JD framing, closing template bans, advocate-posture cross-domain example, inferred-client 4-test depth all match.
+
+Remaining differences (verbosity only, not capability):
+- Claude §4.6 spans 7 subsections (~400 lines) vs Flash §5.7 single section (~100 lines) — same content, different density. R6 from the audit was the Claude-bloat consolidation that's still pending; not a parity issue.
+- Claude is overall ~1100 lines vs Flash ~720 lines — Claude is more verbose at every section. Not capability difference.
+
+What was *not* changed: any of Claude (no edits — this commit only modifies Flash). Schema. Renderer. LLM provider layer.
+
+Test path: re-submit any cross-domain stretch JD (doctor → construction, banker → teacher, engineer → product) on `LLM_PROVIDER=deepseek`. Expected: Flash produces the same "transferable spine" framing Claude does, anchored on master-CV evidence with no editorialising about the pivot. Re-submit any inferred-public-sector-client JD on Flash; expected: gate self-applies, generic language defaults if the 4 tests don't all pass.
+
+Rollback: single `git revert`. All three Flash additions are additive; reverting restores the prior compressed forms.
+
 ---
 
 ## Known Gaps to Watch
