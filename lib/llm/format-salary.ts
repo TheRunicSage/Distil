@@ -65,19 +65,28 @@ export type SalaryFormatResult = {
   // "110,000" if no currency was detectable. Falls back to the raw
   // range when parsing yields fewer than two numbers.
   display: string;
+  // Reconstructed clean range — "NZD 90,000 to 120,000". Built from
+  // the parsed min/max + detected currency, so it's free of any
+  // source-citation prose the model may have embedded into the
+  // original range string (a real failure mode — DeepSeek
+  // 2026-05-13 emitted "AUD 125,000 to 145,000 (market band for IT
+  // Manager, Australia per SEEK 2026)" verbatim). Same fallback as
+  // `display`: equals the raw range when parsing failed.
+  cleanRange: string;
   // True when parsing succeeded and `display` carries the midpoint.
-  // False when we couldn't extract two numbers — `display` is then
-  // the original range string.
+  // False when we couldn't extract two numbers — `display` and
+  // `cleanRange` are then both the original range string.
   isAverage: boolean;
 };
 
 export function formatSalaryAverage(rangeRaw: string): SalaryFormatResult {
   if (!rangeRaw || typeof rangeRaw !== "string") {
-    return { display: rangeRaw ?? "", isAverage: false };
+    const fallback = rangeRaw ?? "";
+    return { display: fallback, cleanRange: fallback, isAverage: false };
   }
 
   const range = rangeRaw.trim();
-  if (range === "") return { display: "", isAverage: false };
+  if (range === "") return { display: "", cleanRange: "", isAverage: false };
 
   const numbers: number[] = [];
   const iter = range.matchAll(NUMBER_PATTERN);
@@ -101,7 +110,7 @@ export function formatSalaryAverage(rangeRaw: string): SalaryFormatResult {
   }
 
   if (numbers.length < 2) {
-    return { display: range, isAverage: false };
+    return { display: range, cleanRange: range, isAverage: false };
   }
 
   const [a, b] = numbers;
@@ -123,15 +132,21 @@ export function formatSalaryAverage(rangeRaw: string): SalaryFormatResult {
       : Math.round(avg / 100) * 100;
 
   const formatted = rounded.toLocaleString("en-NZ");
+  const minFormatted = min.toLocaleString("en-NZ");
+  const maxFormatted = max.toLocaleString("en-NZ");
 
   let display: string;
+  let cleanRange: string;
   if (!currencyToken) {
     display = formatted;
+    cleanRange = `${minFormatted} to ${maxFormatted}`;
   } else if (CURRENCY_CODES.includes(currencyToken as never)) {
     display = `${currencyToken} ${formatted}`;
+    cleanRange = `${currencyToken} ${minFormatted} to ${maxFormatted}`;
   } else {
     display = `${currencyToken}${formatted}`;
+    cleanRange = `${currencyToken}${minFormatted} to ${currencyToken}${maxFormatted}`;
   }
 
-  return { display, isAverage: true };
+  return { display, cleanRange, isAverage: true };
 }

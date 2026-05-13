@@ -279,12 +279,16 @@ export default async function ApplicationPage({ params }: RouteCtx) {
           )}
           {headerSalary && (() => {
             // Pill shows the midpoint of the model-emitted band so a
-            // long verbose range (e.g. "NZD 90,000 to 120,000 per
-            // annum including super") doesn't blow out the meta row.
-            // Hover surfaces the original range verbatim plus the
-            // source citation. If parsing fails (no two numbers
-            // recoverable) we fall back to showing the raw range on
-            // the pill — at least the user still gets the band.
+            // long verbose range (DeepSeek 2026-05-13 emitted
+            // "AUD 125,000 to 145,000 (market band for IT Manager,
+            // Australia per SEEK 2026); market band AUD 130,000 to
+            // 160,000 for Digital/IT Manager Gold Coast QLD
+            // (Glassdoor/Indeed 2026)") doesn't blow out the meta
+            // row. Hover surfaces the parser's reconstructed clean
+            // range — free of any source prose the model embedded
+            // into the original range field — plus the source_name
+            // citation once. If parsing fails (no two numbers
+            // recoverable) cleanRange falls back to the raw range.
             const parsed = formatSalaryAverage(headerSalary.range);
             const source = headerSalary.source_name?.trim();
             return (
@@ -304,29 +308,21 @@ export default async function ApplicationPage({ params }: RouteCtx) {
                   </span>
                 }
               >
-                {parsed.isAverage && (
-                  <span className="block">
-                    Midpoint of{" "}
-                    <strong className="font-semibold text-text">
-                      {headerSalary.range}
-                    </strong>
-                    .
-                  </span>
-                )}
+                <span className="block font-semibold text-text">
+                  {parsed.cleanRange}
+                </span>
                 {source && (
-                  <span className="mt-2 block">
+                  <span className="mt-1.5 block text-muted-foreground">
                     Cited from{" "}
-                    <strong className="font-semibold text-text">
+                    <strong className="font-medium text-text/90">
                       {source}
                     </strong>
                     .
                   </span>
                 )}
                 <span className="mt-2 block text-muted-foreground">
-                  Estimated band for this role and seniority, pulled
-                  from public listings via live web search at
-                  generation time. Treat it as a sense-check, not a
-                  binding number.
+                  Pulled from public listings via live web search at
+                  generation time. Sense-check, not a binding number.
                 </span>
               </HoverHint>
             );
