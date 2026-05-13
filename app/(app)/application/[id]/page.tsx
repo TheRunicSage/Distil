@@ -225,15 +225,37 @@ export default async function ApplicationPage({ params }: RouteCtx) {
                 </span>
               }
             >
-              {/* Bulleted scale per user request — much easier to read
-                  than the previous wall-of-text version. Three rungs,
-                  each one line, with the score name in brand orange
-                  so the eye lands on the rung the user's chip matches. */}
-              <span className="block">
-                How well the role&apos;s must-haves align with your
-                evidenced experience.
-              </span>
-              <ul className="mt-2 space-y-1.5">
+              {/* Specific reasoning lands first — it's the model's
+                  verdict on THIS candidate, not generic legend.
+                  Serif italic + brand-orange left rule gives it
+                  visual primacy without being noisy. */}
+              {headerFit.reasoning && (
+                <span className="block border-l-2 border-orange/50 pl-3 font-serif text-[13px] italic leading-relaxed text-text/90">
+                  {headerFit.reasoning}
+                </span>
+              )}
+              {/* Honest-flag warnings — small warn-tone bullets so
+                  they read as "heads up", not "alarm". Hidden when
+                  empty so the hover stays compact for clean fits. */}
+              {headerFit.warnings.length > 0 && (
+                <ul className="mt-3 space-y-1">
+                  {headerFit.warnings.map((w, i) => (
+                    <li
+                      key={i}
+                      className="flex items-start gap-2 text-warn"
+                    >
+                      <span
+                        aria-hidden
+                        className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-warn"
+                      />
+                      <span>{w}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {/* Reference: what each rung means. Subordinate to
+                  the specific content above. */}
+              <ul className="mt-3 space-y-1 text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span
                     aria-hidden
@@ -243,7 +265,7 @@ export default async function ApplicationPage({ params }: RouteCtx) {
                     <strong className="font-semibold text-success">
                       Strong
                     </strong>{" "}
-                    — close match across the board.
+                    — close match.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
@@ -255,7 +277,7 @@ export default async function ApplicationPage({ params }: RouteCtx) {
                     <strong className="font-semibold text-warn">
                       Moderate
                     </strong>{" "}
-                    — most align, with one or two real gaps.
+                    — one or two real gaps.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
@@ -267,13 +289,13 @@ export default async function ApplicationPage({ params }: RouteCtx) {
                     <strong className="font-semibold text-danger">
                       Weak
                     </strong>{" "}
-                    — a stretch (often a domain or seniority pivot).
+                    — a stretch.
                   </span>
                 </li>
               </ul>
               <span className="mt-2 block text-muted-foreground">
-                Descriptive only — Distil still tailors the full
-                application either way.
+                Sense-check only. Distil tailors the full application
+                either way.
               </span>
             </HoverHint>
           )}
@@ -432,7 +454,10 @@ function SuccessView({
   if (json.status !== "success") return null;
   const success = json as ApplicationOutputSuccess;
 
-  const fit = success.fit_assessment;
+  // fit_assessment is rendered in the Fit pill hover at the page
+  // header level (via headerFit, hoisted before SuccessView). The
+  // BehindApplicationHover panel below is now single-purpose
+  // ("What we did" only) so we don't need fit_assessment here.
   const firstName =
     success.cv_content.contact_details.full_name.trim().split(/\s+/)[0] ?? "";
 
@@ -484,8 +509,6 @@ function SuccessView({
       <FadeUp mode="mount" as="section" className="text-center">
         {applicationTitle && (
           <BehindApplicationHover
-            fitReasoning={fit.reasoning}
-            warnings={fit.warnings}
             tailoringMoves={success.what_we_did_checklist}
           >
             <h2

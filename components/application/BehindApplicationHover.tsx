@@ -1,22 +1,22 @@
 "use client";
 
-// Title pill + on-hover/on-click reveal of "Behind this application" —
-// the consolidated panel that holds fit reasoning, warnings, and the
-// numbered "what we did" tailoring moves. Replaces the previous
-// standalone surface-card on the success view per user request
-// (2026-05-13): the title becomes the affordance; the panel appears
-// beneath on hover (mouse) or click (touch / keyboard).
+// Title pill + on-hover/on-click reveal of "What we did" — the
+// tailoring-moves checklist that tells the user how the model
+// personalised their application. 2026-05-13 v2: pared back from
+// the earlier multi-section panel (fit reasoning + warnings +
+// moves) to just the moves. Fit data has its own dedicated home
+// in the Fit pill hover; this panel is now single-purpose so the
+// reader's eye lands on one thing.
 //
 // Why a client component and not a CSS-only HoverHint:
-//   - Panel content is too tall for the 288px HoverHint pattern
-//     (fit reasoning quote + warnings chips + 5-7 numbered moves).
+//   - Panel content can be tall (5-7 numbered moves).
 //   - With CSS-only hover on a `.group` whose bounding box is the
 //     trigger, cursor leaving the trigger to read the popover kills
 //     :hover. We want the panel to stay open while cursor is over
 //     either the title OR the panel — that requires a wrapping
 //     onMouseLeave handler.
-//   - Click-to-pin gives touch users + keyboard users a stable way
-//     in, without forcing hover semantics they can't trigger.
+//   - Click-to-pin gives touch + keyboard users a stable way in
+//     without forcing hover semantics they can't trigger.
 //
 // Behaviour:
 //   - mouseEnter on wrapper → open
@@ -24,6 +24,17 @@
 //   - click title → toggle pinned
 //   - Escape → close + unpin
 //   - focus-within → open (keyboard a11y)
+//
+// Style notes (2026-05-13 design-first pass):
+//   - Eyebrow + sparkles in brand orange — small, restrained.
+//   - One-line serif-italic tagline below the eyebrow gives the
+//     panel a human-readable purpose without dominating space.
+//   - Numbered chips are the visual hero: gradient orange fill,
+//     brand-ring at rest, slight scale + brighter glow on item
+//     hover. Larger than the previous version (size-7 vs size-5)
+//     to balance the now-shorter panel.
+//   - 2-col grid on sm+, 1-col on mobile. items-start keeps wrapped
+//     lines lined up against their number.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { SparklesIcon } from "lucide-react";
@@ -33,22 +44,12 @@ type Props = {
   // component owns the styling decisions (brand orange on company
   // name, muted " @ " separator).
   children: ReactNode;
-  // Fit assessment reasoning — serif italic quote with brand left
-  // rule, the verdict-style hero of the panel.
-  fitReasoning: string;
-  // Optional honesty-flag chips. Zero-length array hides the row.
-  warnings: string[];
   // Numbered "tailoring moves" — what_we_did_checklist from the
   // success JSON. Rendered as a 2-col grid on sm+ viewports.
   tailoringMoves: string[];
 };
 
-export function BehindApplicationHover({
-  children,
-  fitReasoning,
-  warnings,
-  tailoringMoves,
-}: Props) {
+export function BehindApplicationHover({ children, tailoringMoves }: Props) {
   const [hovering, setHovering] = useState(false);
   const [pinned, setPinned] = useState(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -90,8 +91,7 @@ export function BehindApplicationHover({
       onMouseLeave={() => setHovering(false)}
       onFocus={() => setHovering(true)}
       onBlur={(e) => {
-        // Only close on focus leaving the wrapper entirely. relatedTarget
-        // is the element receiving focus; if it's still inside, keep open.
+        // Only close on focus leaving the wrapper entirely.
         if (
           !e.relatedTarget ||
           !wrapperRef.current?.contains(e.relatedTarget as Node)
@@ -114,13 +114,8 @@ export function BehindApplicationHover({
         {children}
       </button>
 
-      {/* Persistent affordance caption — replaces the previous popover
-          footer hint which dropped off-viewport on long panels. Lives
-          directly under the title pill so it's always visible
-          regardless of whether the popover renders, and shifts copy
-          when pinned so the user knows how to dismiss. Small / muted
-          so it reads as helper text without competing with the title.
-          aria-live="polite" announces the state flip to screen readers. */}
+      {/* Persistent affordance caption — always visible regardless
+          of popover state. */}
       <p
         aria-live="polite"
         className={`mt-2 text-center text-[11px] tracking-wide transition-colors duration-200 ${
@@ -133,26 +128,33 @@ export function BehindApplicationHover({
       >
         {pinned
           ? "Pinned — click title or press Esc to close"
-          : "Hover for tailoring moves · click to pin"}
+          : "Hover for what we did · click to pin"}
       </p>
 
       {/* Panel — anchored below the title, no gap so cursor can move
-          into it without crossing dead space. Width clamped at min of
-          640px and the viewport (minus a 2rem safety gutter) so it
-          stays readable on narrow screens. */}
+          into it without crossing dead space. Width clamped at min
+          of 640px and the viewport (minus a 2rem safety gutter). The
+          corner-tucked brand-orange ambient glow ties the panel to
+          the rest of the success view's brand language without
+          competing with the numbered chips for attention. */}
       <div
         role="dialog"
-        aria-label="Behind this application"
-        className={`absolute left-1/2 top-full z-50 mt-2 w-[min(640px,calc(100vw-2rem))] -translate-x-1/2 rounded-2xl border border-orange/25 bg-dark4/95 p-6 text-left shadow-[0_20px_48px_rgba(0,0,0,0.5),0_0_36px_rgba(232,90,46,0.10)] backdrop-blur-2xl transition-[opacity,transform] duration-200 ease-out ${
+        aria-label="What we did"
+        className={`absolute left-1/2 top-full z-50 mt-2 w-[min(640px,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-2xl border border-orange/25 bg-dark4/95 p-6 text-left shadow-[0_20px_48px_rgba(0,0,0,0.5),0_0_36px_rgba(232,90,46,0.10)] backdrop-blur-2xl transition-[opacity,transform] duration-200 ease-out ${
           open
             ? "pointer-events-auto visible translate-y-0 opacity-100"
             : "pointer-events-none invisible translate-y-1 opacity-0"
         }`}
       >
-        <div className="flex items-baseline justify-between gap-3">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-orange/[0.08] blur-3xl"
+        />
+
+        <div className="relative flex items-baseline justify-between gap-3">
           <p className="eyebrow flex items-center gap-1.5">
             <SparklesIcon size={12} aria-hidden className="text-orange" />
-            Behind this application
+            What we did
           </p>
           <span className="text-xs text-muted-foreground">
             {tailoringMoves.length}{" "}
@@ -160,49 +162,26 @@ export function BehindApplicationHover({
           </span>
         </div>
 
-        {/* Hero verdict — serif italic with brand left rule. Slightly
-            smaller than the standalone-card version so the popover
-            stays compact. */}
-        <blockquote className="mt-4 border-l-2 border-orange/60 pl-4">
-          <p className="font-serif text-base italic leading-relaxed text-text sm:text-lg">
-            {fitReasoning}
-          </p>
-        </blockquote>
+        <p className="relative mt-2 font-serif text-sm italic text-muted-foreground">
+          How we tailored your application to this role.
+        </p>
 
-        {warnings.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            {warnings.map((w, i) => (
+        <ul className="relative mt-5 grid grid-cols-1 items-start gap-x-6 gap-y-3 sm:grid-cols-2">
+          {tailoringMoves.map((item, i) => (
+            <li
+              key={i}
+              className="group/move flex items-start gap-3 text-sm leading-relaxed text-text/90 transition-colors hover:text-text"
+            >
               <span
-                key={i}
-                className="inline-flex items-center gap-2 rounded-md border border-warn/30 bg-warn/10 px-2.5 py-1 text-xs text-warn"
+                aria-hidden
+                className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange/40 to-orange/15 text-xs font-bold text-orange shadow-sm ring-1 ring-orange/30 transition-all duration-200 group-hover/move:scale-110 group-hover/move:from-orange/55 group-hover/move:to-orange/25 group-hover/move:shadow-[0_0_18px_rgba(232,90,46,0.45)]"
               >
-                <span aria-hidden className="size-1 rounded-full bg-warn" />
-                {w}
+                {i + 1}
               </span>
-            ))}
-          </div>
-        )}
-
-        <div className="mt-5 rounded-xl bg-orange/[0.05] p-4 ring-1 ring-orange/15">
-          <p className="eyebrow-muted">Tailoring moves</p>
-          <ul className="mt-3 grid grid-cols-1 gap-x-5 gap-y-2.5 sm:grid-cols-2">
-            {tailoringMoves.map((item, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-2.5 text-sm leading-relaxed text-text/90"
-              >
-                <span
-                  aria-hidden
-                  className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-orange/35 to-orange/15 text-[10px] font-bold text-orange ring-1 ring-orange/30"
-                >
-                  {i + 1}
-                </span>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
