@@ -15,6 +15,7 @@
 
 import { AuthedTopbar } from "@/components/app/AuthedTopbar";
 import { LandingTopbar } from "@/components/landing/LandingTopbar";
+import { normaliseRole } from "@/lib/auth/roles";
 import { createClient } from "@/lib/supabase/server";
 
 export async function AuthAwareTopbar() {
@@ -35,7 +36,7 @@ export async function AuthAwareTopbar() {
       .maybeSingle(),
     supabase
       .from("profiles")
-      .select("is_admin")
+      .select("role")
       .eq("id", user.id)
       .maybeSingle(),
   ]);
@@ -44,7 +45,7 @@ export async function AuthAwareTopbar() {
     <AuthedTopbar
       email={user.email ?? ""}
       hasCv={Boolean(cv)}
-      isAdmin={Boolean(profile?.is_admin)}
+      role={normaliseRole(profile?.role)}
     />
   );
 }

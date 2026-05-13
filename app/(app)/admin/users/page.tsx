@@ -1,11 +1,35 @@
 // Admin users page. Reads auth.users via the service-role client's
-// admin API (supabase.auth.admin.listUsers) and joins each row to its
-// matching profile so we can show the is_admin flag inline. The point
-// of this page: a single place to see every email registered with the
-// app, plus when they signed up and last signed in.
+// admin API (supabase.auth.admin.listUsers) and joins each row to
+// its matching profile to show role + manage role assignment inline.
+//
+// Migration 0006_user_roles.sql replaced the legacy is_admin boolean
+// with profiles.role ('user' | 'team' | 'admin'). Adding future paid
+// tiers (pro / enterprise) is a single-line update in
+// lib/auth/roles.ts + a CHECK-constraint widening migration; the
+// stats + table here pick them up automatically. See CLAUDE.md
+// Decision Log [14] 2026-05-13.
+//
+// Style notes:
+//   - Stat row shows counts by role plus account deletions. Adding
+//     a future role adds a new Stat card via the ROLES array.
+//   - Role chip is the same shape as STATUS_TONE on the application
+//     detail page so the admin surface stays visually consistent.
+//   - UserRolePicker is a per-row segmented control — three pills
+//     inline, current one filled, click any other to change. The
+//     server action has the last-admin guard; the picker disables
+//     itself optimistically on click while the action resolves.
 
 import { createServiceClient } from "@/lib/supabase/service";
+import { createClient } from "@/lib/supabase/server";
 import { userPillLabel, userPillTone } from "@/lib/admin/user-pill";
+import {
+  ROLE_LABELS,
+  ROLE_TONES,
+  ROLES,
+  normaliseRole,
+  type Role,
+} from "@/lib/auth/roles";
+import { UserRolePicker } from "@/components/admin/UserRolePicker";
 
 export const dynamic = "force-dynamic";
 
@@ -20,10 +44,16 @@ function formatDate(iso: string | null | undefined): string {
 
 export default async function AdminUsersPage() {
   const service = createServiceClient();
+  // Read the current admin's id so the picker can disable self-
+  // destructive transitions client-side (server-side last-admin
+  // guard still applies regardless).
+  const supabase = await createClient();
+  const { data: sessionUser } = await supabase.auth.getUser();
+  const selfId = sessionUser.user?.id ?? null;
 
   const [usersRes, profilesRes, deletionsRes] = await Promise.all([
     service.auth.admin.listUsers({ page: 1, perPage: LIST_PAGE_SIZE }),
-    service.from("profiles").select("id, is_admin"),
+    service.from("profiles").select("id, role"),
     service
       .from("account_deletions")
       .select("id, deleted_at")
@@ -32,9 +62,9 @@ export default async function AdminUsersPage() {
   ]);
 
   const users = usersRes.data?.users ?? [];
-  const profileById = new Map<string, { is_admin: boolean | null }>();
+  const roleById = new Map<string, Role>();
   for (const p of profilesRes.data ?? []) {
-    profileById.set(p.id, { is_admin: p.is_admin });
+    roleById.set(p.id, normaliseRole(p.role));
   }
   const deletions = deletionsRes.data ?? [];
 
@@ -43,6 +73,14 @@ export default async function AdminUsersPage() {
     const bAt = new Date(b.created_at ?? 0).getTime();
     return bAt - aAt;
   });
+
+  // Per-role counts. Iterates over the canonical ROLES array so
+  // adding a future role surfaces in stats automatically.
+  const countsByRole: Record<Role, number> = { user: 0, team: 0, admin: 0 };
+  for (const u of sorted) {
+    const role = roleById.get(u.id) ?? "user";
+    countsByRole[role] += 1;
+  }
 
   return (
     <div className="space-y-8">
@@ -53,15 +91,16 @@ export default async function AdminUsersPage() {
         </p>
       </div>
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <section className="grid grid-cols-2 gap-4 sm:grid-cols-5">
         <Stat label="Registered" value={String(sorted.length)} />
-        <Stat
-          label="Admins"
-          value={String(
-            sorted.filter((u) => profileById.get(u.id)?.is_admin).length,
-          )}
-        />
-        <Stat label="Account deletions" value={String(deletions.length)} />
+        {ROLES.map((role) => (
+          <Stat
+            key={role}
+            label={`${ROLE_LABELS[role]}s`}
+            value={String(countsByRole[role])}
+          />
+        ))}
+        <Stat label="Deletions" value={String(deletions.length)} />
       </section>
 
       <section className="panel overflow-x-auto">
@@ -71,8 +110,12 @@ export default async function AdminUsersPage() {
               <th className="whitespace-nowrap px-3 py-3.5">User</th>
               <th className="whitespace-nowrap px-3 py-3.5">Email</th>
               <th className="whitespace-nowrap px-3 py-3.5">Created</th>
-              <th className="hidden whitespace-nowrap px-3 py-3.5 lg:table-cell">Last sign-in</th>
-              <th className="hidden whitespace-nowrap px-3 py-3.5 sm:table-cell">Confirmed</th>
+              <th className="hidden whitespace-nowrap px-3 py-3.5 lg:table-cell">
+                Last sign-in
+              </th>
+              <th className="hidden whitespace-nowrap px-3 py-3.5 sm:table-cell">
+                Confirmed
+              </th>
               <th className="whitespace-nowrap px-3 py-3.5 text-right">Role</th>
             </tr>
           </thead>
@@ -88,7 +131,8 @@ export default async function AdminUsersPage() {
               </tr>
             )}
             {sorted.map((u) => {
-              const profile = profileById.get(u.id);
+              const role = roleById.get(u.id) ?? "user";
+              const isSelf = u.id === selfId;
               return (
                 <tr
                   key={u.id}
@@ -103,7 +147,18 @@ export default async function AdminUsersPage() {
                     </span>
                   </td>
                   <td className="px-3 py-3.5 text-sm">
-                    {u.email ?? <span className="text-muted-foreground">—</span>}
+                    <span className="inline-flex items-center gap-2">
+                      {u.email ?? (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                      {isSelf && (
+                        <span
+                          className={`inline-flex items-center rounded-full border px-2 py-0 text-[10px] font-semibold uppercase tracking-[0.08em] ${ROLE_TONES[role]}`}
+                        >
+                          You
+                        </span>
+                      )}
+                    </span>
                   </td>
                   <td className="whitespace-nowrap px-3 py-3.5 text-sm text-muted-foreground">
                     {formatDate(u.created_at)}
@@ -118,12 +173,13 @@ export default async function AdminUsersPage() {
                       <span className="text-muted-foreground">No</span>
                     )}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-4 text-right text-base">
-                    {profile?.is_admin ? (
-                      <span className="text-orange">Admin</span>
-                    ) : (
-                      <span className="text-muted-foreground">User</span>
-                    )}
+                  <td className="whitespace-nowrap px-3 py-3.5 text-right">
+                    <UserRolePicker
+                      userId={u.id}
+                      email={u.email ?? "(no email)"}
+                      currentRole={role}
+                      isSelf={isSelf}
+                    />
                   </td>
                 </tr>
               );

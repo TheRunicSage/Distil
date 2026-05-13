@@ -28,6 +28,11 @@ import {
   isGenerationEnabled,
 } from "@/lib/env";
 import { ApiError } from "@/lib/errors/api-error";
+import {
+  bypassesDailyCostCeiling,
+  bypassesKillSwitch,
+  normaliseRole,
+} from "@/lib/auth/roles";
 import { withIdempotency } from "@/lib/idempotency/with-idempotency";
 import { withLogging } from "@/lib/logging/with-logging";
 import { createClient } from "@/lib/supabase/server";
@@ -58,7 +63,22 @@ export const POST = withLogging(
     const userId = userData.user.id;
     ctx.user_id = userId;
 
-    if (!isGenerationEnabled()) throw new ApiError("generation_disabled");
+    // Role lookup for operator-side bypasses. Team and admin users
+    // skip the kill switch and the daily cost ceiling — both are
+    // intended as customer-facing cutoffs, not as gates for internal
+    // testing. Per-generation cost caps still apply to everyone
+    // (see lib/llm/cost-cap.ts) so a runaway test loop can't run up
+    // an unbounded bill. See CLAUDE.md Decision Log [14] 2026-05-13.
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
+    const role = normaliseRole(profileRow?.role);
+
+    if (!isGenerationEnabled() && !bypassesKillSwitch(role)) {
+      throw new ApiError("generation_disabled");
+    }
 
     let bodyJson: unknown;
     try {
@@ -116,7 +136,10 @@ export const POST = withLogging(
           (sum, r) => sum + Number(r.cost_usd ?? 0),
           0,
         );
-        if (dailyTotal > getDailyCostCeilingUsd()) {
+        if (
+          dailyTotal > getDailyCostCeilingUsd() &&
+          !bypassesDailyCostCeiling(role)
+        ) {
           throw new ApiError("daily_cost_ceiling_reached");
         }
 

@@ -14,6 +14,7 @@ import { AmbientBackground } from "@/components/app/AmbientBackground";
 import { AppShell } from "@/components/app/AppShell";
 import { AuthedTopbar } from "@/components/app/AuthedTopbar";
 import { MagneticDots } from "@/components/app/MagneticDots";
+import { normaliseRole } from "@/lib/auth/roles";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({
@@ -34,12 +35,12 @@ export default async function AppLayout({
       .maybeSingle(),
     supabase
       .from("profiles")
-      .select("is_admin")
+      .select("role")
       .eq("id", userData.user.id)
       .maybeSingle(),
   ]);
   const hasCv = Boolean(cv);
-  const isAdmin = Boolean(profile?.is_admin);
+  const role = normaliseRole(profile?.role);
   const email = userData.user.email ?? "";
 
   return (
@@ -47,7 +48,7 @@ export default async function AppLayout({
       <AmbientBackground />
       <MagneticDots />
       <div className="relative z-10 flex flex-1 flex-col">
-        <AuthedTopbar hasCv={hasCv} email={email} isAdmin={isAdmin} />
+        <AuthedTopbar hasCv={hasCv} email={email} role={role} />
         <main className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 sm:py-12">
           <div className="mx-auto max-w-[760px]">{children}</div>
         </main>

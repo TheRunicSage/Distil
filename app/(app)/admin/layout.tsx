@@ -1,4 +1,4 @@
-// Admin shell. Gates every /admin/* page on profiles.is_admin = true.
+// Admin shell. Gates every /admin/* page on profiles.role = 'admin'.
 // Unauthenticated → /login. Authenticated but not admin → /dashboard
 // (no enumeration; same response either way for a deeply-suspect user).
 //

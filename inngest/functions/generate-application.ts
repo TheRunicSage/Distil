@@ -35,6 +35,7 @@ import {
 } from "@/lib/llm";
 import { sendApplicationEmail } from "@/lib/email/send-application-email";
 import { isGenerationEnabled } from "@/lib/env";
+import { bypassesKillSwitch, normaliseRole } from "@/lib/auth/roles";
 import { ApiError } from "@/lib/errors/api-error";
 import { buildUserMessage } from "@/lib/llm/build-user-message";
 import { detectLanguageDrift } from "@/lib/llm/language-check";
@@ -145,12 +146,24 @@ export const generateApplication = inngest.createFunction(
     const stepCtx = { application_id, user_id };
 
     // 1. Kill switch — read at runtime so toggling in Vercel takes
-    // effect mid-queue without redeploy.
+    // effect mid-queue without redeploy. Team and admin users
+    // bypass the kill switch (operator-side cutoffs don't apply to
+    // internal testers); per-generation cost caps still apply via
+    // step 5. See CLAUDE.md Decision Log [14] 2026-05-13.
     const enabled = await withInngestStep(
       step,
       "kill-switch-check",
       stepCtx,
-      () => isGenerationEnabled(),
+      async () => {
+        if (isGenerationEnabled()) return true;
+        const service = createServiceClient();
+        const { data: profileRow } = await service
+          .from("profiles")
+          .select("role")
+          .eq("id", user_id)
+          .maybeSingle();
+        return bypassesKillSwitch(normaliseRole(profileRow?.role));
+      },
     );
     if (!enabled) return { halted: "generation_disabled" };
 

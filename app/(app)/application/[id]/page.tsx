@@ -35,6 +35,7 @@ import { PreviewPanel } from "@/components/application/PreviewPanel";
 import { RetryAbandonControls } from "@/components/application/RetryAbandonControls";
 import { RetryFailedButton } from "@/components/application/RetryFailedButton";
 import { HoverHint } from "@/components/ui/HoverHint";
+import { isAdmin as isAdminRole, normaliseRole } from "@/lib/auth/roles";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -106,10 +107,10 @@ export default async function ApplicationPage({ params }: RouteCtx) {
   // (see (app)/layout.tsx, settings/page.tsx).
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_admin")
+    .select("role")
     .eq("id", userData.user.id)
     .maybeSingle();
-  const isAdmin = Boolean(profile?.is_admin);
+  const isAdmin = isAdminRole(normaliseRole(profile?.role));
 
   const tone =
     STATUS_TONE[app.status] ??

@@ -15,11 +15,12 @@ import {
   ShieldIcon,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/app/ThemeToggle";
+import { isAdmin as isAdminRole, type Role } from "@/lib/auth/roles";
 import { signOut } from "@/app/(auth)/login/actions";
 
 type Props = {
   email: string;
-  isAdmin: boolean;
+  role: Role;
 };
 
 function initialOf(email: string): string {
@@ -27,7 +28,8 @@ function initialOf(email: string): string {
   return first ? first.toUpperCase() : "?";
 }
 
-export function UserMenu({ email, isAdmin }: Props) {
+export function UserMenu({ email, role }: Props) {
+  const showAdminTools = isAdminRole(role);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -96,7 +98,7 @@ export function UserMenu({ email, isAdmin }: Props) {
             <HelpCircleIcon size={18} aria-hidden />
             <span className="flex-1">FAQ</span>
           </Link>
-          {isAdmin && (
+          {showAdminTools && (
             <Link
               href="/admin/usage"
               role="menuitem"

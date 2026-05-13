@@ -12,6 +12,13 @@ import { MissingFieldsBadge } from "@/components/app/MissingFieldsBadge";
 import { DeleteAccountForm } from "@/components/settings/DeleteAccountForm";
 import { EmailOnGenerationToggle } from "@/components/settings/EmailOnGenerationToggle";
 import type { MissingFieldCode } from "@/lib/parsing/detect-missing-fields";
+import {
+  ROLE_DESCRIPTIONS,
+  ROLE_LABELS,
+  ROLE_TONES,
+  isAdmin as isAdminRole,
+  normaliseRole,
+} from "@/lib/auth/roles";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +38,7 @@ export default async function SettingsPage() {
   const [profileRes, cvRes] = await Promise.all([
     supabase
       .from("profiles")
-      .select("is_admin, created_at, email_on_generation")
+      .select("role, created_at, email_on_generation")
       .eq("id", userData.user.id)
       .maybeSingle(),
     supabase
@@ -44,11 +51,13 @@ export default async function SettingsPage() {
 
   const profile = profileRes.data as
     | {
-        is_admin: boolean | null;
+        role: string | null;
         created_at: string | null;
         email_on_generation: boolean | null;
       }
     | null;
+  const role = normaliseRole(profile?.role);
+  const isAdminUser = isAdminRole(role);
   const cv = cvRes.data as
     | {
         id: string;
@@ -79,12 +88,17 @@ export default async function SettingsPage() {
               <dd className="text-text">{formatDate(profile.created_at)}</dd>
             </div>
           )}
-          {profile?.is_admin && (
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Role</dt>
-              <dd className="text-orange">Admin</dd>
-            </div>
-          )}
+          <div className="flex items-center justify-between gap-4">
+            <dt className="text-muted-foreground">Role</dt>
+            <dd>
+              <span
+                title={ROLE_DESCRIPTIONS[role]}
+                className={`inline-flex items-center rounded-full border px-3 py-0.5 text-xs font-bold uppercase tracking-[0.08em] ${ROLE_TONES[role]}`}
+              >
+                {ROLE_LABELS[role]}
+              </span>
+            </dd>
+          </div>
         </dl>
       </FadeUp>
 
@@ -164,7 +178,7 @@ export default async function SettingsPage() {
         </div>
       </FadeUp>
 
-      {profile?.is_admin && (
+      {isAdminUser && (
         <FadeUp mode="mount" delay={240} as="section">
           <div className="mb-4">
             <p className="eyebrow">Admin tools</p>
@@ -218,6 +232,21 @@ export default async function SettingsPage() {
                 />
               </Link>
             </li>
+            <li>
+              <Link href="/admin/users" className="surface-row">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-base font-medium text-text">Users & roles</span>
+                  <span className="text-sm text-muted-foreground">
+                    Manage user, team, and admin assignments
+                  </span>
+                </div>
+                <ChevronRightIcon
+                  size={16}
+                  className="shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
+              </Link>
+            </li>
           </ul>
         </FadeUp>
       )}
@@ -226,7 +255,7 @@ export default async function SettingsPage() {
           on /faq — same source claims, abbreviated for in-app context.
           Designed so a logged-in user can verify what we hold without
           tab-switching to the public FAQ. */}
-      <FadeUp mode="mount" delay={profile?.is_admin ? 320 : 240} as="section" className="surface-card">
+      <FadeUp mode="mount" delay={isAdminUser ? 320 : 240} as="section" className="surface-card">
         <p className="eyebrow">Standards & your data</p>
         <ul className="mt-5 space-y-3 text-base text-muted-foreground">
           <li className="flex items-baseline gap-3">
@@ -269,7 +298,7 @@ export default async function SettingsPage() {
         </Link>
       </FadeUp>
 
-      <FadeUp mode="mount" delay={profile?.is_admin ? 400 : 320} as="section" className="surface-card">
+      <FadeUp mode="mount" delay={isAdminUser ? 400 : 320} as="section" className="surface-card">
         <p className="eyebrow">Session</p>
         <p className="mt-5 text-base text-muted-foreground">
           End your session on this device.
@@ -281,7 +310,7 @@ export default async function SettingsPage() {
         </form>
       </FadeUp>
 
-      <FadeUp mode="mount" delay={profile?.is_admin ? 480 : 400} as="section" className="surface-card border-danger/30">
+      <FadeUp mode="mount" delay={isAdminUser ? 480 : 400} as="section" className="surface-card border-danger/30">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-danger">
           Danger zone
         </p>

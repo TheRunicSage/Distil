@@ -1715,6 +1715,44 @@ Followups queued (per `docs/llm-output-risks.md` Implementation Order steps 4–
 
 Each is its own commit, reverts cleanly. Ship if real failures surface.
 
+[14] User roles + admin-managed assignment (2026-05-13). Replaces the legacy `profiles.is_admin BOOLEAN` with `profiles.role TEXT` enum so the system can scale to paid tiers (`pro` / `enterprise` / etc.) without touching every is_admin check site. Initial roles:
+
+- `user` — default. Standard customer / signed-up account.
+- `team` — internal team or tester. Bypasses kill switch and daily cost ceiling so internal testing isn't gated by operator cutoffs. Per-generation cost caps still apply.
+- `admin` — full access to `/admin/*` + user role management. Inherits team capabilities.
+
+User-locked policy (DPs: B + B + B + A from the 4-DP set in the design session):
+- **DP-1 schema**: B — role enum (TEXT + CHECK), not two flags. Pays the one-time refactor cost (~7 sites: layout / settings / application detail / require-admin / AuthAwareTopbar / TopbarNav / UserMenu) to land a payment-tier-ready shape.
+- **DP-2 capabilities**: B — team users bypass kill switch + daily cost ceiling (operator cutoffs); per-generation cost caps stay (cost-cap.ts still applies).
+- **DP-3 last-admin guard**: B — server action counts admin rows before any demote; refuses if the count would drop to 0. Same guard covers self-demote and cross-demote-to-zero.
+- **DP-4 UI shape**: A — segmented control of three pills inline per row, current one filled (role-toned), others ghost. Click any non-current pill → server action commits. Destructive transitions (admin → not-admin) prompt via window.confirm.
+
+Schema choice: TEXT + CHECK constraint over PostgreSQL ENUM type. Reason: adding a future role like 'pro' is just an ALTER on the CHECK constraint; with PG enum types, adding values in a transaction is restricted. Flexibility cost over an enum type is one extra constraint definition.
+
+Files:
+
+- `supabase/migrations/0006_user_roles.sql` — ALTER profiles ADD role, backfill from is_admin, ADD CHECK constraint, drop+recreate RLS policies (request_logs_admin_read, token_usage_admin_read, telemetry_admin_read) against `role = 'admin'`, DROP is_admin.
+- `lib/auth/roles.ts` — single source of truth: `Role` type, `ROLES` const array, `isAdmin / isTeam / isTrustedTier / bypassesKillSwitch / bypassesDailyCostCeiling / canManageUsers` capability helpers, `ROLE_LABELS / ROLE_TONES / ROLE_DESCRIPTIONS` presentation maps.
+- `lib/auth/require-admin.ts` — reads `role`, checks `isAdmin(role)`. Same throw shape.
+- `app/(app)/admin/users/actions.ts` — `setUserRole(userId, nextRole)` server action with admin gate + last-admin guard.
+- `components/admin/UserRolePicker.tsx` — client segmented-control; optimistic UI with rollback on server error.
+- `app/(app)/admin/users/page.tsx` — redesigned: stat row iterates ROLES so future tiers auto-surface; per-row role picker; "You" pill on the current admin's own row.
+- `app/(app)/settings/page.tsx` — role chip always visible (was hidden for non-admins); admin tools section gains a "Users & roles" link.
+- `app/api/applications/route.ts` — fetches role at submit time; kill switch + daily ceiling skip when `bypassesKillSwitch(role)` / `bypassesDailyCostCeiling(role)` true.
+- `inngest/functions/generate-application.ts` — kill-switch-check step also loads role + applies `bypassesKillSwitch`.
+
+What was *not* changed: per-generation cost caps in `lib/llm/cost-cap.ts` (still apply to every generation regardless of role — protects against runaway costs even for team / admin); the daily summary cron / Sentry alerts (not role-aware; same observability across tiers); queue cap (still 1-per-user for everyone). The `(admin)` route-group split out of `(app)` (Decision Log [13] TODO for prod) remains pending — admin still lives inside `(app)` gated by `requireAdmin()`, this commit just changes the gate's data source.
+
+Test path:
+1. Apply migration via Supabase SQL Editor or `npx supabase db push`. Existing admins keep their access (backfill `update profiles set role = 'admin' where is_admin = true` runs before is_admin is dropped).
+2. Sign in as admin → `/admin/users` shows the new segmented picker per row.
+3. Click another user's "Team" pill → role updates, page revalidates, chip swaps.
+4. Try to demote yourself when you're the only admin → server action returns the last-admin error; UI surfaces it inline.
+5. Promote another user to admin first, then demote yourself → succeeds; you lose `/admin/*` access on next nav.
+6. Set a test account to `team` → flip `GENERATION_ENABLED=false` in Vercel → submit a generation → should succeed (kill switch bypassed for team).
+
+Rollback: single `git revert` + manually re-add the `is_admin` column via `ALTER TABLE profiles ADD COLUMN is_admin BOOLEAN GENERATED ALWAYS AS (role = 'admin') STORED;` if a previous deploy expects the column. Cleaner: don't roll back the migration; revert the code only (the migration is forward-compatible — keeping the new `role` column with old code is fine, the new code just stops being called).
+
 ---
 
 ## Known Gaps to Watch

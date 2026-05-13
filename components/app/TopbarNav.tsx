@@ -13,11 +13,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PlusIcon, UploadIcon } from "lucide-react";
 import { UserMenu } from "@/components/app/UserMenu";
+import type { Role } from "@/lib/auth/roles";
 
 type Props = {
   hasCv: boolean;
   email: string;
-  isAdmin: boolean;
+  role: Role;
 };
 
 function isActive(pathname: string, href: string): boolean {
@@ -25,7 +26,7 @@ function isActive(pathname: string, href: string): boolean {
   return pathname.startsWith(href + "/");
 }
 
-export function TopbarNav({ hasCv, email, isAdmin }: Props) {
+export function TopbarNav({ hasCv, email, role }: Props) {
   const pathname = usePathname() ?? "";
 
   const historyActive =
@@ -59,7 +60,7 @@ export function TopbarNav({ hasCv, email, isAdmin }: Props) {
       >
         History
       </Link>
-      <UserMenu email={email} isAdmin={isAdmin} />
+      <UserMenu email={email} role={role} />
     </>
   );
 }

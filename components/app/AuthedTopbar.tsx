@@ -7,14 +7,15 @@
 
 import Link from "next/link";
 import { TopbarNav } from "@/components/app/TopbarNav";
+import type { Role } from "@/lib/auth/roles";
 
 type Props = {
   email: string;
   hasCv: boolean;
-  isAdmin: boolean;
+  role: Role;
 };
 
-export function AuthedTopbar({ email, hasCv, isAdmin }: Props) {
+export function AuthedTopbar({ email, hasCv, role }: Props) {
   return (
     <header className="sticky top-0 z-30 flex h-[56px] shrink-0 items-center justify-between border-b border-border/50 bg-dark/70 px-4 backdrop-blur-md sm:h-[64px] sm:px-6">
       <Link
@@ -29,7 +30,7 @@ export function AuthedTopbar({ email, hasCv, isAdmin }: Props) {
         </span>
       </Link>
       <nav className="flex items-center gap-1.5 sm:gap-2.5">
-        <TopbarNav hasCv={hasCv} email={email} isAdmin={isAdmin} />
+        <TopbarNav hasCv={hasCv} email={email} role={role} />
       </nav>
     </header>
   );
