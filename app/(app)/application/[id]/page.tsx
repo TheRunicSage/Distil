@@ -19,7 +19,6 @@ import {
   BanIcon,
   PauseIcon,
   PencilIcon,
-  SparklesIcon,
 } from "lucide-react";
 import { CopyId } from "@/components/app/CopyId";
 import { FadeUp } from "@/components/app/FadeUp";
@@ -28,6 +27,7 @@ import {
   computeOutputMissingFields,
 } from "@/components/app/MissingFieldsBadge";
 import { ApplicationLiveView } from "@/components/application/ApplicationLiveView";
+import { BehindApplicationHover } from "@/components/application/BehindApplicationHover";
 import { CoverLetterPreview } from "@/components/application/CoverLetterPreview";
 import { CvPreview } from "@/components/application/CvPreview";
 import { EmailMeButton } from "@/components/application/EmailMeButton";
@@ -100,10 +100,33 @@ export default async function ApplicationPage({ params }: RouteCtx) {
     .maybeSingle();
   if (!app) notFound();
 
+  // Admin gate for the ID-copy pill in the header. Regular users
+  // don't need to see the row's UUID; admins use it for support /
+  // log lookups. Same shape as other admin gates in this codebase
+  // (see (app)/layout.tsx, settings/page.tsx).
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", userData.user.id)
+    .maybeSingle();
+  const isAdmin = Boolean(profile?.is_admin);
+
   const tone =
     STATUS_TONE[app.status] ??
     "bg-dim/15 text-muted-foreground border-border";
   const label = STATUS_LABEL[app.status] ?? app.status;
+
+  // Hoist the success-shape JSON so the header can render Fit +
+  // Salary pills in the same row as Files-available (per user
+  // request 2026-05-13). Other branches don't touch this.
+  const successJson =
+    app.status === "success" &&
+    app.llm_response_json &&
+    (app.llm_response_json as ApplicationOutput).status === "success"
+      ? (app.llm_response_json as ApplicationOutputSuccess)
+      : null;
+  const headerFit = successJson?.fit_assessment ?? null;
+  const headerSalary = successJson?.salary_band ?? null;
 
   // For error states, look up the latest error_code from request_logs and
   // map it to a recovery descriptor. Drives which branch the error
@@ -154,10 +177,23 @@ export default async function ApplicationPage({ params }: RouteCtx) {
           <ArrowLeftIcon size={14} aria-hidden />
           Back to Dashboard
         </Link>
+        {/* Header row — slimmed down 2026-05-13:
+            - "Application" heading text removed (title pill below
+              carries the role @ company name).
+            - ID copy pill gated on isAdmin; regular users don't need
+              the row UUID surfaced.
+            - Status pill dropped on the success branch ("Ready" was
+              redundant with the visible CV + cover letter previews);
+              still rendered for queued / running / error / etc. where
+              it carries real status signal.
+            - On success, Fit + Salary verdict pills move up here from
+              the SuccessView title block — one consolidated meta row
+              with files-expiry + verdicts. */}
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <h1 className="text-xl text-text">Application</h1>
-          <CopyId value={id} />
-          <span className={`status-pill ${tone}`}>{label}</span>
+          {isAdmin && <CopyId value={id} />}
+          {app.status !== "success" && (
+            <span className={`status-pill ${tone}`}>{label}</span>
+          )}
           {app.parent_application_id && (
             <span className="text-sm text-muted-foreground">
               retry of {app.parent_application_id.slice(0, 8)}
@@ -170,6 +206,87 @@ export default async function ApplicationPage({ params }: RouteCtx) {
                 timeZone: "Pacific/Auckland",
               })}
             </span>
+          )}
+          {headerFit && (
+            <HoverHint
+              title={`Fit · ${headerFit.score}`}
+              trigger={
+                <span
+                  className={`inline-flex cursor-help items-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] shadow-sm transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] hover:shadow-md hover:brightness-110 ${FIT_TONE[headerFit.score]}`}
+                >
+                  Fit · {headerFit.score}
+                </span>
+              }
+            >
+              {/* Bulleted scale per user request — much easier to read
+                  than the previous wall-of-text version. Three rungs,
+                  each one line, with the score name in brand orange
+                  so the eye lands on the rung the user's chip matches. */}
+              <span className="block">
+                How well the role&apos;s must-haves align with your
+                evidenced experience.
+              </span>
+              <ul className="mt-2 space-y-1.5">
+                <li className="flex items-start gap-2">
+                  <span
+                    aria-hidden
+                    className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-success"
+                  />
+                  <span>
+                    <strong className="font-semibold text-success">
+                      Strong
+                    </strong>{" "}
+                    — close match across the board.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span
+                    aria-hidden
+                    className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-warn"
+                  />
+                  <span>
+                    <strong className="font-semibold text-warn">
+                      Moderate
+                    </strong>{" "}
+                    — most align, with one or two real gaps.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span
+                    aria-hidden
+                    className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-danger"
+                  />
+                  <span>
+                    <strong className="font-semibold text-danger">
+                      Weak
+                    </strong>{" "}
+                    — a stretch (often a domain or seniority pivot).
+                  </span>
+                </li>
+              </ul>
+              <span className="mt-2 block text-muted-foreground">
+                Descriptive only — Distil still tailors the full
+                application either way.
+              </span>
+            </HoverHint>
+          )}
+          {headerSalary && (
+            <HoverHint
+              title={`Salary · ${headerSalary.confidence} confidence`}
+              trigger={
+                <span className="inline-flex cursor-help items-center gap-1.5 rounded-full border border-success/30 bg-success/15 px-3 py-1 text-xs font-medium text-success shadow-sm transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] hover:shadow-md hover:brightness-110">
+                  {headerSalary.range}
+                  <span className="text-[11px] uppercase tracking-[0.08em] text-success/70">
+                    · {headerSalary.confidence}
+                  </span>
+                </span>
+              }
+            >
+              Estimated band for this role + seniority + region, pulled
+              from public listings via live web search at generation
+              time. Confidence reflects how many sources agreed — treat
+              it as a sense-check, not a binding number.
+            </HoverHint>
           )}
         </div>
       </header>
@@ -277,8 +394,6 @@ function SuccessView({
   const success = json as ApplicationOutputSuccess;
 
   const fit = success.fit_assessment;
-  const salary = success.salary_band;
-  const fitTone = FIT_TONE[fit.score];
   const firstName =
     success.cv_content.contact_details.full_name.trim().split(/\s+/)[0] ?? "";
 
@@ -309,35 +424,20 @@ function SuccessView({
 
   return (
     <div className="space-y-5">
-      {/* Top stack — title, missing-detail pill (hover-reveal popover
-          on the badge itself), and Fit/Salary verdict chips. All
-          centred per user request (2026-05-13). Order top to bottom:
-          title → missing pill → fit/salary pills. The wordy "we
-          couldn't find these" paragraph was collapsed into the
-          badge's hover popover since the badge already explains
-          itself on hover (popoverAlign="center" so the popover sits
-          balanced under the centred trigger). */}
+      {/* Top stack — title pill with hover/click reveal of "Behind
+          this application" (consolidated 2026-05-13: the previous
+          standalone surface-card was folded into a popover on the
+          title itself so the docs land higher on the page). Missing-
+          detail badge stays below the title where users expect a
+          soft heads-up; Fit + Salary chips have moved up to the page
+          header row alongside Files-available. */}
       <FadeUp mode="mount" as="section" className="text-center">
         {applicationTitle && (
-          // Frosted-glass title pill — modernised 2026-05-13:
-          // 1. Background opacity lifted dark2/50 → dark2/85 so the pill
-          //    reads as a confident elevated surface instead of a faint
-          //    overlay on the ambient blob layer behind.
-          // 2. Border tinted to brand orange at 25% alpha (was neutral
-          //    border/60), so the pill carries an unmistakable brand
-          //    signature.
-          // 3. Stacked shadow with a subtle outer orange glow
-          //    (0_0_36px_rgba(232,90,46,0.10)) — picks up the ambient
-          //    orange blob colour without committing to a hard outline.
-          // 4. backdrop-blur-2xl (was xl) deepens the frosted feel
-          //    against the background blobs.
-          // 5. Padding bumped to px-7 py-3.5 for more visual presence
-          //    against the rest of the page hierarchy.
-          // Company name rendered in brand orange so the eye lands on
-          // it first; role archetype stays in default text colour; the
-          // " @ " separator drops to muted so it reads as a delimiter,
-          // not a word.
-          <div className="mx-auto w-fit rounded-2xl border border-orange/25 bg-dark2/85 px-7 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_12px_32px_rgba(0,0,0,0.32),0_0_36px_rgba(232,90,46,0.10)] backdrop-blur-2xl">
+          <BehindApplicationHover
+            fitReasoning={fit.reasoning}
+            warnings={fit.warnings}
+            tailoringMoves={success.what_we_did_checklist}
+          >
             <h2 className="font-serif text-2xl font-light leading-snug sm:text-3xl">
               {roleArchetype && companyName ? (
                 <>
@@ -353,7 +453,7 @@ function SuccessView({
                 </span>
               )}
             </h2>
-          </div>
+          </BehindApplicationHover>
         )}
         {outputMissing.length > 0 && (
           <div className="mt-3 flex justify-center">
@@ -365,43 +465,6 @@ function SuccessView({
             />
           </div>
         )}
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-          <HoverHint
-            title={`Fit · ${fit.score}`}
-            trigger={
-              <span
-                className={`inline-flex cursor-help items-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] shadow-sm transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] hover:shadow-md hover:brightness-110 ${fitTone}`}
-              >
-                Fit · {fit.score}
-              </span>
-            }
-          >
-            How well the role's must-haves align with your evidenced
-            experience. <strong>Strong</strong> — close match across the
-            board. <strong>Moderate</strong> — most align, with one or
-            two real gaps. <strong>Weak</strong> — a stretch (often a
-            domain or seniority pivot). Descriptive only: Distil still
-            tailors the full application either way.
-          </HoverHint>
-          {salary && (
-            <HoverHint
-              title={`Salary · ${salary.confidence} confidence`}
-              trigger={
-                <span className="inline-flex cursor-help items-center gap-1.5 rounded-full border border-success/30 bg-success/15 px-3 py-1 text-xs font-medium text-success shadow-sm transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] hover:shadow-md hover:brightness-110">
-                  {salary.range}
-                  <span className="text-[11px] uppercase tracking-[0.08em] text-success/70">
-                    · {salary.confidence}
-                  </span>
-                </span>
-              }
-            >
-              Estimated band for this role + seniority + region, pulled
-              from public listings via live web search at generation
-              time. Confidence reflects how many sources agreed — treat
-              it as a sense-check, not a binding number.
-            </HoverHint>
-          )}
-        </div>
       </FadeUp>
 
       {/* Sign-off block — warm framing immediately above the documents.
@@ -465,87 +528,6 @@ function SuccessView({
               <CoverLetterPreview content={success.cover_letter_content} />
             </PreviewPanel>
           </div>
-        </div>
-      </FadeUp>
-
-      {/* "Behind this application" — dimensional card (2026-05-13 v2).
-          Was too uniform / boring previously; now built around three
-          visual moves:
-          (1) Ambient orange glow in the top-right corner ties the card
-              into the brand palette and breaks up the flat surface.
-          (2) Fit reasoning rendered as a serif italic quote with an
-              orange left-rule — reads as a verdict / curator's note,
-              not narration. Visually distinct hero element.
-          (3) Tailoring moves zone has its own tinted-orange inset panel
-              inside the card (bg-orange/[0.04] + ring-orange/15), so
-              the "what we did" reads as a distinct surface from the
-              reasoning above. Numbered chips beefed up: size-6, orange
-              gradient, ring, shadow-sm at rest, scale + brighter glow
-              on hover. */}
-      <FadeUp mode="scroll" as="section" className="surface-card relative overflow-hidden">
-        {/* Ambient brand-orange glow in the top-right corner. Pure
-            decoration — pointer-events-none so it doesn't steal clicks. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-orange/[0.08] blur-3xl"
-        />
-
-        <div className="relative flex items-baseline justify-between gap-3">
-          <p className="eyebrow flex items-center gap-1.5">
-            <SparklesIcon size={12} aria-hidden className="text-orange" />
-            Behind this application
-          </p>
-          <span className="text-xs text-muted-foreground">
-            {success.what_we_did_checklist.length} tailoring{" "}
-            {success.what_we_did_checklist.length === 1 ? "move" : "moves"}
-          </span>
-        </div>
-
-        {/* Hero verdict — serif italic quote with brand left rule. */}
-        <blockquote className="relative mt-5 border-l-2 border-orange/60 pl-4">
-          <p className="font-serif text-lg italic leading-relaxed text-text sm:text-xl">
-            {fit.reasoning}
-          </p>
-        </blockquote>
-
-        {fit.warnings.length > 0 && (
-          <div className="relative mt-4 flex flex-wrap gap-1.5">
-            {fit.warnings.map((w, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center gap-2 rounded-md border border-warn/30 bg-warn/10 px-2.5 py-1 text-xs text-warn"
-              >
-                <span aria-hidden className="size-1 rounded-full bg-warn" />
-                {w}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Tailoring moves — distinct tinted-orange inset zone. */}
-        <div className="relative mt-6 rounded-xl bg-orange/[0.04] p-5 ring-1 ring-orange/15">
-          <div className="flex items-center justify-between gap-3">
-            <p className="eyebrow-muted">Tailoring moves</p>
-            <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-orange/70">
-              {success.what_we_did_checklist.length} steps
-            </span>
-          </div>
-          <ul className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-            {success.what_we_did_checklist.map((item, i) => (
-              <li
-                key={i}
-                className="group flex items-start gap-3 text-sm leading-relaxed text-text/90 transition-colors hover:text-text"
-              >
-                <span
-                  aria-hidden
-                  className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange/35 to-orange/15 text-xs font-bold text-orange shadow-sm ring-1 ring-orange/30 transition-all duration-200 group-hover:scale-110 group-hover:from-orange/50 group-hover:to-orange/25 group-hover:shadow-[0_0_16px_rgba(232,90,46,0.4)]"
-                >
-                  {i + 1}
-                </span>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
         </div>
       </FadeUp>
 
