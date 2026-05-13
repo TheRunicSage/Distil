@@ -293,6 +293,43 @@ The universal bullet cap (§5.3) applies on top of everything below.
 - Reword to surface JD keywords where they naturally fit — never keyword-stuff.
 - Drop irrelevant projects entirely. Do not pad.
 
+**Within-role bullet selection (master CV usually has more bullets than the budget allows).**
+
+Master CVs routinely have 6-8 bullets per role; §5.2 budget caps to 3-5 (most-relevant role gets 5; others get 3-4). **Select the JD-relevant subset** — don't truncate chronologically or take the first N.
+
+Selection priority:
+1. **Direct JD must-have match** (named tech / workflow / outcome). Leads.
+2. **Direct JD nice-to-have match.**
+3. **Quantified outcome** (number / metric / scope).
+4. **JD-relevant behavioural evidence** (collaboration / leadership / ownership per §5.7).
+5. **Recency** — only as tiebreaker. Recent ≠ relevant.
+
+Worked example. Senior Data Engineer master-CV role with 6 bullets:
+1. `"Built reporting dashboards in Tableau for finance team"`
+2. `"Led migration of 47 cron jobs into Airflow, deprecating three Slack-alert channels"`
+3. `"Wrote and ran daily standups for the data team of 5"`
+4. `"Onboarded two junior engineers across 18 months"`
+5. `"Refactored a legacy ETL job to reduce daily runtime from 4 hours to 90 seconds"`
+6. `"Maintained Confluence documentation for the team's runbook"`
+
+JD must-haves: Airflow, ETL optimisation, mentoring. Nice-to-haves: BI tools. Budget: 4 bullets.
+
+Selected (JD priority leads): 2 (Airflow, quantified) → 5 (ETL, quantified) → 4 (mentoring, JD must-have) → 1 (Tableau BI, nice-to-have). Dropped: 3 (generic admin), 6 (admin). Same 6-bullet role tailored to a BI Analyst role would lead with bullet 1 and drop bullet 2 — master CV is the evidence pool; JD is the selection filter.
+
+**Reframing master-CV phrasing in JD language (parallel to §5.7 for soft skills).**
+
+When a bullet's *underlying action and outcome* are master-CV-sourced but the JD uses different terminology, the bullet can use the JD's language while the facts stay verbatim. Same pattern as §5.7 labels-vs-scaffolding rule, extended to technical skills.
+
+- Master CV `"Built data pipelines in Python"` + JD asks for `"ETL development"` → bullet `"Built ETL pipelines in Python..."`. Python and the activity are master-CV facts; "ETL" is JD framing. OK.
+- Master CV `"Used AWS for distributed processing of 2.4TB dataset"` + JD asks for `"cloud infrastructure"` → bullet `"Built cloud infrastructure on AWS for distributed processing of a 2.4TB dataset..."`. AWS and 2.4TB are master-CV facts; "cloud infrastructure" is JD framing. OK.
+
+NOT allowed (still §5.8 fabrication):
+- Adding a tool the master CV never mentions (`"ETL in Snowflake"` when master CV has Python only).
+- Adding a scope the master CV doesn't support (`"50TB"` when master CV says 2.4TB).
+- Inventing an activity (`"Designed the data warehouse schema"` when master CV only says "built pipelines").
+
+JD terminology can frame the candidate's real master-CV evidence. JD terminology never authorises adding new evidence.
+
 ### 5.5 Same-Archetype Redundancy
 
 Two master-CV roles in the same archetype class (two customer-service roles, two hospitality jobs, two warehouse roles, two intern positions in the same function) that surface near-identical evidence to the JD: **keep the stronger one, drop the weaker.** "Stronger" = better-known employer, more recent, more JD-relevant context, more impressive numbers, longer tenure.

@@ -1599,6 +1599,21 @@ Rollback: single `git revert`. §5.3 rewrite reverts cleanly to previous content
 
 [18] Voice foundation — research sources cited (2026-05-13). For reference if future sessions revisit: Anthropic prompt-engineering docs (`platform.claude.com/docs/en/build-with-claude/prompt-engineering/`), AWS Bedrock Claude 3 guide, LessWrong Sonnet 4.5 fiction experiments, DeepSeek API parameter-settings docs, Lightrains DeepSeek prompt-engineering blog, deepseekai.guide tutorials, Sider DeepSeek V3.2 templates, Cover Letter Copilot recruiter study, CareerAddict 2025 humour-in-cover-letters analysis, CNBC 2018 recruiter humour piece, Vappingo funny-cover-letters collection. Working principle: voice priming + explicit exemplars substitute for the temperature lever we can't use given numeric fidelity priority.
 
+[18] Refined-selection worked example + technical-skill JD-framing permission (2026-05-13, end-goal audit commit 2 of 4). Addresses P2 (refined selection — weak per audit, only one-sentence rule for within-role bullet triage with zero worked examples) and P3 (JD-relevant skills — §4.6.5 explicitly allowed JD-framing for soft-skill labels but no equivalent existed for technical skills, so the model over-anchored tech bullets to master-CV verbatim wording, undercutting ATS keyword alignment).
+
+**Claude §4.3 extended with two new subsections:**
+
+* **Within-role bullet selection (worked example).** Establishes selection priority order: direct JD must-have match > direct JD nice-to-have match > quantified outcome > JD-relevant behavioural evidence > recency (tiebreaker only). Worked example: a Senior Data Engineer role with 6 master-CV bullets and a 4-bullet budget; shows which bullets survive against an Airflow-focused JD vs a BI-Analyst JD, demonstrating that master CV = evidence pool and JD = selection filter. The "same role, different JD = different selection" framing is the most concrete demonstration of refined selection in either prompt.
+* **Reframing master-CV phrasing in JD language.** Parallel to §4.6.5 for soft skills. Underlying action and outcome stay master-CV-sourced (verbatim facts: tools, numbers, scope, employers, dates); JD's terminology can frame the bullet for ATS alignment. Three worked examples (Python pipelines → "ETL pipelines"; automated workflows → "data orchestration workflows"; AWS distributed processing → "cloud infrastructure on AWS"). What is NOT allowed kept explicit: adding a tool the master CV never mentions, adding a scope/scale not in the master CV, inventing an activity. Same line as §4.6.5: JD framing of real evidence OK; JD-derived new evidence NOT OK.
+
+**Flash §5.4 same shape, compact style.** Within-role bullet selection rule + the same 6-bullet worked example + the same reframing rule with 2 worked examples (Python pipelines → ETL, AWS → cloud infrastructure). NOT-allowed list kept.
+
+What was *not* changed: the §4.4 / §5.2 seniority budget (bullet counts unchanged), the §4.6 / §5.7 soft-skill rules, the §5.4 / §5.8 numeric fidelity rules (these are the underlying fidelity protection the new reframing rule pivots on), the schema, the renderer, the LLM provider layer.
+
+Test path: re-submit any generation. Expected (a) bullets within each role visibly ordered with JD-relevant ones leading; (b) bullets that don't appear in the output are drawable to "JD-irrelevant" reasoning (admin maintenance, generic team management, etc.); (c) technical bullets use JD framing (`"ETL"` instead of `"data pipelines"` when JD says ETL) while keeping master-CV facts verbatim.
+
+Rollback: single `git revert`. Both subsections are additive; the existing §4.3 / §5.4 rules (reorder / reword / drop / skill-group ordering) are unchanged.
+
 ---
 
 ## Known Gaps to Watch
