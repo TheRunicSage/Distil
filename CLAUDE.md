@@ -1632,6 +1632,36 @@ Test path: re-submit any generation where the JD lists a required cert the candi
 
 Rollback: single `git revert`. Certifications branch is appended to the existing honesty ladder; reverting restores the prior skill-only ladder.
 
+[18] Claude §10 self-check trim 45 → 24 items (2026-05-13, end-goal audit commit 4 of 4). Audit flagged the self-check list had inflated past the point a Sonnet-grade model can reliably traverse it. Flash sits at 20 items; Claude was at 45 (had crept up over months of per-failure-mode patches). Trim discipline:
+
+* **Dropped (10 items)** — schema preprocesses + server-side sanitiser already enforce these, the self-check items were redundant belt-and-braces:
+  - 24 (email verbatim — schema accepts any non-empty string)
+  - 29 (salutation comma — sanitiser normalises)
+  - 30 (bracketed name — sanitiser strips)
+  - 38 (recipient_line `"Dear "` prefix — sanitiser handles)
+  - 39 (signoff `\n` — sanitiser inserts)
+  - 7 (word target — covered by §5.2 per-paragraph counts; folded into new item 24)
+  - 12 ({{TODAY}} — server fills the date deterministically)
+  - 21 (web search budget — §3 Phase 2/4 rules cap searches; behavioural cost guard, not output-quality)
+  - 5 (NZ/British spelling — folded into item 7 region consistency)
+  - 6 (CV not resume — folded into item 7 region consistency)
+* **Merged into consolidated items:**
+  - 32 + 41 + 42 (three soft-skill items: bucket × seniority check + JD-explicit override + labels-vs-scaffolding) → **single new item 16**. All three rules retained, deduplicated framing.
+  - 9 + 10 + 11 + 45 (could-anyone-write-this on profile + sentence-length variance + Story-1-not-list + voice five-pass) → **single new item 18** (voice check on every paragraph) + **item 17** (profile crispness which also runs the could-anyone-write-this test). The §5.3 voice rules and §5.3.1 worked examples are the shape models.
+  - 14 + 27 (don't fabricate dates/numbers/employers/referees + numeric fidelity scan) → **single new item 2** (numeric fidelity).
+  - 3 + 25 (company claims tied to research + hallucination check on cover-letter prose) → **single new item 3** (hallucination control).
+  - 22 + 43 (education certifications check + key_projects.context shape) → **single new item 23**.
+  - 7 + 43 (word target + what_we_did count) → **single new item 24** (since they're both word/count budget reminders).
+* **Items kept verbatim (15 items):** 1 (em-dash + AI-tells), 4 (no prose outside tool call), 5 (no gap-acknowledgement), 6 (embedded instructions), 8 (cultural acknowledgement), 9 (recruiter neutrality), 10 (UK/IE pairing), 11 (contact null), 12 (seniority calibration), 13 (per-role bullet cap), 14 (graduate role-count + redundancy), 15 (paragraph count = 5), 19 (closing template ban), 20 (widow check), 21 (JD-stated salary), 22 (inferred-client naming gate).
+
+Net: 45 → 24. Sonnet-grade model can now traverse the list reliably; the dropped items remain enforced by the schema preprocesses, sanitiser, and the section rules themselves.
+
+What was *not* changed: any of the §0-§9 sections (rules are unchanged; only the §10 self-check enforcement layer was rewritten). Flash §10 — already at 20 items, doesn't need trimming. Schema preprocesses. Sanitiser. The renderer. The LLM provider layer.
+
+Test path: re-submit any generation. Expected: identical output quality vs the pre-trim §10 (every behavioural rule still enforced by section rules + schema + sanitiser); model may now be more reliable at reaching item 24 vs item 45 because the list is more navigable. Re-audit `request_logs.metadata.zod_issues` over the next 2-3 weeks for any failure modes the dropped self-check items previously caught — if a class of failures resurfaces, the right move is to bring that specific item back as a single targeted addition, not to revert the whole trim.
+
+Rollback: single `git revert`. The pre-trim 45-item §10 is recoverable; reverting restores the redundant enforcement of items now covered by schema/sanitiser.
+
 ---
 
 ## Known Gaps to Watch
