@@ -36,6 +36,7 @@ import { RetryAbandonControls } from "@/components/application/RetryAbandonContr
 import { RetryFailedButton } from "@/components/application/RetryFailedButton";
 import { HoverHint } from "@/components/ui/HoverHint";
 import { isAdmin as isAdminRole, normaliseRole } from "@/lib/auth/roles";
+import { formatSalaryAverage } from "@/lib/llm/format-salary";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -276,24 +277,60 @@ export default async function ApplicationPage({ params }: RouteCtx) {
               </span>
             </HoverHint>
           )}
-          {headerSalary && (
-            <HoverHint
-              title={`Salary · ${headerSalary.confidence} confidence`}
-              trigger={
-                <span className="inline-flex cursor-help items-center gap-1.5 rounded-full border border-success/30 bg-success/15 px-3 py-1 text-xs font-medium text-success shadow-sm transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] hover:shadow-md hover:brightness-110">
-                  {headerSalary.range}
-                  <span className="text-[11px] uppercase tracking-[0.08em] text-success/70">
-                    · {headerSalary.confidence}
+          {headerSalary && (() => {
+            // Pill shows the midpoint of the model-emitted band so a
+            // long verbose range (e.g. "NZD 90,000 to 120,000 per
+            // annum including super") doesn't blow out the meta row.
+            // Hover surfaces the original range verbatim plus the
+            // source citation. If parsing fails (no two numbers
+            // recoverable) we fall back to showing the raw range on
+            // the pill — at least the user still gets the band.
+            const parsed = formatSalaryAverage(headerSalary.range);
+            const source = headerSalary.source_name?.trim();
+            return (
+              <HoverHint
+                title={`Salary · ${headerSalary.confidence} confidence`}
+                trigger={
+                  <span className="inline-flex cursor-help items-center gap-1.5 rounded-full border border-success/30 bg-success/15 px-3 py-1 text-xs font-medium text-success shadow-sm transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] hover:shadow-md hover:brightness-110">
+                    {parsed.display}
+                    {parsed.isAverage && (
+                      <span className="text-[10px] uppercase tracking-[0.08em] text-success/70">
+                        midpoint
+                      </span>
+                    )}
+                    <span className="text-[11px] uppercase tracking-[0.08em] text-success/70">
+                      · {headerSalary.confidence}
+                    </span>
                   </span>
+                }
+              >
+                {parsed.isAverage && (
+                  <span className="block">
+                    Midpoint of{" "}
+                    <strong className="font-semibold text-text">
+                      {headerSalary.range}
+                    </strong>
+                    .
+                  </span>
+                )}
+                {source && (
+                  <span className="mt-2 block">
+                    Cited from{" "}
+                    <strong className="font-semibold text-text">
+                      {source}
+                    </strong>
+                    .
+                  </span>
+                )}
+                <span className="mt-2 block text-muted-foreground">
+                  Estimated band for this role and seniority, pulled
+                  from public listings via live web search at
+                  generation time. Treat it as a sense-check, not a
+                  binding number.
                 </span>
-              }
-            >
-              Estimated band for this role + seniority + region, pulled
-              from public listings via live web search at generation
-              time. Confidence reflects how many sources agreed — treat
-              it as a sense-check, not a binding number.
-            </HoverHint>
-          )}
+              </HoverHint>
+            );
+          })()}
         </div>
       </header>
 
