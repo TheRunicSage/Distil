@@ -105,7 +105,7 @@ export function BehindApplicationHover({
         aria-expanded={open}
         aria-haspopup="dialog"
         onClick={() => setPinned((p) => !p)}
-        className={`group/title rounded-2xl border bg-dark2/85 px-7 py-3.5 text-left backdrop-blur-2xl transition-all duration-200 ${
+        className={`group/title rounded-2xl border bg-dark2/85 px-7 py-3.5 text-center backdrop-blur-2xl transition-all duration-200 ${
           open
             ? "border-orange/50 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_40px_rgba(0,0,0,0.36),0_0_48px_rgba(232,90,46,0.18)]"
             : "border-orange/25 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_12px_32px_rgba(0,0,0,0.32),0_0_36px_rgba(232,90,46,0.10)]"

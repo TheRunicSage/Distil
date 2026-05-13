@@ -188,8 +188,13 @@ export default async function ApplicationPage({ params }: RouteCtx) {
               it carries real status signal.
             - On success, Fit + Salary verdict pills move up here from
               the SuccessView title block — one consolidated meta row
-              with files-expiry + verdicts. */}
-        <div className="mt-3 flex flex-wrap items-center gap-3">
+              with files-expiry + verdicts.
+            - `justify-center` so the row is always centred. With
+              `flex-wrap`, a long salary chip (e.g. "NZD 145,000 to
+              175,000 · MEDIUM") that doesn't fit drops to its own
+              line and re-centres there — keeps the row polished on
+              every viewport / verdict combo. */}
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
           {isAdmin && <CopyId value={id} />}
           {app.status !== "success" && (
             <span className={`status-pill ${tone}`}>{label}</span>
@@ -421,6 +426,17 @@ function SuccessView({
     roleArchetype && companyName
       ? `${roleArchetype} @ ${companyName}`
       : roleArchetype || companyName || null;
+  // Inline " role @ company " when both segments are short enough to
+  // sit on one line at the desktop pill size. Above the threshold,
+  // stack each on its own row (role / @ / company) so a long title
+  // reads neatly instead of producing a mid-word line break. 30 chars
+  // combined is a practical floor: most NZ titles like "Data Analyst
+  // @ Auckland Council" (~30) stay inline; long ones like "Principal
+  // Site Reliability Engineer @ Te Whatu Ora Health New Zealand"
+  // (~70) stack cleanly.
+  const titleHasBoth = Boolean(roleArchetype && companyName);
+  const isLongTitle =
+    titleHasBoth && roleArchetype.length + companyName.length > 30;
 
   return (
     <div className="space-y-5">
@@ -438,8 +454,31 @@ function SuccessView({
             warnings={fit.warnings}
             tailoringMoves={success.what_we_did_checklist}
           >
-            <h2 className="font-serif text-2xl font-light leading-snug sm:text-3xl">
-              {roleArchetype && companyName ? (
+            <h2
+              className={`font-serif text-2xl font-light sm:text-3xl ${
+                isLongTitle ? "leading-tight" : "leading-snug"
+              }`}
+            >
+              {!titleHasBoth ? (
+                <span className="text-text">
+                  {roleArchetype || companyName}
+                </span>
+              ) : isLongTitle ? (
+                // Stacked layout — each segment becomes a block so it
+                // sits on its own centred row. " @ " drops to its own
+                // line as a smaller delimiter so it reads as a
+                // separator, not equal-weight content.
+                <>
+                  <span className="block text-text">{roleArchetype}</span>
+                  <span className="block text-base text-muted-foreground/70 sm:text-lg">
+                    @
+                  </span>
+                  <span className="block font-normal text-orange">
+                    {companyName}
+                  </span>
+                </>
+              ) : (
+                // Inline layout — short titles sit on one row.
                 <>
                   <span className="text-text">{roleArchetype}</span>
                   <span className="text-muted-foreground/70"> @ </span>
@@ -447,10 +486,6 @@ function SuccessView({
                     {companyName}
                   </span>
                 </>
-              ) : (
-                <span className="text-text">
-                  {roleArchetype || companyName}
-                </span>
               )}
             </h2>
           </BehindApplicationHover>
