@@ -1682,6 +1682,39 @@ Test path: re-submit any cross-domain stretch JD (doctor → construction, banke
 
 Rollback: single `git revert`. All three Flash additions are additive; reverting restores the prior compressed forms.
 
+[18] Language-drift hard reject + retry (2026-05-13). Real failure: a DeepSeek V4 Flash generation emitted Chinese/CJK characters in an English cover letter. Root cause is a documented upstream bug — DeepSeek's bilingual tokenizer occasionally selects a Chinese token in place of an English one even with English-only inputs. DeepSeek's own 2025-09-22 V3.1-Terminus release notes name `"Reduced occurrences of Chinese-English mixing and occasional abnormal characters"` as a fix item — *reduced*, not eliminated. V4 inherits the same lineage; 2026-04-27 MindStudio bug confirms V4 Flash specifically still drifts (DeepSeek staff confirmed under investigation as of 2026-05-06). Temperature 0.4 lowers the base rate but doesn't fix it.
+
+Full threat model in `docs/llm-output-risks.md` — 16 risk classes (L1–L16) with shape / root cause / detection / mitigation / current state. This Decision Log entry covers shipped step 1 of the implementation order; the rest is queued.
+
+User-locked policy (DPs: B + C + B):
+
+- **DP-1 scope**: ship L1 + L3 (non-target-language chars + Unicode invisibles) — closes the reported bug + the documented prompt-injection vector (AWS / Cisco / Promptfoo) in the same module.
+- **DP-2 severity**: zero tolerance. A single disallowed character fails the generation. Strip-and-ship was rejected — silent strip could leave a sentence missing a key word with no audit trail. Hard reject lets Inngest function-level retry handle it; if even the retries land bad, user sees a transient error rather than a corrupted-but-stripped docx.
+- **DP-3 allowed character set**: Latin-extended base (ASCII + Latin-1 Supplement + Latin Extended-A/B/C/Additional + IPA + Combining Diacriticals + General Punctuation minus dashes + Currency Symbols) — covers every English-business market we serve including Māori macrons (ā ē ī ō ū) and EU diacritics. PLUS two extensions: (a) target-country script extension — when `research_summary.target_country` resolves to a non-Latin-script market (Japan / China / Taiwan / Hong Kong / Macau / Singapore / Korea / Russia + 11 Cyrillic-script countries / Greece / Cyprus / Armenia / Georgia / Israel / 18 Arabic-script countries / India multi-script / Nepal / Bangladesh / Sri Lanka / Thailand / Myanmar / Cambodia / Laos / Ethiopia / Eritrea), the relevant script blocks pass through; (b) master-CV provenance — every codepoint that appears in the user's parsed master CV passes through, covering candidate names (`王芳`, `Søren Müller`), school / place names in the user's own CV prose, etc.
+
+Implementation:
+
+- **New `lib/llm/language-check.ts`** — pure module. Exports `detectLanguageDrift(output, masterCvText): LanguageDriftScanResult`. Builds the allowed codepoint set from (Latin base ∪ COUNTRY_SCRIPTS[target_country] ∪ chars-in-master-cv), then walks every user-facing string in `cv_content + cover_letter_content + fit_assessment.reasoning + fit_assessment.warnings + what_we_did_checklist + salary_band.range` (the docx-rendered fields plus the success-page hover panel; `research_summary` / `jd_analysis` excluded since they're internal metadata and a legitimate researched Chinese-company name there shouldn't false-positive). Returns up to 20 findings with codepoint samples and a total count for `request_logs.metadata`.
+- **New error code `llm_language_drift`** in `lib/errors/codes.ts` (recovery_kind: `transient`, message "The AI mixed languages unexpectedly. Please retry."). Reusing `llm_invalid_output` would have worked but a dedicated code gives admin-dashboard observability for drift rate over time.
+- **New pipeline step `language-check`** in `inngest/functions/generate-application.ts` between `validate-output` and `inject-date` (renumbered 8.5 in the top-of-file step list). Runs `detectLanguageDrift` outside `step.run` because it's a pure deterministic function of the already-cached `validated` output; safe across Inngest retries with the same answer. If findings are non-empty, opens a `withInngestStep` block with the findings + count + target_country in metadata (so `request_logs` carries the full signal for ops), then throws `NonRetriableError("llm_language_drift")` wrapping an `ApiError` with the same code (the cause-chain walker in `with-inngest-step.ts` lifts `error_code = "llm_language_drift"` onto the row).
+
+NonRetriable chosen over plain ApiError because Inngest step memoisation caches `validate-output`'s result across retries — re-running the language-check on the same memoised output would just throw again, burning retry budget for no benefit. The current shape (NonRetriable → user sees transient error → user clicks Retry → new application row → fresh LLM call) matches the existing `validate-output` Zod-failure flow exactly and uses the same error-recovery UX components.
+
+What was *not* changed: the existing `sanitiseOutput` (dash stripping stays as-is), Zod schema (no new constraints — the schema sees a normal success-shape output and passes; drift detection lives in the new step), the LLM provider layer (no temperature change, no prompt change, no retry change), the cover-letter or CV renderers, the system prompts (Claude or Flash). Detection is purely post-LLM at the function level; model-side untouched.
+
+Test path (manual): submit any JD that has previously produced drift, observe `request_logs` for a row with `error_code = "llm_language_drift"` and `metadata.drift_findings`. Retry from the UI should produce a clean generation. Watch `request_logs.metadata` for the baseline drift rate over the first week to inform whether DP-2's zero-tolerance threshold is right.
+
+Rollback: single `git revert`. The new module + error code + step are all additive; reverting restores the pre-change behaviour where drift would ship to the user as a corrupted docx.
+
+Followups queued (per `docs/llm-output-risks.md` Implementation Order steps 4–8, not in this commit):
+- L5 repetition / degenerate-decoding detection (2026-04-27 V4 Flash word-soup bug, still unfixed upstream)
+- L6 markdown emphasis bleed strip
+- L7 + L11 + L12 instruction-tag / injection / refusal hard-rejects
+- L11 JD-input tag-block hardening on the API submit path
+- L10 truncation monitoring on `token_usage`
+
+Each is its own commit, reverts cleanly. Ship if real failures surface.
+
 ---
 
 ## Known Gaps to Watch

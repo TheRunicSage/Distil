@@ -11,6 +11,9 @@
 //   6.  call-llm                (retries: 0; logs token_usage)
 //   7.  cost-cap-postcheck      (warning only, never throws)
 //   8.  validate-output         (Zod parse only; ATS coverage moved to quality-scan as a warning)
+//   8.5 language-check          (only fires on success branch; zero-tolerance
+//                                hard-reject on non-target-language chars
+//                                per docs/llm-output-risks.md L1)
 //   9.  inject-date             (Pacific/Auckland today)
 //   10. quality-scan            (warnings only)
 //   then branch: success path vs insufficient_input path.
@@ -34,6 +37,7 @@ import { sendApplicationEmail } from "@/lib/email/send-application-email";
 import { isGenerationEnabled } from "@/lib/env";
 import { ApiError } from "@/lib/errors/api-error";
 import { buildUserMessage } from "@/lib/llm/build-user-message";
+import { detectLanguageDrift } from "@/lib/llm/language-check";
 import {
   ApplicationOutputSchema,
   type ApplicationOutput,
@@ -361,6 +365,54 @@ export const generateApplication = inngest.createFunction(
         data: { application_id, user_id, outcome: "insufficient_input" },
       });
       return { outcome: "insufficient_input" };
+    }
+
+    // 8.5. Language-drift check (L1 + L3 per docs/llm-output-risks.md
+    // and CLAUDE.md Decision Log [18] 2026-05-13). Zero tolerance for
+    // non-target-language characters in user-facing output. DeepSeek
+    // V4 Flash has a documented bilingual-tokenizer drift bug — the
+    // model occasionally selects a Chinese/CJK token in place of an
+    // English one even with English-only system prompt + JD + master
+    // CV (DeepSeek's own 2025-09-22 V3.1-Terminus release notes name
+    // this as a fix item — "reduced", not eliminated).
+    //
+    // detectLanguageDrift extends the Latin-base allowlist by
+    //   (a) research_summary.target_country — non-Latin-script
+    //       markets like Japan / China / Russia / Saudi Arabia allow
+    //       their native script.
+    //   (b) master-CV provenance — every character in the user's
+    //       parsed master CV passes through, covering candidate names
+    //       like "王芳" or "Søren Müller", school / place names in
+    //       the user's own CV prose.
+    //
+    // Any disallowed character fails the generation as
+    // llm_language_drift (a NonRetriableError so Inngest doesn't burn
+    // step retries on a deterministically-cached LLM output — the
+    // user-facing error UX surfaces a transient "we've been alerted"
+    // message with the existing Retry button, which creates a fresh
+    // application attempt with a new LLM call).
+    //
+    // detectLanguageDrift runs outside step.run because it's a pure
+    // deterministic function of the cached validate-output result —
+    // safe to re-run on retries with the same answer.
+    const drift = detectLanguageDrift(validated, ctx.master_cv_text);
+    if (drift.findings.length > 0) {
+      await withInngestStep(
+        step,
+        "language-check",
+        {
+          ...stepCtx,
+          metadata: {
+            drift_findings: drift.findings,
+            drift_total_count: drift.totalCount,
+            drift_target_country: drift.targetCountry,
+          },
+        },
+        () => {
+          const apiErr = new ApiError("llm_language_drift");
+          throw new NonRetriableError("llm_language_drift", { cause: apiErr });
+        },
+      );
     }
 
     // 9. Inject date (Pacific/Auckland today).

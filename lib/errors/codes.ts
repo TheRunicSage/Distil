@@ -255,6 +255,24 @@ export const ERROR_CODES = {
     recovery_hint:
       "Sometimes the AI gets confused on a particular job description and outputs something the renderer can't read. Adjusting the JD (paste a fuller version, or a cleaner cut without bullet symbols) often gives the model clearer signal.",
   },
+  llm_language_drift: {
+    // 2026-05-13: hard-reject + retry on any disallowed character
+    // in user-facing output. See lib/llm/language-check.ts and
+    // docs/llm-output-risks.md (risk L1). The Inngest function's
+    // retry budget (2) usually catches DeepSeek's intermittent
+    // bilingual-tokenizer drift on the next attempt. If all retries
+    // fail, the user sees this transient error — better than
+    // shipping a docx with stray Chinese / Cyrillic / etc. characters
+    // dropped in mid-sentence.
+    http_status: 502,
+    category: "external",
+    user_message: "The AI mixed languages unexpectedly. Please retry.",
+    client_retryable: true,
+    recovery_kind: "transient",
+    recovery_headline: "The AI slipped into the wrong language",
+    recovery_hint:
+      "We caught some non-English characters in the output — usually a one-off glitch on the AI provider's side. Our team has been alerted automatically. A retry almost always clears it.",
+  },
   storage_failed: {
     http_status: 502,
     category: "external",
