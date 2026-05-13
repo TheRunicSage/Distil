@@ -10,8 +10,14 @@
 // levels. Adding a future 'pro' role that gets a higher cost cap
 // but no admin access is just a new entry here — no comparisons to
 // update. See CLAUDE.md Decision Log [14] 2026-05-13.
-
-import "server-only";
+//
+// NOT server-only — capability predicates and presentation maps are
+// imported by both server pages (layout, settings, admin) AND client
+// components (UserMenu, TopbarNav, UserRolePicker). The module is
+// pure (types + helpers + maps; no DB / fetch / fs / env access) so
+// bundling it to the client is safe. Server-side gates that DO need
+// privileged access (e.g. requireAdmin) live in `lib/auth/require-admin.ts`
+// which keeps its own server-only marker.
 
 export const ROLES = ["user", "team", "admin"] as const;
 
