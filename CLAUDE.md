@@ -1550,6 +1550,55 @@ Test path: re-submit any recent generation with the same JD. Expected: closing p
 
 Rollback: single `git revert`. Banned-phrase list addition is additive; §5.2 / §6.2 rewrite reverts cleanly to the previous "Express willingness to discuss further" rule; self-check items 44 / 20 are append-only.
 
+[18] Voice foundation + §4.6 reconciliation (2026-05-13, end-goal audit commit 1 of 4). User asked the meta-question: `"Are we doing that?"` — referring to the service's end-goal of producing professional, lively, sense-of-humour-when-natural human-sounding outputs across all seniorities. Audit findings (separate agent run):
+
+- **P1 Best foot forward**: Strong — §0.1 advocate posture + §0.2 cross-domain example are solid.
+- **P2 Refined selection**: WEAK — single-sentence rule for within-role bullet triage; zero worked examples in either prompt.
+- **P3 JD-relevant skills/certs**: WEAK — three concrete gaps (cert-gap silence, no tech-skill JD-framing permission, soft-skill Skills-section contradiction).
+- **P4 Honest intent, no fabrication**: Strong.
+- **P5 Universal applicability**: Adequate.
+
+Plus an internal contradiction: Claude §4.6 paragraph 2 said `"Soft skills do not get their own category inside the Skills section"`; §4.6.5 worked example (added 2026-05-13) emitted `"Customer-facing communication, Empathy and de-escalation, Conflict resolution"` as a valid Skills category. Flash §5.7 inherited the same contradiction.
+
+Plus Claude's self-check at 44 items vs Flash at 20 — model traversal reliability concern raised.
+
+User direction: research first (`"how to derive these results in a mix of human and professional/casual way from claude and deepseek"`) then ship the recommendations. Goal: `"imitate the writing of a human as to showcase how lively they are and they have a sense of humour and arent just robots that want to work to make money."`
+
+Research findings (separate agent, sourced from Anthropic prompt-engineering docs, DeepSeek api-docs, recruiter studies, LessWrong Sonnet experiments, Cover Letter Copilot recruiter study, CareerAddict humour analysis):
+
+* **Multi-shot worked exemplars are Anthropic's single highest-leverage voice technique.** Claude prompt had ZERO good/bad cover-letter examples; Flash §6.3 has one (Story 1 only).
+* **DeepSeek V4's default voice is documented-flat without explicit priming.** Lightrains and deepseekai.guide both confirm. Temperature ≥1.3 is the textbook lever; we can't use it (numeric-fidelity priority per [18] 2026-05-12), but voice-fingerprint exemplars + explicit rules substitute for it.
+* **Universal techniques both models respond to:** sentence-length variance, contractions, concrete-anchor-per-paragraph, "could anyone write this" test.
+* **"Humour" is the wrong word** — empirically (CareerAddict 2025, CNBC 2018, Vappingo case studies) punchline humour backfires on borderline candidates and only differentiates top-tier ones. **Dry observation works; setup-and-payoff doesn't.** Recommendation: rename concept to "warmth and dryness" in the spec; bound to one mildly dry observation per cover letter; explicit hard rules against jokes / puns / pop-culture / quirky openers / self-deprecation-about-competence.
+
+This commit (1 of 4 from the end-goal audit work) ships the voice foundation + the §4.6/§4.6.5 contradiction reconciliation:
+
+**Claude prompt:**
+* §5.3 rewritten end-to-end as `"Voice: Warm, Specific, Human"`. Five explicit rules: (1) sentence-length variance with worked rhythm example (5/23/2 words), (2) contractions are natural with concrete examples, (3) one concrete anchor per paragraph, (4) warmth and dryness not humour (up to one mildly dry observation, hard rules against jokes/puns/quirky openers/self-deprecation), (5) "could anyone write this" test. New §5.3.1 subsection with BAD (every AI-tell at once) and GOOD (specific, varied rhythm, one dry beat, contractions natural) worked cover-letter paragraph examples. Both examples carry annotated `Why bad`/`Why good` analysis.
+* §4.6 paragraph 2 reconciled with §4.6.5: gate the `"no soft-skills category in Skills section"` rule on role type. Tech-heavy roles: no own category (soft skills in profile + bullets). HIGH-need non-tech roles (customer service, hospitality, sales, healthcare, teaching, public sector): soft skills CAN form Skills-section categories — the §4.6.5 worked example demonstrates. Principle: Skills section mirrors what the role values.
+* §10 new item 45: consolidated voice check on every cover-letter paragraph — five passes (sentence-length variance, contractions, concrete anchor, warmth-not-humour, "could anyone write this"). Points back to §5.3.1 worked examples as shape models.
+
+**Flash prompt:**
+* §6.1 voice rules extended with two new items: rule 6 (contractions are natural, with examples — the absence is the strongest AI-tell), rule 7 (warmth and dryness not humour — same boundary as Claude §5.3 rule 4). Existing rules 1-5 unchanged.
+* §5.7 paragraph 2 reconciled with §5.7's worked example (same role-type-gated Skills-section rule as Claude §4.6).
+* §10 item 12 rewritten with five-pass voice check (sentence rhythm / contractions / concrete anchor / warmth-not-humour / "could anyone write this") plus existing §7.2 ban list reference. §6.3 worked example stays as shape model.
+
+What was *not* changed: the §0 advocate posture, §0.2 cross-domain example, the soft-skill rubric (§4.6.1-§4.6.4 / §5.7 buckets), the JD-explicit override (§4.6.3.5), §5.2 paragraph-5 closing rule (just landed in 5d83d4b), §5.4 hallucination control + numeric fidelity, the §2.2 banned-phrase list (just extended in 5d83d4b), the schema, the renderer, the LLM provider layer. Temperature stays at 0.4 — voice priming substitutes for higher-temperature lever per the DeepSeek docs / Lightrains research.
+
+Test path: re-submit any recent generation. Expected cover letter:
+- Sentence lengths visibly vary (mix of short punches and long builds).
+- Contractions appear naturally (`"I'm"`, `"don't"`, `"it's"` etc.).
+- Every paragraph has at least one named project / tool / number / JD-line.
+- Possibly one mildly dry observation; never a joke / pun / quirky opener.
+- No sentence reads as if it could appear in any other applicant's letter.
+- Reader finishes thinking "okay, this person is actually interesting", not "another templated application".
+
+For HIGH-need non-tech roles (customer service, hospitality, etc.): Skills section may now appropriately contain soft-skill categories without §4.6 violation.
+
+Rollback: single `git revert`. §5.3 rewrite reverts cleanly to previous content; §4.6 paragraph reverts to original blanket prohibition; §6.1 / §5.7 / §10 items revert to prior shape.
+
+[18] Voice foundation — research sources cited (2026-05-13). For reference if future sessions revisit: Anthropic prompt-engineering docs (`platform.claude.com/docs/en/build-with-claude/prompt-engineering/`), AWS Bedrock Claude 3 guide, LessWrong Sonnet 4.5 fiction experiments, DeepSeek API parameter-settings docs, Lightrains DeepSeek prompt-engineering blog, deepseekai.guide tutorials, Sider DeepSeek V3.2 templates, Cover Letter Copilot recruiter study, CareerAddict 2025 humour-in-cover-letters analysis, CNBC 2018 recruiter humour piece, Vappingo funny-cover-letters collection. Working principle: voice priming + explicit exemplars substitute for the temperature lever we can't use given numeric fidelity priority.
+
 ---
 
 ## Known Gaps to Watch

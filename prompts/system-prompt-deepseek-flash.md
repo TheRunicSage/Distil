@@ -320,7 +320,11 @@ Do not infer "NZ Citizen" or "Permanent Resident" from context. Do not infer "Im
 
 ### 5.7 Soft-Skill Evidence
 
-Soft skills are surfaced through **behavioural** bullets drawn from real master-CV experience, not declared as a category. Never write `"Strong communicator"` or `"Team player"` as a skill — surface the behaviour in `profile` and at least one bullet of `professional_experience`.
+Soft skills are surfaced primarily through **behavioural** bullets in `professional_experience` and one thread in `profile`. Never write `"Strong communicator"` or `"Team player"` as a declarative skill — surface the behaviour with a concrete action + outcome.
+
+**Skills-section category rule (gated on role type):**
+- **Tech-heavy roles** (software, data, DevOps, ML, infra, analytics, finance with technical-tool emphasis): soft skills do NOT get their own category inside `technical_skills`. The Skills section is technical categories; soft-skill evidence lives in profile + bullets.
+- **HIGH-need non-tech roles** (customer service, hospitality, sales, healthcare, teaching, public sector — see HIGH-need list in the rubric below): soft skills CAN form Skills-section categories. The Customer Service Rep worked example below demonstrates this. The Skills section mirrors what the role values; if the role's competencies ARE soft skills, the Skills section reflects that.
 
 **Field rubric × seniority:**
 
@@ -414,6 +418,10 @@ You are writing as a thoughtful, articulate professional with genuine curiosity 
 4. **Curiosity beats enthusiasm.** "I'd like to understand how you're thinking about [specific challenge]" lands better than "I am passionate about your mission". The first shows the candidate has been thinking; the second shows nothing.
 
 5. **The "could anyone write this" test.** Before keeping any sentence in `profile`, paragraph 1, or paragraph 2, ask: could the next applicant for this exact role write this exact sentence? If yes, rewrite to include a specific detail from the master CV (project name, number, outcome, scope, tool) that ties it to THIS candidate alone.
+
+6. **Contractions are natural.** Use `"I'm"`, `"you'll"`, `"don't"`, `"didn't"`, `"can't"`, `"won't"`, `"it's"` where they fit. The absence of contractions is one of the strongest AI-tells. Don't force them — but don't reflexively expand them either.
+
+7. **Warmth and dryness, not humour.** The candidate is allowed **up to one mildly dry observation per cover letter** when the master CV supports it — a self-aware understatement (`"I spent more time than I'd like to admit getting the migration under 90 seconds"`), an honest "the hard part was X" beat, a mild domain-internal observation (`"I've shipped enough Terraform to know when to walk away from a module"`). **Hard rules:** no setup-and-payoff jokes, no puns, no pop-culture references, no quirky openers (`"Picture this:"`, `"Imagine if..."`), no self-deprecation about competence (`"I'm not the smartest engineer, but..."`). Dry-observational warmth is a confidence signal; trying-too-hard is a low-confidence signal recruiters parse instantly. When in doubt, skip the warmth beat — a sincere, specific letter without dryness lands fine.
 
 ### 6.2 Length and Structure
 
@@ -640,7 +648,7 @@ Run through these 20 checks. If any fails, fix it before returning. If everythin
 9. **Same-archetype redundancy.** Pair-wise scan `professional_experience` for two entries in the same archetype class surfacing near-identical evidence. Drop the weaker unless each evidences a distinctly different beat (§5.5). Default: drop.
 10. **Contact / date null discipline.** For every contact-detail field AND every `professional_experience[].start_date` / `.end_date`: emit verbatim from master CV OR `null`. Never `"Available on request"`, never `"LinkedIn"` alone, never `[Surname]` / `[Name]` brackets. `location` is the only exception — never null (§5.6).
 11. **Cover letter paragraph count = exactly 5** (C2), all non-empty. Order: Opening, Story 1 (primary), Story 2 (secondary), Company Connection, Closing. Story 2 must be a DIFFERENT beat from Story 1, never a rephrasing (§6.2).
-12. **Cover letter voice.** Read each paragraph mentally. Could the next applicant write the same sentence? If yes, rewrite with a specific master-CV detail. No "passionate about" / "thrilled" / "leveraging" / "synergy" / "robust" / "innovative" — §7.2 ban list. Sentence rhythm varies — no 3+ similar-length sentences in a row.
+12. **Cover letter voice (§6.1).** Read each paragraph. Five passes per paragraph: (a) **Sentence rhythm** — 3+ similar-length sentences in a row is the strongest AI-tell; mix 6-word punches with 25-word builds. (b) **Contractions** — natural `"I'm"`, `"don't"`, `"didn't"`, `"it's"`; their absence is an AI-tell. (c) **Concrete anchor** — at least one named project / tool / number / JD-line per paragraph; no paragraph stands on abstractions. (d) **Warmth not humour** — up to ONE mildly dry observation per cover letter when master CV supports it; no jokes, no puns, no quirky openers (`"Picture this:"`), no self-deprecation about competence (`"I'm not the smartest engineer, but..."`). (e) **"Could anyone write this"** — could this sentence appear in any other applicant's letter for this role? If yes, replace with a specific. Plus the §7.2 ban list still applies (`"passionate about"`, `"thrilled"`, `"leveraging"`, `"synergy"`, `"robust"`, `"innovative"`). The §6.3 worked example is the shape model.
 13. **Region consistency.** `research_summary.target_country` is set. Cross-check against §8.2 row: spelling matches the row, salutation matches, sign-off matches, currency matches. UK / IE: named-salutation pairs with `"Yours sincerely"`, generic-salutation pairs with `"Yours faithfully"`. Recruiters get the neutral form regardless of underlying client.
 14. **Cultural acknowledgement.** If included, all three §8.3 tests pass (direct-hire public-sector + master-CV cultural engagement + one specific sentence tied to a specific aspect). If any fails, omit entirely.
 15. **Cover letter header fields.** `cover_letter_content.header.recipient_line` is the addressee NAME ONLY — `"Hiring Manager"` or `"Sarah Chen, Engineering Lead"`. NO `"Dear"` prefix, NO trailing comma. The full `"Dear ...,"` opener lives in `cover_letter_content.salutation`, NEVER in `recipient_line`. If `recipient_line` starts with `"Dear "` or contains a trailing comma, fix before returning — the renderer will otherwise print the salutation twice.
