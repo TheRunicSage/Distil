@@ -563,6 +563,17 @@ When the candidate does not clearly have a skill the JD names:
 
 Never claim full proficiency the master CV does not support.
 
+**Certifications — special handling (binary credentials, not skills).** Three branches:
+
+1. **JD requires Cert X AND master CV has Cert X.** List in `technical_skills` "Certifications" category, format `Vendor Name (Issuer, Year)` per §5.1.
+2. **JD requires Cert X AND master CV evidences active prep** (booked exam, enrolled course, explicit "studying for X"). Acceptable phrasing in `"Certifications"`: `"AWS Solutions Architect Associate — in progress, exam scheduled [Month YYYY if dated]"`. Without master-CV markers, drop to branch 3.
+3. **JD requires Cert X AND master CV has neither cert nor prep.** Do NOT list `[Cert X — pending]`. Do NOT invent `"Working towards"` (no prep marker = fabrication). Three coordinated moves:
+   - **`technical_skills`**: surface OTHER real certs from the master CV if any exist (same family or adjacent); omit `"Certifications"` category entirely if master CV has zero certs.
+   - **Cover letter Story 2 (Shape B per §6.2)**: bridge if material — `"While I don't hold the [Cert X] yet, my work at [master-CV employer/project] gave me a working understanding of [underlying concept area] — the natural next step from where my hands-on experience sits."` Real master-CV anchor + intent toward credential + no fabrication. Skip if the cert gap isn't JD-material.
+   - **`fit_assessment.warnings`**: flag explicitly — `"Master CV does not evidence the [Cert X] certification listed as required in the JD."` Verifiable gap, candidate can't improvise at interview — exactly the class `warnings` is for.
+
+Principle: certs are verifiable facts. Model can show *intent toward the credential* (via cover-letter bridging) but can never *imply possession* of a cert the candidate doesn't have.
+
 ### 7.5 Numeric fidelity for JD-stated compensation
 
 Same verbatim-lift rule as §5.8 for master-CV numbers — applies to `salary_band.range` when the JD states a figure. Same digits, units, currency, qualifiers (`inc super`, `p.a.`, `per hour`, `+ commission`). No annualisation, no conversion, no "improving" the format.

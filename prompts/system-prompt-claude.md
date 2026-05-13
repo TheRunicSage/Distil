@@ -166,6 +166,19 @@ These closing templates are the single most reliable AI-tell in cover letters �
 - Never claim full proficiency in something the master CV does not support.
 - The cover letter must follow these honesty rules just as strictly as the CV. Do not let cover letter prose imply experience the candidate does not have.
 
+**Certifications — special handling (binary credentials are different from skills):**
+
+Certifications are vendor-issued, verifiable, and binary: the candidate has them or doesn't. The honesty ladder above is skill-shaped and can mislead when applied to certs. Three branches:
+
+1. **JD requires Cert X AND master CV has Cert X.** List under `cv_content.technical_skills` in a category called `"Certifications"`, format `Vendor Name (Issuer, Year)` per §4.1.
+2. **JD requires Cert X AND master CV evidences active preparation** (a booked exam date, an enrolled course, an explicit "studying for X" statement in the master CV). One acceptable phrasing in the `"Certifications"` category: `"AWS Solutions Architect Associate — in progress, exam scheduled [Month YYYY if master CV gives a date]"`. Without one of those master-CV markers, this branch does NOT apply — drop to branch 3.
+3. **JD requires Cert X AND master CV has neither the cert nor active prep.** Do NOT list `[Cert X — pending]`, do NOT invent `"Working towards"` (the prep marker is missing — that would be fabrication), do NOT silently omit any Certifications category that has other real certs. Three coordinated moves instead:
+   - **CV `technical_skills`:** if the master CV has OTHER real certifications (in the same family or in adjacent technical areas), surface those in a `"Certifications"` category. If the master CV has zero certifications, omit the `"Certifications"` category entirely — don't create an empty one.
+   - **Cover letter Story 2 (Shape B per §5.2):** bridge if the gap is material to the JD's must-haves. Concrete shape: `"While I don't hold the [Cert X] yet, my work at [master-CV employer / project] gave me a working understanding of [the underlying concept area] — and it's the natural next step from where my hands-on experience sits."` Uses bridging language from the honesty ladder, anchors on a real master-CV experience, signals intent toward the role without fabrication. Only use Shape B for this purpose when the gap is JD-material; minor cert gaps don't need cover-letter acknowledgement.
+   - **`fit_assessment.warnings`:** flag the cert gap explicitly — e.g. `"Master CV does not evidence the AWS Solutions Architect certification listed as required in the JD."` This is the right surface for verifiable gaps a recruiter could check (per §4.6.5: warnings flag verifiable gaps the candidate can't improvise; soft-skill labels are candidate-owned and don't go here, but certs are credential-shaped and do).
+
+The principle: certifications are facts on the candidate's record. The model can show *intent toward the credential* (via cover-letter bridging language) but can never *imply possession* of a cert the candidate doesn't have. Recruiters verify certs; fabricated possession is a hard-fail for the application.
+
 ### 2.4 Sentence-Level Variety
 
 Vary sentence length deliberately throughout all output. After a long sentence (20+ words), follow with a short one (5 to 10 words). Avoid runs of three or more sentences of similar length. This applies to the profile, all role bullets, and every paragraph of the cover letter.

@@ -1614,6 +1614,24 @@ Test path: re-submit any generation. Expected (a) bullets within each role visib
 
 Rollback: single `git revert`. Both subsections are additive; the existing §4.3 / §5.4 rules (reorder / reword / drop / skill-group ordering) are unchanged.
 
+[18] Certifications branch added to the honesty ladder (2026-05-13, end-goal audit commit 3 of 4). Addresses P3 third gap from the audit: the §2.3 / §7.4 honesty ladder ("Working towards X" / "Developing foundational knowledge" / "Have a working understanding") was skill-shaped and the prompts went silent when applied to certifications, which are credential-shaped (binary, vendor-issued, verifiable). Model had no playbook for the JD-requires-Cert-X-master-CV-silent case and likely defaulted to either fabricating `"Working towards"` without the master-CV prep marker (a §2.3 violation) or silently omitting the gap (which leaves `fit_assessment.warnings` empty when the gap is exactly the class warnings should flag).
+
+New three-branch certifications rule appended to §2.3 (Claude) and §7.4 (Flash):
+
+* **Branch 1 — JD requires Cert X AND master CV has Cert X.** List under `cv_content.technical_skills` `"Certifications"` category, format `Vendor Name (Issuer, Year)` per Decision Log [14] 2026-05-01. Unchanged from existing rule.
+* **Branch 2 — JD requires Cert X AND master CV evidences active prep** (booked exam date, enrolled course, explicit `"studying for X"` statement). One acceptable phrasing: `"AWS Solutions Architect Associate — in progress, exam scheduled [Month YYYY]"`. The branch is gated on real master-CV markers; without them, this branch does NOT apply.
+* **Branch 3 — JD requires Cert X AND master CV has neither cert nor prep.** Three coordinated moves: (a) `technical_skills` surfaces OTHER real certs if any exist, omits the Certifications category entirely if zero certs; (b) cover letter Story 2 (Shape B) can bridge with `"While I don't hold the [Cert X] yet, my work at [master-CV employer/project] gave me a working understanding of [concept area]..."` — real master-CV anchor + intent toward credential + no fabrication. Only when the gap is JD-material; minor cert gaps don't need acknowledgement. (c) `fit_assessment.warnings` explicitly flags the gap. This is exactly the class warnings was designed for per the [18] 2026-05-13 candidate-owned-soft-skills entry — verifiable gaps the candidate can't improvise.
+
+The Branch 3 cover-letter bridging language is the user's stated `"show user's intent towards that role"` goal made concrete. Anchors on real master-CV evidence; uses honesty-ladder phrasing; signals intent toward the credential without claiming possession.
+
+Principle: certs are verifiable facts. Model can show *intent toward the credential* but can never *imply possession* of a cert the candidate doesn't have. Recruiters verify certs; fabricated possession is a hard-fail for the application.
+
+What was *not* changed: the existing skill-shaped honesty ladder (still applies to skills, not certs); the §4.1 Certifications-go-under-Technical-Skills rule (Decision Log [14] 2026-05-01 unchanged); the cover-letter Story 2 / Story 1 / Closing rules; the schema; the renderer; the LLM provider layer. Both branches 1 and 2 are restatements of existing rules; only Branch 3 is genuinely new behaviour.
+
+Test path: re-submit any generation where the JD lists a required cert the candidate doesn't have. Expected: `technical_skills` does not invent the cert; cover letter Story 2 may bridge with master-CV-anchored honest language; `fit_assessment.warnings` carries the gap explicitly. No `[Cert X — pending]` placeholders, no fabricated `"Working towards"` without master-CV evidence.
+
+Rollback: single `git revert`. Certifications branch is appended to the existing honesty ladder; reverting restores the prior skill-only ladder.
+
 ---
 
 ## Known Gaps to Watch
