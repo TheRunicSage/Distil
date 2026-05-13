@@ -114,6 +114,28 @@ export function BehindApplicationHover({
         {children}
       </button>
 
+      {/* Persistent affordance caption — replaces the previous popover
+          footer hint which dropped off-viewport on long panels. Lives
+          directly under the title pill so it's always visible
+          regardless of whether the popover renders, and shifts copy
+          when pinned so the user knows how to dismiss. Small / muted
+          so it reads as helper text without competing with the title.
+          aria-live="polite" announces the state flip to screen readers. */}
+      <p
+        aria-live="polite"
+        className={`mt-2 text-center text-[11px] tracking-wide transition-colors duration-200 ${
+          pinned
+            ? "text-orange/85"
+            : open
+              ? "text-muted-foreground"
+              : "text-muted-foreground/70"
+        }`}
+      >
+        {pinned
+          ? "Pinned — click title or press Esc to close"
+          : "Hover for tailoring moves · click to pin"}
+      </p>
+
       {/* Panel — anchored below the title, no gap so cursor can move
           into it without crossing dead space. Width clamped at min of
           640px and the viewport (minus a 2rem safety gutter) so it
@@ -181,11 +203,6 @@ export function BehindApplicationHover({
           </ul>
         </div>
 
-        <p className="mt-4 text-[11px] text-muted-foreground">
-          {pinned
-            ? "Click the title again or press Esc to close."
-            : "Click to keep open."}
-        </p>
       </div>
     </div>
   );
