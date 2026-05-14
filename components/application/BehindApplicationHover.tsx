@@ -146,17 +146,31 @@ export function BehindApplicationHover({ children, tailoringMoves }: Props) {
           className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-emerald-500/[0.06] blur-3xl"
         />
 
-        {/* Header — Distilled as the hero. Fraunces italic 28px
-            in brand orange, with a small sparkles glyph floating
-            to the upper-left as a brand bullet (lighter stroke so
-            the word reads first). This IS the panel's headline;
-            no subtitle, no second line. */}
-        <header className="relative border-b border-border/60 px-6 pb-4 pt-5">
-          <h2 className="relative inline-flex items-center gap-2.5 font-serif text-[28px] italic font-medium leading-none tracking-tight text-orange">
+        {/* Header — Distilled wordmark hosted in its own zone: a
+            brand-orange tinted gradient wash + radial glow give
+            the word a real backing instead of floating on the
+            body surface. Centered for masthead presence; the
+            ledger below is left-aligned, the contrast is the
+            point. Border-orange seam ties the zone to the panel
+            shell. */}
+        <header className="relative overflow-hidden border-b border-orange/20 px-6 pb-5 pt-6">
+          {/* Layered backing: vertical wash + soft radial glow
+              above the wordmark. Both at low alpha — present but
+              never competing with the word itself. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-gradient-to-b from-orange/[0.10] via-orange/[0.04] to-transparent"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-12 left-1/2 h-32 w-64 -translate-x-1/2 rounded-full bg-orange/[0.22] blur-3xl"
+          />
+
+          <h2 className="relative flex items-center justify-center gap-2.5 font-serif text-[24px] italic font-medium leading-none tracking-tight text-orange">
             <SparklesIcon
-              size={18}
+              size={16}
               aria-hidden
-              strokeWidth={1.5}
+              strokeWidth={1.6}
               className="text-orange/85"
             />
             <span className="distilled-wordmark">Distilled</span>
