@@ -810,6 +810,30 @@
   }
 }
 
+/* Mouse-position tilt wrapper (2026-05-14). TiltWrap client
+   component sets --mx and --my CSS variables on mousemove; the
+   child rotates within a perspective container. 240ms ease-out
+   transition smooths the lerp back to flat on mouse leave. The
+   reduced-motion media query at the bottom kills the effect for
+   users who opted out — TiltWrap itself also gates on matchMedia,
+   so this CSS is belt-and-braces. */
+.tilt-wrap {
+  perspective: 800px;
+  transform-style: preserve-3d;
+}
+.tilt-wrap > * {
+  display: block;
+  transform: rotateY(var(--mx, 0deg)) rotateX(var(--my, 0deg));
+  transition: transform 240ms ease-out;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tilt-wrap > * {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
 /* Success-view choreography (2026-05-14). Three coordinated reveals
    so the emotional payoff lands as a cascade, not a single mass-
    mount:
