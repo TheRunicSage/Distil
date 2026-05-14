@@ -1,40 +1,30 @@
 "use client";
 
-// Title pill + on-hover/on-click reveal of "What we did" — the
-// tailoring-moves checklist that tells the user how the model
-// personalised their application. 2026-05-13 v2: pared back from
-// the earlier multi-section panel (fit reasoning + warnings +
-// moves) to just the moves. Fit data has its own dedicated home
-// in the Fit pill hover; this panel is now single-purpose so the
-// reader's eye lands on one thing.
+// Title pill + on-hover/on-click reveal of "Distilled" — the
+// tailoring-moves ledger that tells the user how their application
+// was personalised.
 //
-// Why a client component and not a CSS-only HoverHint:
-//   - Panel content can be tall (5-7 numbered moves).
-//   - With CSS-only hover on a `.group` whose bounding box is the
-//     trigger, cursor leaving the trigger to read the popover kills
-//     :hover. We want the panel to stay open while cursor is over
-//     either the title OR the panel — that requires a wrapping
-//     onMouseLeave handler.
-//   - Click-to-pin gives touch + keyboard users a stable way in
-//     without forcing hover semantics they can't trigger.
+// 2026-05-14 design pass ("Artisan's Ledger"): replaced the orange
+// numbered 2-col grid with a single-column ledger of green-verified
+// craft moves. Each row carries an emerald disc whose inner check
+// path stroke-draws in on panel reveal, anchored by a thin orange
+// rail that runs the length of the list. Header gains a Fraunces
+// italic count tagline; footer carries a small italic signature.
+// The semantic shift: "queued items" → "verified moves", driving
+// confidence rather than information density.
 //
-// Behaviour:
+// Why a client component (unchanged): panel can be tall, cursor
+// needs to be able to leave the trigger and enter the panel without
+// killing :hover, and click-to-pin gives touch + keyboard users a
+// stable way in without forcing hover semantics they can't trigger.
+//
+// Behaviour (unchanged):
 //   - mouseEnter on wrapper → open
 //   - mouseLeave on wrapper → close (unless pinned)
 //   - click title → toggle pinned
 //   - Escape → close + unpin
 //   - focus-within → open (keyboard a11y)
-//
-// Style notes (2026-05-13 design-first pass):
-//   - Eyebrow + sparkles in brand orange — small, restrained.
-//   - One-line serif-italic tagline below the eyebrow gives the
-//     panel a human-readable purpose without dominating space.
-//   - Numbered chips are the visual hero: gradient orange fill,
-//     brand-ring at rest, slight scale + brighter glow on item
-//     hover. Larger than the previous version (size-7 vs size-5)
-//     to balance the now-shorter panel.
-//   - 2-col grid on sm+, 1-col on mobile. items-start keeps wrapped
-//     lines lined up against their number.
+//   - outside mousedown while pinned → close
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { SparklesIcon } from "lucide-react";
@@ -45,9 +35,28 @@ type Props = {
   // name, muted " @ " separator).
   children: ReactNode;
   // Numbered "tailoring moves" — what_we_did_checklist from the
-  // success JSON. Rendered as a 2-col grid on sm+ viewports.
+  // success JSON. Rendered as a single-column ledger.
   tailoringMoves: string[];
 };
+
+// Spell-out for the italic count tagline. System prompt §6 / C14
+// caps the list at 5–7 items, but guard the edges anyway. Words
+// read better in serif italic than digits.
+const COUNT_WORDS: Record<number, string> = {
+  1: "One",
+  2: "Two",
+  3: "Three",
+  4: "Four",
+  5: "Five",
+  6: "Six",
+  7: "Seven",
+  8: "Eight",
+  9: "Nine",
+};
+
+function countWord(n: number): string {
+  return COUNT_WORDS[n] ?? String(n);
+}
 
 export function BehindApplicationHover({ children, tailoringMoves }: Props) {
   const [hovering, setHovering] = useState(false);
@@ -55,6 +64,8 @@ export function BehindApplicationHover({ children, tailoringMoves }: Props) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
   const open = hovering || pinned;
+  const count = tailoringMoves.length;
+  const noun = count === 1 ? "move" : "moves";
 
   // Escape closes everything. Outside-click closes pinned state so
   // users can dismiss without finding the title again.
@@ -131,16 +142,17 @@ export function BehindApplicationHover({ children, tailoringMoves }: Props) {
           : "Hover for the tailoring notes · click to pin"}
       </p>
 
-      {/* Panel — anchored below the title, no gap so cursor can move
-          into it without crossing dead space. Width clamped at min
-          of 640px and the viewport (minus a 2rem safety gutter). The
-          corner-tucked brand-orange ambient glow ties the panel to
-          the rest of the success view's brand language without
-          competing with the numbered chips for attention. */}
+      {/* Panel — single-column ledger anchored below the title with
+          no gap so cursor can move into it without crossing dead
+          space. Narrower than the previous 2-col version (520px max)
+          to read as a ledger rather than a dashboard. The corner-
+          tucked orange + emerald ambient glows seed the brand-craft
+          duality without competing with row content. */}
       <div
         role="dialog"
-        aria-label="What we did"
-        className={`absolute left-1/2 top-full z-50 mt-2 w-[min(640px,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-2xl border border-orange/25 bg-dark4/95 p-6 text-left shadow-[0_20px_48px_rgba(0,0,0,0.5),0_0_36px_rgba(232,90,46,0.10)] backdrop-blur-2xl transition-[opacity,transform] duration-200 ease-out ${
+        aria-label="Distilled — tailoring moves"
+        data-open={open}
+        className={`absolute left-1/2 top-full z-50 mt-2 w-[min(520px,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-2xl border border-orange/25 bg-dark4/95 text-left shadow-[0_20px_48px_rgba(0,0,0,0.5),0_0_36px_rgba(232,90,46,0.10)] backdrop-blur-2xl transition-[opacity,transform] duration-200 ease-out ${
           open
             ? "pointer-events-auto visible translate-y-0 opacity-100"
             : "pointer-events-none invisible translate-y-1 opacity-0"
@@ -148,33 +160,129 @@ export function BehindApplicationHover({ children, tailoringMoves }: Props) {
       >
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-orange/[0.08] blur-3xl"
+          className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-orange/[0.10] blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-emerald-500/[0.06] blur-3xl"
         />
 
-        {/* Single eyebrow, no tagline, no counter — the brand pun is
-            the headline and the list does the rest. */}
-        <p className="relative eyebrow flex items-center gap-1.5">
-          <SparklesIcon size={12} aria-hidden className="text-orange" />
-          Distilled
-        </p>
+        {/* Header — eyebrow + italic count tagline. The italic
+            serif tagline reads as a curator's note, framing the
+            list below as crafted artefacts rather than queued
+            tasks. */}
+        <header className="relative border-b border-border/60 px-6 pb-4 pt-5">
+          <p className="eyebrow flex items-center gap-1.5">
+            <SparklesIcon size={12} aria-hidden className="text-orange" />
+            Distilled
+          </p>
+          <p className="mt-1.5 font-serif text-[15px] italic leading-tight text-text/90">
+            {countWord(count)} crafted {noun} that make this theirs.
+          </p>
+        </header>
 
-        <ul className="relative mt-4 grid grid-cols-1 items-start gap-x-5 gap-y-2.5 sm:grid-cols-2">
+        {/* Ledger — single-column rail of verified moves. */}
+        <ol className="distilled-ledger relative px-6 pb-5 pt-4">
+          {/* Vertical orange hairline rail behind the disc column —
+              reads as a "thread of craft" running through the list.
+              Gradient fade at top/bottom masks any imprecision in
+              first/last disc alignment. */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute top-6 bottom-6 w-px bg-gradient-to-b from-orange/0 via-orange/35 to-orange/0"
+            style={{ left: "calc(1.5rem + 11px)" }}
+          />
+
           {tailoringMoves.map((item, i) => (
             <li
               key={i}
-              className="group/move flex items-start gap-2.5 text-[13px] leading-snug text-text/90 transition-colors hover:text-text"
+              className="distilled-row group/move relative flex items-start gap-3.5 py-2 text-[13.5px] leading-snug text-text/85 transition-colors hover:text-text"
+              style={{ ["--row-delay" as string]: `${i * 70}ms` }}
             >
+              {/* Verified disc. Emerald-500 fill with a white
+                  check, ring + glow intensify on row hover. The
+                  inner check stroke draws itself in on reveal via
+                  stroke-dash animation, delayed 140ms behind the
+                  row's own fade-in for a satisfying one-two beat. */}
               <span
                 aria-hidden
-                className="mt-px inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-orange/40 to-orange/15 text-[11px] font-bold text-orange shadow-sm ring-1 ring-orange/30 transition-all duration-200 group-hover/move:scale-110 group-hover/move:from-orange/55 group-hover/move:to-orange/25 group-hover/move:shadow-[0_0_14px_rgba(232,90,46,0.4)]"
+                className="relative mt-px inline-flex size-[22px] shrink-0 items-center justify-center rounded-full bg-emerald-500 shadow-[0_0_0_1px_rgba(16,185,129,0.4),0_4px_10px_rgba(16,185,129,0.18)] transition-all duration-200 group-hover/move:bg-emerald-400 group-hover/move:shadow-[0_0_0_1px_rgba(52,211,153,0.55),0_0_16px_rgba(52,211,153,0.45)]"
               >
-                {i + 1}
+                <svg
+                  viewBox="0 0 24 24"
+                  className="size-3"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="3.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path
+                    d="M4.5 12.5 L10 18 L19.5 7"
+                    className="distilled-check-path"
+                  />
+                </svg>
               </span>
-              <span>{item}</span>
+
+              <span className="pt-[1px]">{item}</span>
             </li>
           ))}
-        </ul>
+        </ol>
+
+        {/* Signature flourish — quiet italic right-aligned line
+            tying the panel off as a craftsman's note. Tiny on
+            purpose; the discs and tagline are the leads. */}
+        <p className="relative border-t border-border/60 px-6 py-3 text-right font-serif text-[11px] italic text-muted-foreground">
+          — Tailored by Distil
+        </p>
       </div>
+
+      {/* Scoped keyframes for the row stagger + check-draw reveal.
+          Unique `distilled-*` prefix avoids collisions with the
+          live-view's `live-*` keyframes per the existing convention.
+          prefers-reduced-motion drops all animation and shows the
+          content at rest. */}
+      <style>{`
+        .distilled-row {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        [data-open="true"] .distilled-row {
+          animation: distilled-row-in 360ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          animation-delay: var(--row-delay, 0ms);
+        }
+        @keyframes distilled-row-in {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .distilled-check-path {
+          stroke-dasharray: 28;
+          stroke-dashoffset: 28;
+        }
+        [data-open="true"] .distilled-check-path {
+          animation: distilled-check-draw 420ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+          animation-delay: calc(var(--row-delay, 0ms) + 140ms);
+        }
+        @keyframes distilled-check-draw {
+          to {
+            stroke-dashoffset: 0;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .distilled-row,
+          .distilled-check-path {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+            stroke-dashoffset: 0 !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
