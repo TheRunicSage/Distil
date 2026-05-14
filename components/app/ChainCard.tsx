@@ -12,7 +12,6 @@
 import Link from "next/link";
 import { type ChainCard as Chain, chainToneClass } from "@/lib/applications/chains";
 import { DownloadDropdown } from "./DownloadDropdown";
-import { TiltWrap } from "./TiltWrap";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString("en-NZ", {
@@ -29,8 +28,7 @@ export function ChainCard({ chain }: { chain: Chain }) {
   const showDownload = chain.effectiveStatus === "ready";
 
   return (
-    <TiltWrap>
-    <article className="rounded-xl border border-border bg-dark2/60 backdrop-blur-sm transition-[transform,box-shadow,border-color,background-color,color] duration-200 ease-out hover:border-orange/40 hover:shadow-[0_4px_14px_rgba(226,97,59,0.10)]">
+    <article className="rounded-xl border border-border bg-dark2/60 backdrop-blur-sm transition-[transform,box-shadow,border-color,background-color,color] duration-200 ease-out hover:border-orange/40 hover:shadow-[0_4px_14px_rgba(226,97,59,0.10)] motion-safe:hover:-translate-y-px motion-safe:hover:shadow-[0_8px_22px_rgba(226,97,59,0.16)]">
       <div className="relative">
         <Link
           href={`/application/${chain.anchorId}`}
@@ -99,6 +97,5 @@ export function ChainCard({ chain }: { chain: Chain }) {
         </details>
       )}
     </article>
-    </TiltWrap>
   );
 }
