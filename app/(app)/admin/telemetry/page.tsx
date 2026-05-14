@@ -338,7 +338,7 @@ function Stat({
       <p className="text-xs font-bold uppercase tracking-[0.16em] text-orange">
         {label}
       </p>
-      <p className={`mt-2 text-3xl font-semibold ${accentClass}`}>{value}</p>
+      <p className={`mt-2 text-3xl font-semibold tabular-nums ${accentClass}`}>{value}</p>
     </div>
   );
 }

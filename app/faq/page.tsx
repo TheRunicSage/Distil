@@ -25,6 +25,7 @@
 
 import { AmbientBackground } from "@/components/app/AmbientBackground";
 import { AuthAwareTopbar } from "@/components/app/AuthAwareTopbar";
+import { FadeUp } from "@/components/app/FadeUp";
 import { Footer } from "@/components/landing/Footer";
 
 export const metadata = {
@@ -252,7 +253,9 @@ export default function FaqPage() {
             </header>
 
             {SECTIONS.map((section) => (
-              <FaqSectionBlock key={section.heading} section={section} />
+              <FadeUp key={section.heading} mode="scroll">
+                <FaqSectionBlock section={section} />
+              </FadeUp>
             ))}
 
             <section className="surface-card text-center">

@@ -444,7 +444,7 @@ function Stat({
         {label}
       </p>
       <p
-        className={`mt-2 text-3xl font-semibold ${STAT_VALUE_CLASS[tone]}`}
+        className={`mt-2 text-3xl font-semibold tabular-nums ${STAT_VALUE_CLASS[tone]}`}
       >
         {value}
       </p>

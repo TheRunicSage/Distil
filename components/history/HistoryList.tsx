@@ -7,6 +7,7 @@
 
 import { useMemo, useState } from "react";
 import { ChainCard } from "@/components/app/ChainCard";
+import { FadeUp } from "@/components/app/FadeUp";
 import type { ChainCard as Chain, ChainStatus } from "@/lib/applications/chains";
 
 const FILTERS: {
@@ -107,9 +108,11 @@ export function HistoryList({ chains }: { chains: Chain[] }) {
         </div>
       ) : (
         <ul className="space-y-2">
-          {filtered.map((c) => (
+          {filtered.map((c, i) => (
             <li key={c.rootId}>
-              <ChainCard chain={c} />
+              <FadeUp mode="scroll" delay={i < 8 ? i * 40 : 0}>
+                <ChainCard chain={c} />
+              </FadeUp>
             </li>
           ))}
         </ul>
