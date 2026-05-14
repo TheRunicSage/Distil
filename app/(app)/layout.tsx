@@ -10,7 +10,6 @@
 // "you need to upload first" message.
 
 import { redirect } from "next/navigation";
-import { unstable_ViewTransition as ViewTransition } from "react";
 import { AmbientBackground } from "@/components/app/AmbientBackground";
 import { AppShell } from "@/components/app/AppShell";
 import { AuthedTopbar } from "@/components/app/AuthedTopbar";
@@ -51,16 +50,7 @@ export default async function AppLayout({
       <div className="relative z-10 flex flex-1 flex-col">
         <AuthedTopbar hasCv={hasCv} email={email} role={role} />
         <main className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 sm:py-12">
-          <div className="mx-auto max-w-[760px]">
-            {/* React View Transitions wrapper — pairs with the
-                experimental.viewTransition flag in next.config.ts.
-                Children re-render on route change, React detects the
-                swap and runs the browser-native cross-fade. Browsers
-                without View Transitions support fall through to
-                instant nav (the current behaviour) — pure
-                progressive enhancement. */}
-            <ViewTransition>{children}</ViewTransition>
-          </div>
+          <div className="mx-auto max-w-[760px]">{children}</div>
         </main>
       </div>
     </AppShell>

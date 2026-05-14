@@ -7,17 +7,11 @@ const nextConfig: NextConfig = {
     // Pin the workspace root so Next does not pick up the stray lockfile in $HOME.
     root: path.join(__dirname),
   },
-  experimental: {
-    // React View Transitions API integration (Next.js 16). Pairs with
-    // <ViewTransition> in app/(app)/layout.tsx to cross-fade between
-    // (app) routes on client-side navigation. Browsers without View
-    // Transitions support fall back to instant navigation — the
-    // correct progressive-enhancement behaviour. ThemeToggle already
-    // uses the browser-native API directly for the circular reveal;
-    // this flag layers React's wrapper on top so route changes also
-    // animate.
-    viewTransition: true,
-  },
+  // Note: experimental.viewTransition + React's <ViewTransition>
+  // was attempted 2026-05-14 but reverted because React 19.2.4
+  // stable does not export unstable_ViewTransition — the wrapper
+  // lives in React canary only. Re-enable once we move React to a
+  // canary-channel release or React 19 ships ViewTransition stable.
 };
 
 // Sentry build-time wrapper. Source maps upload only when the
