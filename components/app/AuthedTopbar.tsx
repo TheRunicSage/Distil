@@ -22,7 +22,7 @@ export function AuthedTopbar({ email, hasCv, role }: Props) {
         href="/dashboard"
         className="flex items-baseline gap-3 outline-none focus-visible:opacity-80"
       >
-        <span className="font-serif text-xl font-light tracking-tight text-text sm:text-3xl">
+        <span className="wordmark-breathe font-serif text-xl font-light tracking-tight text-text sm:text-3xl">
           Distil
         </span>
         <span className="hidden text-xs font-semibold uppercase tracking-[0.18em] text-orange sm:inline">

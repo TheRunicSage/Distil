@@ -45,7 +45,7 @@ export default async function AppLayout({
 
   return (
     <AppShell>
-      <AmbientBackground />
+      <AmbientBackground variant="authed" />
       <MagneticDots />
       <div className="relative z-10 flex flex-1 flex-col">
         <AuthedTopbar hasCv={hasCv} email={email} role={role} />

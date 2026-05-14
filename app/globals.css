@@ -555,6 +555,20 @@
   box-shadow: 0 4px 14px rgba(226, 97, 59, 0.10);
 }
 
+/* Hover depth lift (2026-05-14). Interactive surfaces now physically
+   rise 1px on hover in addition to the border + glow swap, so the
+   row reads as responsive rather than just colour-flipping. Motion-
+   gated; reduced-motion users still get the border + glow change.
+   The :active scale(0.97) below overrides this translateY by design
+   — pressing collapses the lift back into the page, reading as a
+   physical depression. */
+@media (prefers-reduced-motion: no-preference) {
+  .surface-card-interactive:hover,
+  .surface-row:hover {
+    transform: translateY(-1px);
+  }
+}
+
 /* btn-primary has no light-mode override below, so the dark-mode
    :hover above applies in light mode too. The other three primitives
    (btn-secondary, surface-card-interactive, surface-row) get their
@@ -760,6 +774,21 @@
   }
 }
 
+/* Topbar wordmark breathing pulse (2026-05-14). Soft brand-orange
+   text-shadow that fades in + out over a 6s cycle. Same vocabulary
+   as the Distilled hover wordmark glow; reads as a heartbeat without
+   shifting layout (text-shadow ignored in layout box). Honors
+   prefers-reduced-motion. */
+@keyframes wordmark-breathe {
+  0%, 100% { text-shadow: 0 0 0 rgba(232, 90, 46, 0); }
+  50%      { text-shadow: 0 0 28px rgba(232, 90, 46, 0.22); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .wordmark-breathe {
+    animation: wordmark-breathe 6s ease-in-out infinite;
+  }
+}
+
 .ambient-blob {
   position: fixed;
   border-radius: 50%;
@@ -851,6 +880,22 @@
   background: radial-gradient(circle, rgba(108, 99, 255, 0.06) 0%, transparent 70%);
   filter: blur(60px);
   animation: ambient-float 28s ease-in-out infinite reverse;
+}
+
+/* Authed variant (2026-05-14). The (app) shell passes
+   variant="authed" so ambient is receded — lower alpha + longer
+   drift period — to support content rather than compete with it.
+   Landing / login keep variant="default" and the full intensity
+   above. Tuned via data-attribute selectors so the variant lives
+   entirely in CSS, no second component. */
+.ambient-blob[data-variant="authed"] {
+  opacity: 0.55;
+}
+.ambient-blob-orange[data-variant="authed"] {
+  animation-duration: 42s;
+}
+.ambient-blob-violet[data-variant="authed"] {
+  animation-duration: 50s;
 }
 
 /* ============================================================
