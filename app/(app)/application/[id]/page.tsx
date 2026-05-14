@@ -219,7 +219,7 @@ export default async function ApplicationPage({ params }: RouteCtx) {
               title={`Fit · ${headerFit.score}`}
               trigger={
                 <span
-                  className={`inline-flex cursor-help items-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] shadow-sm transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] hover:shadow-md hover:brightness-110 ${FIT_TONE[headerFit.score]}`}
+                  className={`verdict-pill-arrive inline-flex cursor-help items-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] shadow-sm transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] hover:shadow-md hover:brightness-110 ${FIT_TONE[headerFit.score]}`}
                 >
                   Fit · {headerFit.score}
                 </span>
@@ -317,7 +317,10 @@ export default async function ApplicationPage({ params }: RouteCtx) {
               <HoverHint
                 title={`Salary · ${headerSalary.confidence} confidence`}
                 trigger={
-                  <span className="inline-flex cursor-help items-center gap-1.5 rounded-full border border-success/30 bg-success/15 px-3 py-1 text-xs font-medium text-success shadow-sm transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] hover:shadow-md hover:brightness-110">
+                  <span
+                    className="verdict-pill-arrive inline-flex cursor-help items-center gap-1.5 rounded-full border border-success/30 bg-success/15 px-3 py-1 text-xs font-medium text-success shadow-sm transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] hover:shadow-md hover:brightness-110"
+                    style={{ animationDelay: "120ms" }}
+                  >
                     {parsed.display}
                     {parsed.isAverage && (
                       <span className="text-[10px] uppercase tracking-[0.08em] text-success/70">
@@ -506,7 +509,7 @@ function SuccessView({
           detail badge stays below the title where users expect a
           soft heads-up; Fit + Salary chips have moved up to the page
           header row alongside Files-available. */}
-      <FadeUp mode="mount" as="section" className="text-center">
+      <FadeUp mode="mount" as="section" delay={240} className="text-center">
         {applicationTitle && (
           <BehindApplicationHover
             tailoringMoves={success.what_we_did_checklist}
@@ -563,7 +566,7 @@ function SuccessView({
           User-requested placement (verbatim copy). Sized so the title
           pill above stays the dominant element; sign-off reads as a
           quieter warm aside, not a billboard. */}
-      <FadeUp mode="mount" as="section" className="pt-1 text-center">
+      <FadeUp mode="mount" as="section" delay={360} className="pt-1 text-center">
         <p className="font-serif text-lg font-light leading-snug text-text sm:text-xl">
           {firstName
             ? `Good luck with your application, ${firstName}.`
@@ -577,7 +580,7 @@ function SuccessView({
       {/* Email CTA — sits directly above the previews per user request
           (2026-05-12). Single-action row; "Emailed X ago" rendered
           inline by EmailMeButton when the row's last_emailed_at is set. */}
-      <FadeUp mode="mount" as="section" className="flex justify-center">
+      <FadeUp mode="mount" as="section" delay={480} className="flex justify-center">
         <EmailMeButton
           applicationId={applicationId}
           lastEmailedAt={lastEmailedAt}

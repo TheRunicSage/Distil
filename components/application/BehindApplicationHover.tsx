@@ -39,12 +39,38 @@ type Props = {
   tailoringMoves: string[];
 };
 
+const NUDGE_STORAGE_KEY = "distilled-discovered";
+
 export function BehindApplicationHover({ children, tailoringMoves }: Props) {
   const [hovering, setHovering] = useState(false);
   const [pinned, setPinned] = useState(false);
+  // showNudge: title button carries data-nudge="true" → CSS keyframe
+  // pulses brand-orange ring 3× as a one-time invitation. Gated on
+  // localStorage so users who've discovered the panel never see it
+  // again across visits.
+  const [showNudge, setShowNudge] = useState(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
   const open = hovering || pinned;
+
+  // First mount: if user hasn't discovered the panel before, start the
+  // nudge after a 1.4s delay so the title's own FadeUp lands first.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.localStorage.getItem(NUDGE_STORAGE_KEY)) return;
+    const t = window.setTimeout(() => setShowNudge(true), 1400);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  // On first open: mark discovered and stop nudging immediately. Don't
+  // gate on `pinned` only — hovering counts as discovery too.
+  useEffect(() => {
+    if (!open) return;
+    setShowNudge(false);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(NUDGE_STORAGE_KEY, "1");
+    }
+  }, [open]);
 
   // Escape closes everything. Outside-click closes pinned state so
   // users can dismiss without finding the title again.
@@ -94,6 +120,7 @@ export function BehindApplicationHover({ children, tailoringMoves }: Props) {
         type="button"
         aria-expanded={open}
         aria-haspopup="dialog"
+        data-nudge={showNudge && !open ? "true" : undefined}
         onClick={() => setPinned((p) => !p)}
         className={`group/title rounded-2xl border bg-dark2/85 px-7 py-3.5 text-center backdrop-blur-2xl transition-all duration-200 ${
           open

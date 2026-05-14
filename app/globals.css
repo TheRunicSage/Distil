@@ -810,6 +810,46 @@
   }
 }
 
+/* Success-view choreography (2026-05-14). Three coordinated reveals
+   so the emotional payoff lands as a cascade, not a single mass-
+   mount:
+     1. Verdict pills (Fit then Salary) arrive into the header row.
+     2. SuccessView FadeUp sections cascade behind them (staggered
+        delays set on the call sites).
+     3. The Distilled title pill nudges once if the user hasn't
+        discovered the hover panel yet (localStorage gated). */
+
+/* Verdict pill arrival — opacity + slight scale-up + drop-in. The
+   `backwards` fill-mode applies the 0% state during animation-delay
+   so the pill is invisible during the wait, then arrives. */
+@keyframes verdict-pill-arrive {
+  from { opacity: 0; transform: translateY(-4px) scale(0.92); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .verdict-pill-arrive {
+    animation: verdict-pill-arrive 420ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+}
+
+/* Distilled title pill nudge — three soft brand-orange ring +
+   glow pulses, then back to the resting Tailwind shadow. Fires on
+   the trigger button when data-nudge="true" (set by client JS in
+   BehindApplicationHover after a 1.4s post-mount delay, only when
+   localStorage flag is absent). Iterates exactly 3 times then
+   stops; user discovery (open) clears the attribute and shorts
+   the animation. */
+@keyframes distilled-nudge {
+  0%   { box-shadow: 0 0 0 0 rgba(232, 90, 46, 0);                                                 }
+  50%  { box-shadow: 0 0 0 6px rgba(232, 90, 46, 0.18), 0 0 48px rgba(232, 90, 46, 0.32);          }
+  100% { box-shadow: 0 0 0 0 rgba(232, 90, 46, 0);                                                 }
+}
+@media (prefers-reduced-motion: no-preference) {
+  button[data-nudge="true"] {
+    animation: distilled-nudge 1.6s ease-in-out 3;
+  }
+}
+
 .ambient-blob {
   position: fixed;
   border-radius: 50%;
