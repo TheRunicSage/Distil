@@ -226,12 +226,6 @@ export function BehindApplicationHover({ children, tailoringMoves }: Props) {
           ))}
         </ol>
 
-        {/* Signature flourish — quiet italic right-aligned line
-            tying the panel off as a craftsman's note. Tiny on
-            purpose; the discs and tagline are the leads. */}
-        <p className="relative border-t border-border/60 px-6 py-3 text-right font-serif text-[11px] italic text-muted-foreground">
-          — Tailored by Distil
-        </p>
       </div>
 
       {/* Scoped keyframes for the row stagger + check-draw reveal.
