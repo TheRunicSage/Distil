@@ -39,33 +39,12 @@ type Props = {
   tailoringMoves: string[];
 };
 
-// Spell-out for the italic count tagline. System prompt §6 / C14
-// caps the list at 5–7 items, but guard the edges anyway. Words
-// read better in serif italic than digits.
-const COUNT_WORDS: Record<number, string> = {
-  1: "One",
-  2: "Two",
-  3: "Three",
-  4: "Four",
-  5: "Five",
-  6: "Six",
-  7: "Seven",
-  8: "Eight",
-  9: "Nine",
-};
-
-function countWord(n: number): string {
-  return COUNT_WORDS[n] ?? String(n);
-}
-
 export function BehindApplicationHover({ children, tailoringMoves }: Props) {
   const [hovering, setHovering] = useState(false);
   const [pinned, setPinned] = useState(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
   const open = hovering || pinned;
-  const count = tailoringMoves.length;
-  const noun = count === 1 ? "move" : "moves";
 
   // Escape closes everything. Outside-click closes pinned state so
   // users can dismiss without finding the title again.
@@ -152,7 +131,7 @@ export function BehindApplicationHover({ children, tailoringMoves }: Props) {
         role="dialog"
         aria-label="Distilled — tailoring moves"
         data-open={open}
-        className={`absolute left-1/2 top-full z-50 mt-2 w-[min(520px,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-2xl border border-orange/25 bg-dark4/95 text-left shadow-[0_20px_48px_rgba(0,0,0,0.5),0_0_36px_rgba(232,90,46,0.10)] backdrop-blur-2xl transition-[opacity,transform] duration-200 ease-out ${
+        className={`absolute left-1/2 top-full z-50 mt-2 w-max min-w-[320px] max-w-[min(520px,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-2xl border border-orange/25 bg-dark4/95 text-left shadow-[0_20px_48px_rgba(0,0,0,0.5),0_0_36px_rgba(232,90,46,0.10)] backdrop-blur-2xl transition-[opacity,transform] duration-200 ease-out ${
           open
             ? "pointer-events-auto visible translate-y-0 opacity-100"
             : "pointer-events-none invisible translate-y-1 opacity-0"
@@ -167,18 +146,21 @@ export function BehindApplicationHover({ children, tailoringMoves }: Props) {
           className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-emerald-500/[0.06] blur-3xl"
         />
 
-        {/* Header — eyebrow + italic count tagline. The italic
-            serif tagline reads as a curator's note, framing the
-            list below as crafted artefacts rather than queued
-            tasks. */}
+        {/* Header — Distilled as the hero. Fraunces italic 28px
+            in brand orange, with a small sparkles glyph floating
+            to the upper-left as a brand bullet (lighter stroke so
+            the word reads first). This IS the panel's headline;
+            no subtitle, no second line. */}
         <header className="relative border-b border-border/60 px-6 pb-4 pt-5">
-          <p className="eyebrow flex items-center gap-1.5">
-            <SparklesIcon size={12} aria-hidden className="text-orange" />
-            Distilled
-          </p>
-          <p className="mt-1.5 font-serif text-[15px] italic leading-tight text-text/90">
-            {countWord(count)} crafted {noun} that make this theirs.
-          </p>
+          <h2 className="relative inline-flex items-center gap-2.5 font-serif text-[28px] italic font-medium leading-none tracking-tight text-orange">
+            <SparklesIcon
+              size={18}
+              aria-hidden
+              strokeWidth={1.5}
+              className="text-orange/85"
+            />
+            <span className="distilled-wordmark">Distilled</span>
+          </h2>
         </header>
 
         {/* Ledger — single-column rail of verified moves. */}
@@ -244,6 +226,9 @@ export function BehindApplicationHover({ children, tailoringMoves }: Props) {
           prefers-reduced-motion drops all animation and shows the
           content at rest. */}
       <style>{`
+        .distilled-wordmark {
+          text-shadow: 0 0 24px rgba(232, 90, 46, 0.32);
+        }
         .distilled-row {
           opacity: 0;
           transform: translateY(4px);
