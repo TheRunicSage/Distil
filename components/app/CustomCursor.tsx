@@ -16,7 +16,10 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const RING_LERP = 0.18;
+// Higher = snappier ring follow. 0.18 produced a visible trail (~167ms
+// to reach 86% on a fast swipe); 0.40 lands the ring inside ~85ms while
+// keeping a faint trail so the ring still reads as distinct from the dot.
+const RING_LERP = 0.4;
 
 export function CustomCursor() {
   const [enabled, setEnabled] = useState(false);
