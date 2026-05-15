@@ -40,11 +40,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 //     MAX_GROW 1.18 → 1.6, LERP_FACTOR 0.11 → 0.20, RANGE_PX 200 → 230,
 //     and active opacities (see profiles below). Rest opacities unchanged
 //     — the dynamism is in the hover state, not the ambient state.
+//   2026-05-15 (later): CELL_PX 36 → 28 (~1.65× more, ~8× original total),
+//     DOT_CAP 2200 → 3500. Cull fast-path still bounds per-frame cost
+//     to ~350 active dots regardless of total count.
 // Held per-frame cost flat across all bumps by skipping inert dots — see
 // the cull fast-path inside the tick loop. The cull bounds active
 // iterations to dots within RANGE_CULL_PX of the cursor + dots still
 // settling, regardless of total dot count.
-const CELL_PX = 36;
+const CELL_PX = 28;
 const DOT_R = 1.7;
 const RANGE_PX = 230; // softly wide; smoothstep keeps the outer ring gentle
 const RANGE_CULL_PX = RANGE_PX + 60; // beyond this + already-at-rest, skip
@@ -53,7 +56,7 @@ const MAX_PUSH_PX = 16; // pronounced displacement near cursor — seen, not jus
 const MAX_GROW = 1.6; // visible lift on the dots near the cursor
 const LERP_FACTOR = 0.2; // responsive without being twitchy
 const HALO_SIZE_PX = 280; // wider so the centre isn't bright; reads as a haze
-const DOT_CAP = 2200;
+const DOT_CAP = 3500;
 
 // Theme-conditioned opacities. Dark canvas needs lower numbers since
 // orange-on-dark already pops; the cream light canvas needs higher
