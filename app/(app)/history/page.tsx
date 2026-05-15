@@ -10,7 +10,7 @@
 // double-list the original.
 
 import { redirect } from "next/navigation";
-import { FadeUp } from "@/components/app/FadeUp";
+import { MotionSection } from "@/components/app/MotionList";
 import { HistoryList } from "@/components/history/HistoryList";
 import { groupIntoChains } from "@/lib/applications/chains";
 import { createClient } from "@/lib/supabase/server";
@@ -44,17 +44,17 @@ export default async function HistoryPage() {
 
   return (
     <div className="space-y-6">
-      <FadeUp mode="mount" as="header">
+      <MotionSection>
         <p className="eyebrow">History</p>
         <h1 className="heading-display mt-3">All your applications.</h1>
         <p className="mt-3 text-base text-muted-foreground">
           Newest first. Retries are nested under the original generation.
         </p>
-      </FadeUp>
+      </MotionSection>
 
-      <FadeUp mode="mount" delay={120}>
+      <MotionSection delay={120}>
         <HistoryList chains={chains} />
-      </FadeUp>
+      </MotionSection>
     </div>
   );
 }

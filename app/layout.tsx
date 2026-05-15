@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Outfit } from "next/font/google";
 import "./globals.css";
 import { CustomCursor } from "@/components/app/CustomCursor";
+import { MotionProvider } from "@/components/app/MotionProvider";
+import { AmbientParticles } from "@/components/ambient/AmbientParticles";
+import { ScrollIndicator } from "@/components/ambient/ScrollIndicator";
 import { cn } from "@/lib/utils";
 
 // Outfit — body sans. Geometric, friendly, holds at small sizes.
@@ -63,7 +66,11 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
       </head>
       <body className="min-h-full flex flex-col font-sans">
-        {children}
+        <MotionProvider>
+          <ScrollIndicator />
+          <AmbientParticles />
+          {children}
+        </MotionProvider>
         <CustomCursor />
       </body>
     </html>

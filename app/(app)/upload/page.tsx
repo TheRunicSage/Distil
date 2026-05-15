@@ -2,7 +2,7 @@
 // the upload form (client component) for the actual POST.
 
 import { redirect } from "next/navigation";
-import { FadeUp } from "@/components/app/FadeUp";
+import { MotionSection } from "@/components/app/MotionList";
 import { MissingFieldsBadge } from "@/components/app/MissingFieldsBadge";
 import { ProTip } from "@/components/app/ProTip";
 import { UploadForm } from "@/components/upload/UploadForm";
@@ -43,7 +43,7 @@ export default async function UploadPage() {
 
   return (
     <div className="space-y-8">
-      <FadeUp mode="mount" as="header" className="text-center">
+      <MotionSection className="text-center">
         <p className="eyebrow">
           {isFirstUpload ? "Step 1 of 2" : "Replace master CV"}
         </p>
@@ -57,10 +57,10 @@ export default async function UploadPage() {
             ? "Upload your master CV with all your experience, skills, and accomplishments. Don't hold back — the more we know, the sharper the result."
             : "Replacing the CV won't affect applications already in the queue. They keep using the snapshot from when they were submitted."}
         </p>
-      </FadeUp>
+      </MotionSection>
 
       {existing && (
-        <FadeUp mode="mount" delay={120} className="rounded-2xl border border-orange/30 bg-[var(--color-orange-subtle)] p-5">
+        <MotionSection delay={120} className="rounded-2xl border border-orange/30 bg-[var(--color-orange-subtle)] p-5">
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange">
               Currently on file
@@ -84,10 +84,10 @@ export default async function UploadPage() {
             the queue. They keep using the snapshot from when they were
             submitted.
           </p>
-        </FadeUp>
+        </MotionSection>
       )}
 
-      <FadeUp mode="mount" delay={existing ? 200 : 120} as="section" className="surface-card">
+      <MotionSection delay={existing ? 200 : 120} className="surface-card">
         <h2 className="heading-section">
           {existing ? "Replace master CV" : "Upload your master CV"}
         </h2>
@@ -104,7 +104,7 @@ export default async function UploadPage() {
           best. PDFs work too — just stick to text-based ones; scanned
           or image-only PDFs won&apos;t extract.
         </ProTip>
-      </FadeUp>
+      </MotionSection>
     </div>
   );
 }

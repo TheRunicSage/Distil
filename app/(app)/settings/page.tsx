@@ -7,7 +7,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronRightIcon, DownloadIcon } from "lucide-react";
 import { signOut } from "@/app/(auth)/login/actions";
-import { FadeUp } from "@/components/app/FadeUp";
+import { MotionSection } from "@/components/app/MotionList";
 import { MissingFieldsBadge } from "@/components/app/MissingFieldsBadge";
 import { DeleteAccountForm } from "@/components/settings/DeleteAccountForm";
 import { EmailOnGenerationToggle } from "@/components/settings/EmailOnGenerationToggle";
@@ -70,12 +70,12 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-8">
-      <FadeUp mode="mount" as="header">
+      <MotionSection>
         <p className="eyebrow">Account</p>
         <h1 className="heading-display mt-3">Settings</h1>
-      </FadeUp>
+      </MotionSection>
 
-      <FadeUp mode="mount" delay={80} as="section" className="surface-card">
+      <MotionSection delay={80} className="surface-card">
         <p className="eyebrow">Account</p>
         <dl className="mt-5 space-y-2.5 text-base">
           <div className="flex justify-between gap-4">
@@ -100,9 +100,9 @@ export default async function SettingsPage() {
             </dd>
           </div>
         </dl>
-      </FadeUp>
+      </MotionSection>
 
-      <FadeUp mode="mount" delay={160} as="section" className="surface-card">
+      <MotionSection delay={160} className="surface-card">
         <div className="flex flex-wrap items-center gap-3">
           <p className="eyebrow">Master CV</p>
           {cv?.missing_fields && cv.missing_fields.length > 0 && (
@@ -166,9 +166,9 @@ export default async function SettingsPage() {
             </div>
           </>
         )}
-      </FadeUp>
+      </MotionSection>
 
-      <FadeUp mode="mount" delay={200} as="section" className="surface-card">
+      <MotionSection delay={200} className="surface-card">
         <p className="eyebrow">Preferences</p>
         <div className="mt-5">
           <EmailOnGenerationToggle
@@ -176,10 +176,10 @@ export default async function SettingsPage() {
             email={userData.user.email ?? ""}
           />
         </div>
-      </FadeUp>
+      </MotionSection>
 
       {isAdminUser && (
-        <FadeUp mode="mount" delay={240} as="section">
+        <MotionSection delay={240}>
           <div className="mb-4">
             <p className="eyebrow">Admin tools</p>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -248,14 +248,14 @@ export default async function SettingsPage() {
               </Link>
             </li>
           </ul>
-        </FadeUp>
+        </MotionSection>
       )}
 
       {/* Condensed view of the standards + data treatment we publish
           on /faq — same source claims, abbreviated for in-app context.
           Designed so a logged-in user can verify what we hold without
           tab-switching to the public FAQ. */}
-      <FadeUp mode="mount" delay={isAdminUser ? 320 : 240} as="section" className="surface-card">
+      <MotionSection delay={isAdminUser ? 320 : 240} className="surface-card">
         <p className="eyebrow">Standards & your data</p>
         <ul className="mt-5 space-y-3 text-base text-muted-foreground">
           <li className="flex items-baseline gap-3">
@@ -296,9 +296,9 @@ export default async function SettingsPage() {
         <Link href="/faq" className="btn-link-orange mt-6 inline-block">
           Read the full FAQ →
         </Link>
-      </FadeUp>
+      </MotionSection>
 
-      <FadeUp mode="mount" delay={isAdminUser ? 400 : 320} as="section" className="surface-card">
+      <MotionSection delay={isAdminUser ? 400 : 320} className="surface-card">
         <p className="eyebrow">Session</p>
         <p className="mt-5 text-base text-muted-foreground">
           End your session on this device.
@@ -308,14 +308,14 @@ export default async function SettingsPage() {
             Sign out
           </button>
         </form>
-      </FadeUp>
+      </MotionSection>
 
-      <FadeUp mode="mount" delay={isAdminUser ? 480 : 400} as="section" className="surface-card border-danger/30">
+      <MotionSection delay={isAdminUser ? 480 : 400} className="surface-card border-danger/30">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-danger">
           Danger zone
         </p>
         <DeleteAccountForm email={userData.user.email ?? ""} />
-      </FadeUp>
+      </MotionSection>
     </div>
   );
 }

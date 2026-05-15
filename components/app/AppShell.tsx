@@ -7,6 +7,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { ToastProvider, useKeyboardShortcuts } from "@/components/ui/toast";
+import { PageTransition } from "@/components/app/PageTransition";
 
 function ShortcutLayer({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -66,7 +67,9 @@ function ShortcutLayer({ children }: { children: ReactNode }) {
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <ToastProvider>
-      <ShortcutLayer>{children}</ShortcutLayer>
+      <ShortcutLayer>
+        <PageTransition>{children}</PageTransition>
+      </ShortcutLayer>
     </ToastProvider>
   );
 }

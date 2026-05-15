@@ -1192,3 +1192,72 @@
     animation: none;
   }
 }
+
+
+/* ============================================================
+   Curiosity micro-interactions — additive keyframes + utilities
+   used by motion-aware components. All respect prefers-reduced-motion.
+   ============================================================ */
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+@keyframes ripple {
+  0% { transform: scale(0); opacity: 0.5; }
+  100% { transform: scale(4); opacity: 0; }
+}
+
+@keyframes whisper {
+  0%, 100% { opacity: 0.3; transform: scale(1); filter: blur(4px); }
+  50% { opacity: 0.6; transform: scale(1.04); filter: blur(6px); }
+}
+
+@keyframes orbit-ring {
+  0% { transform: rotate(0deg) scale(1); opacity: 0.4; }
+  50% { transform: rotate(180deg) scale(1.08); opacity: 0.6; }
+  100% { transform: rotate(360deg) scale(1); opacity: 0.4; }
+}
+
+@keyframes peek-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(226, 97, 59, 0); }
+  50% { box-shadow: 0 0 20px 4px rgba(226, 97, 59, 0.12); }
+}
+
+@keyframes draw-check {
+  to { stroke-dashoffset: 0; }
+}
+
+.shimmer-skeleton {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.whisper-text {
+  animation: whisper 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-skeleton::after,
+  .pulse-dot,
+  .whisper-text {
+    animation: none;
+  }
+}

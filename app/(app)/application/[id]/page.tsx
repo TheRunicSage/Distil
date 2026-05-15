@@ -21,7 +21,7 @@ import {
   PencilIcon,
 } from "lucide-react";
 import { CopyId } from "@/components/app/CopyId";
-import { FadeUp } from "@/components/app/FadeUp";
+import { MotionSection } from "@/components/app/MotionList";
 import {
   MissingFieldsBadge,
   computeOutputMissingFields,
@@ -509,7 +509,7 @@ function SuccessView({
           detail badge stays below the title where users expect a
           soft heads-up; Fit + Salary chips have moved up to the page
           header row alongside Files-available. */}
-      <FadeUp mode="mount" as="section" delay={240} className="text-center">
+      <MotionSection delay={240} className="text-center">
         {applicationTitle && (
           <BehindApplicationHover
             tailoringMoves={success.what_we_did_checklist}
@@ -560,13 +560,13 @@ function SuccessView({
             />
           </div>
         )}
-      </FadeUp>
+      </MotionSection>
 
       {/* Sign-off block — warm framing immediately above the documents.
           User-requested placement (verbatim copy). Sized so the title
           pill above stays the dominant element; sign-off reads as a
           quieter warm aside, not a billboard. */}
-      <FadeUp mode="mount" as="section" delay={360} className="pt-1 text-center">
+      <MotionSection delay={360} className="pt-1 text-center">
         <p className="font-serif text-lg font-light leading-snug text-text sm:text-xl">
           {firstName
             ? `Good luck with your application, ${firstName}.`
@@ -575,17 +575,17 @@ function SuccessView({
         <p className="mt-2 font-serif text-sm italic text-orange sm:text-base">
           Kia kaha — you&apos;ve got this.
         </p>
-      </FadeUp>
+      </MotionSection>
 
       {/* Email CTA — sits directly above the previews per user request
           (2026-05-12). Single-action row; "Emailed X ago" rendered
           inline by EmailMeButton when the row's last_emailed_at is set. */}
-      <FadeUp mode="mount" as="section" delay={480} className="flex justify-center">
+      <MotionSection delay={480} className="flex justify-center">
         <EmailMeButton
           applicationId={applicationId}
           lastEmailedAt={lastEmailedAt}
         />
-      </FadeUp>
+      </MotionSection>
 
       {/* Side-by-side previews — promoted to land directly under the
           hero action row so documents are the first substantial thing
@@ -599,7 +599,7 @@ function SuccessView({
           preview is a continuous scroll inside a max-height frame;
           the cover letter is one A4 page (CoverLetterPreview's own
           min-height fills the card naturally). */}
-      <FadeUp mode="scroll" as="section" className="relative left-1/2 right-1/2 -mx-[50vw] w-screen px-6">
+      <MotionSection className="relative left-1/2 right-1/2 -mx-[50vw] w-screen px-6">
         <div className="mx-auto max-w-[1280px]">
           {/* `items-start` keeps each card at its content height so the
               cover letter doesn't stretch to match the CV's longer body. */}
@@ -624,7 +624,7 @@ function SuccessView({
             </PreviewPanel>
           </div>
         </div>
-      </FadeUp>
+      </MotionSection>
 
     </div>
   );
