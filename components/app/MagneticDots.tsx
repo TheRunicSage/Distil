@@ -32,23 +32,28 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-// Density bumps:
+// Density + hover-dynamism bumps:
 //   2026-05-09: CELL_PX 80 → 56 (~2× density), DOT_CAP 400 → 800.
 //   2026-05-09 (later): CELL_PX 56 → 44 (~1.6× more), DOT_CAP 800 → 1300.
-// Held per-frame cost flat across both bumps by skipping inert dots —
-// see the cull fast-path inside the tick loop. The cull bounds active
+//   2026-05-15: CELL_PX 44 → 36 (~1.5× more, ~5× original total), DOT_CAP
+//     1300 → 2200. Also bumped hover dynamism: MAX_PUSH 8 → 16,
+//     MAX_GROW 1.18 → 1.6, LERP_FACTOR 0.11 → 0.20, RANGE_PX 200 → 230,
+//     and active opacities (see profiles below). Rest opacities unchanged
+//     — the dynamism is in the hover state, not the ambient state.
+// Held per-frame cost flat across all bumps by skipping inert dots — see
+// the cull fast-path inside the tick loop. The cull bounds active
 // iterations to dots within RANGE_CULL_PX of the cursor + dots still
 // settling, regardless of total dot count.
-const CELL_PX = 44;
+const CELL_PX = 36;
 const DOT_R = 1.7;
-const RANGE_PX = 200; // softly wide; smoothstep keeps the outer ring gentle
+const RANGE_PX = 230; // softly wide; smoothstep keeps the outer ring gentle
 const RANGE_CULL_PX = RANGE_PX + 60; // beyond this + already-at-rest, skip
 const REST_EPSILON = 0.05; // |state - rest| within this counts as settled
-const MAX_PUSH_PX = 8; // very subtle displacement — felt, not seen
-const MAX_GROW = 1.18; // tiny lift on the dots near the cursor
-const LERP_FACTOR = 0.11; // slow, graceful return; never springy
+const MAX_PUSH_PX = 16; // pronounced displacement near cursor — seen, not just felt
+const MAX_GROW = 1.6; // visible lift on the dots near the cursor
+const LERP_FACTOR = 0.2; // responsive without being twitchy
 const HALO_SIZE_PX = 280; // wider so the centre isn't bright; reads as a haze
-const DOT_CAP = 1300;
+const DOT_CAP = 2200;
 
 // Theme-conditioned opacities. Dark canvas needs lower numbers since
 // orange-on-dark already pops; the cream light canvas needs higher
@@ -62,10 +67,14 @@ type ThemeProfile = {
   haloBlend: "screen" | "multiply";
 };
 
+// Active opacities and haloPeak bumped 2026-05-15 — rest stays at the
+// 2026-05-09 values (the field at rest is the same), but hover now
+// reads as a clear brightness lift, not a subtle shift. Halo also
+// warmer so the cursor centre carries real presence.
 const DARK_PROFILE: ThemeProfile = {
   rest: 0.22,
-  active: 0.42,
-  haloPeak: 0.3,
+  active: 0.7,
+  haloPeak: 0.45,
   haloBlend: "screen",
 };
 
@@ -73,10 +82,12 @@ const DARK_PROFILE: ThemeProfile = {
 // rest alpha was washing out — page read as "mostly white". Bumped
 // rest / active / haloPeak so the dot field actually carries presence
 // against the off-white canvas. Same brand orange, just more visible.
+// Active + haloPeak bumped again 2026-05-15 to match dark-mode hover
+// dynamism — dots near cursor approach full opacity.
 const LIGHT_PROFILE: ThemeProfile = {
   rest: 0.46,
-  active: 0.72,
-  haloPeak: 0.34,
+  active: 0.95,
+  haloPeak: 0.48,
   haloBlend: "multiply",
 };
 
