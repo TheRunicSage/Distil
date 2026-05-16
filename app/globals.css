@@ -1119,12 +1119,17 @@
   will-change: transform;
 }
 
+/* No transform transition on the dot: the RAF loop in CustomCursor.tsx
+   already writes a fresh translate3d every frame to the raw mouse position.
+   A CSS transition on transform would have the browser interpolating toward
+   each successive target, so on fast flicks the dot never arrives before
+   the next target lands — that's the "muddy" feel. The ring trail comes
+   purely from RING_LERP in JS, which is untouched. */
 .landing-cursor-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: var(--color-orange);
-  transition: transform 0.05s linear;
 }
 
 .landing-cursor-ring {
