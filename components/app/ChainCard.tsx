@@ -21,6 +21,24 @@ function formatDate(iso: string): string {
   });
 }
 
+// Title shape from groupIntoChains is "${role_archetype} @ ${company_name}"
+// when any descendant of the chain reached `success`. Highlight the
+// company name in brand orange so the surface scans as "this role —
+// where". If the title doesn't contain the " @ " separator (single
+// field fallback or fallback id), render it untouched.
+function renderTitle(title: string) {
+  const atIdx = title.indexOf(" @ ");
+  if (atIdx === -1) return title;
+  const role = title.slice(0, atIdx);
+  const company = title.slice(atIdx + 3);
+  return (
+    <>
+      {role} <span className="text-muted-foreground">@</span>{" "}
+      <span className="text-orange">{company}</span>
+    </>
+  );
+}
+
 export function ChainCard({ chain }: { chain: Chain }) {
   const hasRetries = chain.attempts.length > 1;
   const tone = chainToneClass(chain.effectiveTone);
@@ -36,7 +54,9 @@ export function ChainCard({ chain }: { chain: Chain }) {
         >
           <div className="min-w-0 flex-1">
             <p className="truncate text-base text-text">
-              {chain.title ?? (
+              {chain.title ? (
+                renderTitle(chain.title)
+              ) : (
                 <span className="font-mono text-text/70">
                   {chain.fallbackId}
                 </span>
