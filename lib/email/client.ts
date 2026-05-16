@@ -41,7 +41,7 @@ export async function sendEmail(input: SendEmailInput): Promise<void> {
     // Sentry will pick up the cause via the wrapping log.
     throw new ApiError(
       "email_send_failed",
-      "Email is not configured (missing RESEND_API_KEY or EMAIL_FROM_ADDRESS).",
+      "Email delivery is still being set up — the admin is wiring it up. Please download the documents directly for now.",
     );
   }
 
