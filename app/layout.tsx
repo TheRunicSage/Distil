@@ -3,7 +3,6 @@ import { Fraunces, Outfit } from "next/font/google";
 import "./globals.css";
 import { CustomCursor } from "@/components/app/CustomCursor";
 import { MotionProvider } from "@/components/app/MotionProvider";
-import { AmbientParticles } from "@/components/ambient/AmbientParticles";
 import { ScrollIndicator } from "@/components/ambient/ScrollIndicator";
 import { cn } from "@/lib/utils";
 
@@ -68,7 +67,6 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         <MotionProvider>
           <ScrollIndicator />
-          <AmbientParticles />
           {children}
         </MotionProvider>
         <CustomCursor />

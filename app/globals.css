@@ -874,10 +874,17 @@
   }
 }
 
+/* 2026-05-16 perf: blur radii halved (80px → 40px here, 60px → 30px in
+   the light-mode override and the violet blob below). A blur surface
+   that large (the orange blob is 70vw × 70vw ≈ 1344px on a 1920px viewport)
+   re-rasterizes every frame the ambient-float animation moves it; the
+   larger the radius the more expensive each frame. 40px still reads as
+   diffuse atmosphere — the blob is enormous and far from any focal
+   content, so the eye can't distinguish 80px from 40px there. */
 .ambient-blob {
   position: fixed;
   border-radius: 50%;
-  filter: blur(80px);
+  filter: blur(40px);
   pointer-events: none;
   z-index: 0;
 }
@@ -903,7 +910,7 @@
     rgba(226, 97, 59, 0.18) 35%,
     transparent 70%
   );
-  filter: blur(60px);
+  filter: blur(30px);
 }
 
 /* ============================================================
@@ -963,7 +970,7 @@
   width: 50vw;
   height: 50vw;
   background: radial-gradient(circle, rgba(108, 99, 255, 0.06) 0%, transparent 70%);
-  filter: blur(60px);
+  filter: blur(30px);
   animation: ambient-float 28s ease-in-out infinite reverse;
 }
 

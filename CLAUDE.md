@@ -111,7 +111,7 @@ Decision Point. Do not invent behaviour, default values, or UX copy.
 │   │   ├── inngest/route.ts
 │   │   ├── telemetry/route.ts
 │   │   └── admin/{usage,logs,telemetry}/route.ts
-│   ├── layout.tsx                      # MotionProvider + ScrollIndicator + AmbientParticles + CustomCursor + inline FOUC theme script
+│   ├── layout.tsx                      # MotionProvider + ScrollIndicator + CustomCursor + inline FOUC theme script
 │   ├── globals.css                     # @theme tokens + design-system primitives + keyframes
 │   └── page.tsx                        # landing
 ├── components/
@@ -134,7 +134,6 @@ Decision Point. Do not invent behaviour, default values, or UX copy.
 │   ├── settings/{DeleteAccountForm, EmailOnGenerationToggle}.tsx
 │   ├── landing/LandingTopbar.tsx
 │   ├── ambient/
-│   │   ├── AmbientParticles.tsx        # 35 drifting orange particles
 │   │   └── ScrollIndicator.tsx         # 2px spring-smoothed top progress bar
 │   └── app/
 │       ├── AppShell.tsx                # ToastProvider + keyboard shortcuts + PageTransition
@@ -681,7 +680,8 @@ Schema is intentionally permissive — the cushion against model drift. Prompt r
 - **Design system primitives in `app/globals.css`** (single source of truth): `.eyebrow` / `.eyebrow-muted`, `.heading-display` (`text-4xl sm:text-6xl`), `.heading-section` (`text-3xl sm:text-4xl`), `.text-meta`, `.surface-card` (`p-6 sm:p-8`), `.surface-card-interactive`, `.surface-row`, `.panel` (no padding — for admin tables), `.btn-primary` / `.btn-secondary` / `.btn-disabled-shell` (`px-5 py-2.5 text-base`, ~40px tall), `.btn-ghost` (`px-4 py-2 text-base`, ~36px), `.btn-icon` (size-10, ~40px), `.btn-link-orange` (`text-base`), `.btn-pill` (chip pattern for "View all" / back-links), `.status-pill`.
 - **Button calibration**: buttons sit at modern-app norms (text-base / 40px). The audit-pass-2 size overshoot was walked back; what stayed is the muted-foreground contrast lift to rgba(0.82) dark / `#3f3d36` light — the actual a11y fix.
 - **Mobile responsiveness**: `sm:` breakpoints in the primitives layer, not per-surface overrides.
-- **Motion layer**: `MotionProvider` (LazyMotion strict + reducedMotion="user") wraps the app at root. `PageTransition` inside `AppShell` cross-fades route changes. `MotionList` / `MotionListItem` / `MotionSection` replace `FadeUp` on `(app)` pages. `FadeUp` stays for landing / faq / `HistoryList` / `MissingFieldsBadge` / `BehindApplicationHover`. `AmbientParticles` + `ScrollIndicator` mount at body; both gated to ≥1024px and reduced-motion-aware.
+- **Motion layer**: `MotionProvider` (LazyMotion strict + reducedMotion="user") wraps the app at root. `PageTransition` inside `AppShell` cross-fades route changes. `MotionList` / `MotionListItem` / `MotionSection` replace `FadeUp` on `(app)` pages. `FadeUp` stays for landing / faq / `HistoryList` / `MissingFieldsBadge` / `BehindApplicationHover`. `ScrollIndicator` mounts at body; gated to ≥1024px and reduced-motion-aware.
+- **Ambient stack perf budget (2026-05-16)**: `mix-blend-mode` is banned from per-frame-moving elements — it prevents compositor layer promotion and re-rasterizes the underlying region every frame. `filter: blur(...)` over large surfaces (`>500px`) capped at 40px; larger radii pin frame rate on high-refresh displays. The `MagneticDots` halo uses a plain orange radial-gradient with `haloPeak` opacity tuning per theme, no blend mode.
 - **Cursor + dots**: `CustomCursor` (dot + ring) and `MagneticDots` (cursor halo + cushioned dot field). Tuning constants documented inline in each file; do not re-document in CLAUDE.md.
 - **PagedPreview is no longer in `SuccessView`**. CV and cover letter previews render in `max-h-[900px] overflow-y-auto` `PreviewPanel` with click-to-zoom `PreviewZoomModal`. The `PagedPreview` module stays in the codebase for future print views.
 - **Brand band**: 6px brand-orange top stripe on both `CvPreview` and `CoverLetterPreview`; orange contact rule mirrored from CV (matches the DOCX `contactLine(text, withRule=true)` treatment).

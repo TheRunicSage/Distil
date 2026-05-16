@@ -57,38 +57,30 @@ const DOT_CAP = 2200;
 
 // Theme-conditioned opacities. Dark canvas needs lower numbers since
 // orange-on-dark already pops; the cream light canvas needs higher
-// numbers since orange-on-cream washes out at low alpha. Halo also
-// needs different blend modes per theme — `screen` warms a dark
-// surface, `multiply` tints a light one without bleaching it.
+// numbers since orange-on-cream washes out at low alpha.
+//
+// 2026-05-16: haloBlend (mix-blend-mode) dropped — mix-blend-mode
+// prevents the compositor from promoting the halo to its own surface,
+// forcing a re-rasterize of the underlying ambient-blob region every
+// frame the halo moves. That single property was halving framerate
+// on high-refresh displays. Halo is now a plain orange radial-gradient;
+// haloPeak compensates so the visible warmth is preserved.
 type ThemeProfile = {
   rest: number;
   active: number;
   haloPeak: number;
-  haloBlend: "screen" | "multiply";
 };
 
-// Active opacities and haloPeak bumped 2026-05-15 — rest stays at the
-// 2026-05-09 values (the field at rest is the same), but hover now
-// reads as a clear brightness lift, not a subtle shift. Halo also
-// warmer so the cursor centre carries real presence.
 const DARK_PROFILE: ThemeProfile = {
   rest: 0.22,
   active: 0.7,
-  haloPeak: 0.45,
-  haloBlend: "screen",
+  haloPeak: 0.55,
 };
 
-// Light-mode visibility lift (2026-05-09): orange-on-cream at 0.32
-// rest alpha was washing out — page read as "mostly white". Bumped
-// rest / active / haloPeak so the dot field actually carries presence
-// against the off-white canvas. Same brand orange, just more visible.
-// Active + haloPeak bumped again 2026-05-15 to match dark-mode hover
-// dynamism — dots near cursor approach full opacity.
 const LIGHT_PROFILE: ThemeProfile = {
   rest: 0.46,
   active: 0.95,
-  haloPeak: 0.48,
-  haloBlend: "multiply",
+  haloPeak: 0.6,
 };
 
 type Dot = { cx: number; cy: number };
@@ -320,11 +312,11 @@ export function MagneticDots() {
   return (
     <>
       {/* Soft cursor halo — a barely-there warm haze, not a glowing orb.
-          Wide radius (280px) plus an early falloff stop at 45% means the
-          centre is the brightest point but never bright; the shoulders
-          fall off into nothing well before the edge. Theme-conditioned
-          blend mode warms a dark canvas (`screen`) and tints a light
-          canvas (`multiply`) without bleaching either. */}
+          Wide radius (280px) with the orange stop fading to transparent at
+          55% so the shoulders dissolve before the edge. No mix-blend-mode
+          (see 2026-05-16 note above): higher-alpha orange + haloPeak
+          opacity tuning carries the warmth instead, and the compositor
+          can promote this div to its own layer for free transforms. */}
       <div
         ref={haloRef}
         aria-hidden
@@ -336,10 +328,9 @@ export function MagneticDots() {
           height: HALO_SIZE_PX,
           pointerEvents: "none",
           background:
-            "radial-gradient(circle, var(--color-orange-glow) 0%, transparent 55%)",
+            "radial-gradient(circle, rgba(232,90,14,0.45) 0%, transparent 55%)",
           opacity: 0,
           transition: "opacity 0.5s ease-out",
-          mixBlendMode: profile.haloBlend,
           willChange: "transform, opacity",
           zIndex: 1,
         }}
