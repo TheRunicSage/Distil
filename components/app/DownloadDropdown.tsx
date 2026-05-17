@@ -25,7 +25,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { DownloadIcon, FileTextIcon, MailIcon } from "lucide-react";
+import { DownloadIcon, FileUserIcon, LetterTextIcon } from "lucide-react";
 
 const MENU_WIDTH = 208; // w-52
 const MENU_OFFSET = 6; // px below the trigger
@@ -153,17 +153,17 @@ export function DownloadDropdown({ applicationId }: { applicationId: string }) {
           >
             <DownloadItem
               href={`/api/applications/${applicationId}/download/cv`}
-              label="Download CV"
+              label="CV"
               sub="DOCX"
-              icon={<FileTextIcon className="h-4 w-4" />}
+              icon={<FileUserIcon className="h-4 w-4" />}
               onPick={() => setOpen(false)}
             />
             <div className="h-px bg-border/60" />
             <DownloadItem
               href={`/api/applications/${applicationId}/download/cover_letter`}
-              label="Download cover letter"
+              label="Cover Letter"
               sub="DOCX"
-              icon={<MailIcon className="h-4 w-4" />}
+              icon={<LetterTextIcon className="h-4 w-4" />}
               onPick={() => setOpen(false)}
             />
           </div>,

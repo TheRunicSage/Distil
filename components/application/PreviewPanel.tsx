@@ -48,6 +48,16 @@ export function PreviewPanel({
             </button>
             <a
               href={downloadHref}
+              // `download` makes the browser treat the click as a
+              // subresource download rather than a top-level navigation.
+              // Without it, clicking the CV download then immediately
+              // clicking the cover-letter download cancels the first
+              // (Chrome supersedes in-flight navigations). With it,
+              // multiple parallel downloads work as expected. The route
+              // 302-redirects to a Supabase signed URL with
+              // Content-Disposition, which is what actually triggers
+              // the save dialog — `download` is just the navigation hint.
+              download
               aria-label={downloadLabel}
               title={downloadLabel}
               className="flex size-10 shrink-0 items-center justify-center rounded-full bg-orange text-white transition-[transform,box-shadow,background-color] duration-200 hover:bg-orange-light hover:shadow-[0_6px_18px_rgba(226,97,59,0.28)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange/40 motion-safe:active:scale-[0.95]"
