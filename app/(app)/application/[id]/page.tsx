@@ -93,25 +93,41 @@ export default async function ApplicationPage({ params }: RouteCtx) {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) redirect("/login");
 
-  const { data: app } = await supabase
-    .from("applications")
-    .select(
-      "id, user_id, status, attempt_number, queue_position, parent_application_id, job_description, user_notes, region, insufficient_input_reason, error_message, llm_response_json, files_expire_at, files_deleted_at, created_at, started_at, completed_at, last_emailed_at",
-    )
-    .eq("id", id)
-    .maybeSingle();
-  if (!app) notFound();
+  // Fetch the row + the viewer's role in parallel. The role is needed
+  // for the admin escape hatch immediately below (if the regular-client
+  // query returns null because the row belongs to a different user,
+  // and the viewer is an admin, refetch via service client so admins
+  // can triage failed applications across all users).
+  const SELECT_COLS =
+    "id, user_id, status, attempt_number, queue_position, parent_application_id, job_description, user_notes, region, insufficient_input_reason, error_message, llm_response_json, files_expire_at, files_deleted_at, created_at, started_at, completed_at, last_emailed_at";
 
-  // Admin gate for the ID-copy pill in the header. Regular users
-  // don't need to see the row's UUID; admins use it for support /
-  // log lookups. Same shape as other admin gates in this codebase
-  // (see (app)/layout.tsx, settings/page.tsx).
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userData.user.id)
-    .maybeSingle();
-  const isAdmin = isAdminRole(normaliseRole(profile?.role));
+  const [appRes, profileRes] = await Promise.all([
+    supabase.from("applications").select(SELECT_COLS).eq("id", id).maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userData.user.id)
+      .maybeSingle(),
+  ]);
+
+  const isAdmin = isAdminRole(normaliseRole(profileRes.data?.role));
+
+  // Admin escape hatch. RLS on applications scopes users to their own
+  // rows; admins triaging another user's failure need read access to
+  // the JD + status here. Same pattern as the request_logs service-
+  // client lookup further down — narrow widening of read scope, no
+  // mutation surface added.
+  let app = appRes.data;
+  if (!app && isAdmin) {
+    const service = createServiceClient();
+    const { data: adminApp } = await service
+      .from("applications")
+      .select(SELECT_COLS)
+      .eq("id", id)
+      .maybeSingle();
+    app = adminApp;
+  }
+  if (!app) notFound();
 
   const tone =
     STATUS_TONE[app.status] ??
@@ -439,6 +455,47 @@ export default async function ApplicationPage({ params }: RouteCtx) {
         <section className="rounded-lg border border-border bg-dark3 p-6 text-base text-muted-foreground">
           This application was abandoned. The metadata stays for a year for
           your records.
+        </section>
+      )}
+
+      {/* Submitted JD — read-only, collapsed by default. Lives at the
+          footer so it's available on every state: queued / running
+          users can sanity-check what they submitted, failed users can
+          see the JD that didn't work (the retry form above edits it
+          on insufficient_input + error, this is the no-edit view),
+          successful users can re-read the brief they got tailored
+          against, and admins (via the RLS escape hatch up top) can
+          triage another user's failure without leaving the page. */}
+      {app.job_description && (
+        <section className="rounded-lg border border-border bg-dark2/40">
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 text-sm text-muted-foreground transition-colors hover:text-text [&::-webkit-details-marker]:hidden">
+              <span className="text-xs font-bold uppercase tracking-[0.14em] text-orange">
+                Submitted job description
+              </span>
+              <span
+                aria-hidden
+                className="font-mono text-xs text-muted-foreground transition-transform group-open:rotate-180"
+              >
+                ▾
+              </span>
+            </summary>
+            <div className="border-t border-border px-6 py-5">
+              <p className="whitespace-pre-wrap font-sans text-base leading-relaxed text-text/85">
+                {app.job_description}
+              </p>
+              {app.user_notes && (
+                <div className="mt-5 border-t border-border/60 pt-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    Your notes
+                  </p>
+                  <p className="mt-2 whitespace-pre-wrap font-sans text-base leading-relaxed text-text/85">
+                    {app.user_notes}
+                  </p>
+                </div>
+              )}
+            </div>
+          </details>
         </section>
       )}
     </div>
