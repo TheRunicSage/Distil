@@ -1,6 +1,8 @@
 // Admin usage page. Last 50 applications with status, attempt, cost,
-// and duration; plus the running 7-day cost total. Status filter via
-// `?status=` search param so admin can pin a triage view via URL.
+// and duration; plus a cost total that windows by `?range=` (default
+// 7 days, options month / quarter / year / forever). Status filter
+// via `?status=` composes with range so an admin can pin a triage
+// view via URL.
 
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -10,7 +12,37 @@ import { getLlmProvider } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+// Spend window options. `days: null` means no lower bound (forever).
+// `headline` is used in the section + stat labels; `pill` is the nav
+// chip text. Default range is "7d" — keys map to the `?range=` param.
+const RANGE_OPTIONS = [
+  { key: "7d", days: 7, pill: "7 days", headline: "7-day" },
+  { key: "30d", days: 30, pill: "Month", headline: "Month" },
+  { key: "90d", days: 90, pill: "Quarter", headline: "Quarter" },
+  { key: "365d", days: 365, pill: "Year", headline: "Year" },
+  { key: "all", days: null, pill: "Forever", headline: "All-time" },
+] as const;
+
+function resolveRange(key: string | undefined) {
+  return RANGE_OPTIONS.find((r) => r.key === key) ?? RANGE_OPTIONS[0];
+}
+
+// Compose the page URL from the two filter dimensions. Defaults
+// (range=7d, status=all) are omitted from the query string so the
+// "clean" URL stays /admin/usage.
+function buildHref({
+  range,
+  status,
+}: {
+  range: string;
+  status: string;
+}): string {
+  const params = new URLSearchParams();
+  if (range && range !== "7d") params.set("range", range);
+  if (status && status !== "all") params.set("status", status);
+  const qs = params.toString();
+  return qs ? `/admin/usage?${qs}` : "/admin/usage";
+}
 
 const ALL_STATUSES = [
   "queued",
@@ -123,15 +155,19 @@ function formatDuration(ms: number | null): string {
 export default async function AdminUsagePage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; range?: string }>;
 }) {
   const sp = await searchParams;
   const activeKey = sp.status ?? "all";
   const activeGroup =
     STATUS_GROUPS.find((g) => g.key === activeKey) ?? STATUS_GROUPS[0];
+  const activeRange = resolveRange(sp.range);
 
   const service = createServiceClient();
-  const sevenDaysAgo = new Date(Date.now() - SEVEN_DAYS_MS).toISOString();
+  const sinceIso =
+    activeRange.days === null
+      ? null
+      : new Date(Date.now() - activeRange.days * 24 * 60 * 60 * 1000).toISOString();
 
   let appQuery = service
     .from("applications")
@@ -148,27 +184,29 @@ export default async function AdminUsagePage({
     appQuery = appQuery.in("status", matchedStatuses as unknown as string[]);
   }
 
-  const [recentApps, recentUsage, perAppCost] = await Promise.all([
+  // Spend query is range-windowed. The default "7d" matches the prior
+  // behaviour exactly; "all" drops the .gte() so we sum the full table.
+  let usageQuery = service.from("token_usage").select("cost_usd, model");
+  if (sinceIso) usageQuery = usageQuery.gte("created_at", sinceIso);
+
+  const [recentApps, rangeUsage, perAppCost] = await Promise.all([
     appQuery,
-    service
-      .from("token_usage")
-      .select("cost_usd, model")
-      .gte("created_at", sevenDaysAgo),
+    usageQuery,
     service.from("token_usage").select("application_id, cost_usd, model"),
   ]);
 
-  const sevenDayCost = (recentUsage.data ?? []).reduce(
+  const rangeCost = (rangeUsage.data ?? []).reduce(
     (sum, r) => sum + Number(r.cost_usd ?? 0),
     0,
   );
 
-  // Per-provider 7-day spend split — surfaced as a stat card so admin
-  // can see at a glance how the migration's affecting costs without
-  // leaving the page.
-  const sevenDayByProvider = { anthropic: 0, deepseek: 0, unknown: 0 };
-  for (const row of recentUsage.data ?? []) {
+  // Per-provider spend split for the same window — admin can see at a
+  // glance how the active range's spend breaks down between providers
+  // without leaving the page.
+  const rangeByProvider = { anthropic: 0, deepseek: 0, unknown: 0 };
+  for (const row of rangeUsage.data ?? []) {
     const tag = modelLabel(row.model).provider;
-    sevenDayByProvider[tag] += Number(row.cost_usd ?? 0);
+    rangeByProvider[tag] += Number(row.cost_usd ?? 0);
   }
 
   const costByApp = new Map<string, number>();
@@ -201,9 +239,41 @@ export default async function AdminUsagePage({
       <div>
         <h1 className="text-3xl font-semibold text-text">Usage</h1>
         <p className="mt-2 text-base text-muted-foreground">
-          Last 50 applications and the 7-day spend.
+          Last 50 applications and the {activeRange.headline.toLowerCase()} spend.
         </p>
       </div>
+
+      {/* Range nav — controls the spend stat + provider split below.
+          Composes with the status filter: clicking a range preserves
+          the active status query and vice versa. */}
+      <nav
+        className="flex flex-wrap items-center gap-2"
+        aria-label="Spend range"
+      >
+        <span className="mr-1 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
+          Range
+        </span>
+        {RANGE_OPTIONS.map((r) => {
+          const active = r.key === activeRange.key;
+          const href = buildHref({
+            range: r.key,
+            status: activeGroup.key,
+          });
+          return (
+            <Link
+              key={r.key}
+              href={href}
+              className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+                active
+                  ? "border-orange/60 bg-[var(--color-orange-subtle)] text-orange"
+                  : "border-border bg-dark2/60 text-muted-foreground hover:border-orange/40 hover:text-text"
+              }`}
+            >
+              {r.pill}
+            </Link>
+          );
+        })}
+      </nav>
 
       {(() => {
         const activeQueueCount = apps.filter((a) =>
@@ -212,8 +282,8 @@ export default async function AdminUsagePage({
         return (
           <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Stat
-              label="7-day spend"
-              value={`$${sevenDayCost.toFixed(2)}`}
+              label={`${activeRange.headline} spend`}
+              value={`$${rangeCost.toFixed(2)}`}
               tone="orange"
               labelTone="orange"
             />
@@ -241,36 +311,42 @@ export default async function AdminUsagePage({
 
       <section className="panel p-6">
         <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-orange">
-          7-day spend by provider
+          {activeRange.headline} spend by provider
         </h2>
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <ProviderSpend
             label="Anthropic"
-            cost={sevenDayByProvider.anthropic}
-            total={sevenDayCost}
+            cost={rangeByProvider.anthropic}
+            total={rangeCost}
+            rangeHeadline={activeRange.headline}
             tone="orange"
           />
           <ProviderSpend
             label="DeepSeek"
-            cost={sevenDayByProvider.deepseek}
-            total={sevenDayCost}
+            cost={rangeByProvider.deepseek}
+            total={rangeCost}
+            rangeHeadline={activeRange.headline}
             tone="info"
           />
-          {sevenDayByProvider.unknown > 0 && (
+          {rangeByProvider.unknown > 0 && (
             <ProviderSpend
               label="Unknown"
-              cost={sevenDayByProvider.unknown}
-              total={sevenDayCost}
+              cost={rangeByProvider.unknown}
+              total={rangeCost}
+              rangeHeadline={activeRange.headline}
               tone="muted"
             />
           )}
         </div>
       </section>
 
-      <nav className="flex flex-wrap gap-2">
+      <nav className="flex flex-wrap gap-2" aria-label="Status filter">
         {STATUS_GROUPS.map((g) => {
           const active = g.key === activeGroup.key;
-          const href = g.key === "all" ? "/admin/usage" : `/admin/usage?status=${g.key}`;
+          const href = buildHref({
+            range: activeRange.key,
+            status: g.key,
+          });
           return (
             <Link
               key={g.key}
@@ -461,11 +537,13 @@ function ProviderSpend({
   label,
   cost,
   total,
+  rangeHeadline,
   tone,
 }: {
   label: string;
   cost: number;
   total: number;
+  rangeHeadline: string;
   tone: "orange" | "info" | "muted";
 }) {
   const pct = total > 0 ? (cost / total) * 100 : 0;
@@ -498,7 +576,7 @@ function ProviderSpend({
         />
       </div>
       <p className="mt-2 font-mono text-sm text-muted-foreground">
-        {pct.toFixed(0)}% of 7-day spend
+        {pct.toFixed(0)}% of {rangeHeadline.toLowerCase()} spend
       </p>
     </div>
   );
