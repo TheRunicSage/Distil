@@ -15,8 +15,9 @@
 //   through with --mx/--my pinned at 0deg so the child renders flat
 //   with no transform overhead.
 //
-// Used by ChainCard. Could be applied to any rectangular surface
-// where a "designed product" feel beats a "list of rows" feel.
+// Used by ApplicationLiveView (the waiting-screen progress card).
+// Applicable to any rectangular surface where a "designed product"
+// feel beats a "list of rows" feel.
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 

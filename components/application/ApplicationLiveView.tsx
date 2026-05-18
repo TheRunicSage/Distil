@@ -29,6 +29,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { TiltWrap } from "@/components/app/TiltWrap";
 
 type Phase =
   | "queued"
@@ -336,7 +337,13 @@ export function ApplicationLiveView({
   const phrase = phrasesForPhase(phase)[phraseIdx] ?? "";
   const now = PHASE_NOW[phase];
 
+  // 3D tilt wrapper — gives the waiting card a subtle perspective shift
+  // tracking the cursor. Capped at 2deg (a touch above TiltWrap's 1.5deg
+  // default) so the card-sized surface reads as living without crossing
+  // into "toy" territory. Wrapper self-gates on prefers-reduced-motion
+  // and hover:hover.
   return (
+    <TiltWrap maxDeg={2}>
     <section className="relative overflow-hidden rounded-2xl border border-border bg-dark2/60 backdrop-blur-sm">
       {/* Ambient glow tied to phase — sits behind everything else. */}
       <div
@@ -401,6 +408,7 @@ export function ApplicationLiveView({
         }
       `}</style>
     </section>
+    </TiltWrap>
   );
 }
 

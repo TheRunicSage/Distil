@@ -189,11 +189,23 @@ export default async function AdminUsagePage({
   let usageQuery = service.from("token_usage").select("cost_usd, model");
   if (sinceIso) usageQuery = usageQuery.gte("created_at", sinceIso);
 
-  const [recentApps, rangeUsage, perAppCost] = await Promise.all([
+  // Range-scoped count of applications. Used by the "Apps in range"
+  // stat card so the number reflects the active range chip rather
+  // than the table's last-50 truncation (which on a healthy DB just
+  // reads as a static "50"). head:true + count:'exact' returns the
+  // count without pulling rows.
+  let appsInRangeQuery = service
+    .from("applications")
+    .select("id", { count: "exact", head: true });
+  if (sinceIso) appsInRangeQuery = appsInRangeQuery.gte("created_at", sinceIso);
+
+  const [recentApps, rangeUsage, perAppCost, appsInRangeRes] = await Promise.all([
     appQuery,
     usageQuery,
     service.from("token_usage").select("application_id, cost_usd, model"),
+    appsInRangeQuery,
   ]);
+  const appsInRange = appsInRangeRes.count ?? 0;
 
   const rangeCost = (rangeUsage.data ?? []).reduce(
     (sum, r) => sum + Number(r.cost_usd ?? 0),
@@ -294,8 +306,8 @@ export default async function AdminUsagePage({
               labelTone="cyan"
             />
             <Stat
-              label="Recent count"
-              value={String(apps.length)}
+              label={`Apps in ${activeRange.headline.toLowerCase()}`}
+              value={String(appsInRange)}
               tone="text"
               labelTone="cyan"
             />
