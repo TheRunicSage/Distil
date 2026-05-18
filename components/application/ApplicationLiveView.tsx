@@ -285,13 +285,20 @@ export function ApplicationLiveView({
       try {
         const ev = JSON.parse(raw.data) as { phase: Phase };
         setPhase(ev.phase);
+        // router.refresh() fires only on terminal — re-fetching the
+        // Server Component mid-generation triggered a full page reflow
+        // at every stage boundary, which read as a stutter (especially
+        // visible at the research -> draft transition where the user is
+        // actively tracking the stage rail). For intermediate phases the
+        // local setPhase() drives the visible UI; the server-rendered
+        // status pill in the page header shows the same "Tailoring"
+        // label and colour for both `running` and `rendering`, so a
+        // refresh between them changed nothing the user could see.
         if (ev.phase === "finalized") {
           setTimeout(() => {
             es.close();
             router.refresh();
           }, 600);
-        } else {
-          router.refresh();
         }
       } catch {
         // ignore malformed events
