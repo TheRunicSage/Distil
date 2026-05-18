@@ -351,7 +351,14 @@ export function ApplicationLiveView({
   // on prefers-reduced-motion and hover:hover.
   return (
     <TiltWrap maxDeg={4}>
-    <section className="relative overflow-hidden rounded-2xl border border-border bg-dark2/60 backdrop-blur-sm">
+    {/* No `backdrop-blur-sm` here: backdrop-filter + a per-frame
+        transform: rotateX/Y is a known expensive combination —
+        the compositor re-blurs the area behind the card on every
+        tilt frame, which read as a stutter when the cursor moved
+        in circles over the card. Switched to a fully-opaque-enough
+        dark fill (bg-dark2/85) which preserves the contrast against
+        the ambient blobs without requiring backdrop processing. */}
+    <section className="relative overflow-hidden rounded-2xl border border-border bg-dark2/85">
       {/* Ambient glow tied to phase — sits behind everything else. */}
       <div
         aria-hidden

@@ -32,6 +32,13 @@ type Props = {
 export function TiltWrap({ children, className = "", maxDeg = 1.5 }: Props) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [enabled, setEnabled] = useState(false);
+  // Pending tilt target, drained on the next animation frame.
+  // mousemove can fire 5+ times per frame on a 165Hz device; without
+  // RAF coalescing each event would trigger a style recalc plus a
+  // bounding-rect read, both main-thread work. With RAF coalescing the
+  // wrapper writes its CSS custom properties at most once per frame.
+  const targetRef = useRef<{ mx: number; my: number } | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -42,6 +49,25 @@ export function TiltWrap({ children, className = "", maxDeg = 1.5 }: Props) {
     setEnabled(motionOK && hoverOK);
   }, []);
 
+  // Cancel any pending frame on unmount so the RAF doesn't fire after
+  // the wrapper has been torn down.
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  }, []);
+
+  function flush() {
+    rafRef.current = null;
+    const pending = targetRef.current;
+    if (!pending || !ref.current) return;
+    ref.current.style.setProperty("--mx", `${pending.mx.toFixed(2)}deg`);
+    ref.current.style.setProperty("--my", `${pending.my.toFixed(2)}deg`);
+  }
+
   function handleMove(e: React.MouseEvent<HTMLDivElement>) {
     if (!enabled) return;
     const el = e.currentTarget;
@@ -50,13 +76,21 @@ export function TiltWrap({ children, className = "", maxDeg = 1.5 }: Props) {
     const y = (e.clientY - rect.top) / rect.height; // 0..1, top→bottom
     // rotateY: cursor on the right tilts the right edge away.
     // rotateX: cursor on the top tilts the top edge toward the viewer.
-    const ry = (x - 0.5) * 2 * maxDeg;
-    const rx = (0.5 - y) * 2 * maxDeg;
-    el.style.setProperty("--mx", `${ry.toFixed(2)}deg`);
-    el.style.setProperty("--my", `${rx.toFixed(2)}deg`);
+    targetRef.current = {
+      mx: (x - 0.5) * 2 * maxDeg,
+      my: (0.5 - y) * 2 * maxDeg,
+    };
+    if (rafRef.current === null) {
+      rafRef.current = requestAnimationFrame(flush);
+    }
   }
 
   function handleLeave(e: React.MouseEvent<HTMLDivElement>) {
+    targetRef.current = null;
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
     e.currentTarget.style.setProperty("--mx", "0deg");
     e.currentTarget.style.setProperty("--my", "0deg");
   }
