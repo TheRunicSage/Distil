@@ -345,12 +345,12 @@ export function ApplicationLiveView({
   const now = PHASE_NOW[phase];
 
   // 3D tilt wrapper — gives the waiting card a perspective shift
-  // tracking the cursor. 4deg on this card-sized surface reads as
-  // tangible depth without crossing into "toy" territory; the 1.5deg
-  // default was too subtle on a surface this large. Wrapper self-gates
+  // tracking the cursor. 3deg sits between the 1.5deg default (too
+  // subtle on a surface this large) and 4deg (slightly too much on a
+  // card the user is staring at for ~2 minutes). Wrapper self-gates
   // on prefers-reduced-motion and hover:hover.
   return (
-    <TiltWrap maxDeg={4}>
+    <TiltWrap maxDeg={3}>
     {/* No `backdrop-blur-sm` here: backdrop-filter + a per-frame
         transform: rotateX/Y is a known expensive combination —
         the compositor re-blurs the area behind the card on every
