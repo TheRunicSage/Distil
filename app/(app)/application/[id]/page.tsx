@@ -458,15 +458,17 @@ export default async function ApplicationPage({ params }: RouteCtx) {
         </section>
       )}
 
-      {/* Submitted JD — read-only, collapsed by default. Lives at the
-          footer so it's available on every state: queued / running
-          users can sanity-check what they submitted, failed users can
-          see the JD that didn't work (the retry form above edits it
-          on insufficient_input + error, this is the no-edit view),
+      {/* Submitted JD — read-only, collapsed by default. Hidden on
+          in-progress states (queued / paused / running / rendering)
+          to keep the waiting screen focused on the live status; it
+          would just be a re-render of the JD the user submitted
+          seconds ago. Shows on terminal states: failed users can see
+          the JD that didn't work (the retry form above edits it on
+          insufficient_input + error, this is the no-edit view),
           successful users can re-read the brief they got tailored
           against, and admins (via the RLS escape hatch up top) can
           triage another user's failure without leaving the page. */}
-      {app.job_description && (
+      {!NON_TERMINAL.has(app.status) && app.job_description && (
         <section className="rounded-lg border border-border bg-dark2/40">
           <details className="group">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 text-sm text-muted-foreground transition-colors hover:text-text [&::-webkit-details-marker]:hidden">
