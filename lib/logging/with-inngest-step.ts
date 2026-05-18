@@ -75,6 +75,16 @@ export async function withInngestStep<T>(
           provider_error: provider,
         };
       }
+      const jsonParse = findJsonParseExcerpt(err);
+      if (jsonParse) {
+        errorMetadata = {
+          ...(errorMetadata ?? {}),
+          json_parse_excerpt: jsonParse.excerpt,
+          json_parse_message: jsonParse.message,
+          json_repair_attempted: jsonParse.repairAttempted,
+          json_repair_error: jsonParse.repairError ?? null,
+        };
+      }
       throw err;
     } finally {
       const duration_ms = Date.now() - startedAt;
@@ -138,6 +148,43 @@ function findProviderError(
           message: sanitiseErrorMessage(cur.message),
         };
       }
+    }
+    cur = (cur as { cause?: unknown })?.cause;
+  }
+  return null;
+}
+
+// Walk the cause chain for the JSON-parse-failure shape attached by
+// the DeepSeek provider when both raw parse and jsonrepair fail. Duck-
+// typed so we don't have to export a class from the provider package
+// just to share with the logger.
+function findJsonParseExcerpt(err: unknown): {
+  excerpt: string;
+  message: string;
+  repairAttempted: boolean;
+  repairError: string | null;
+} | null {
+  let cur: unknown = err;
+  for (let i = 0; i < 8 && cur; i++) {
+    const candidate = cur as {
+      json_parse_excerpt?: unknown;
+      message?: unknown;
+      json_repair_attempted?: unknown;
+      json_repair_error?: unknown;
+    };
+    if (typeof candidate.json_parse_excerpt === "string") {
+      return {
+        excerpt: candidate.json_parse_excerpt,
+        message:
+          typeof candidate.message === "string"
+            ? sanitiseErrorMessage(candidate.message)
+            : "JSON.parse failed",
+        repairAttempted: Boolean(candidate.json_repair_attempted),
+        repairError:
+          typeof candidate.json_repair_error === "string"
+            ? sanitiseErrorMessage(candidate.json_repair_error)
+            : null,
+      };
     }
     cur = (cur as { cause?: unknown })?.cause;
   }

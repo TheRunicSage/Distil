@@ -73,6 +73,7 @@
 
 import "server-only";
 import OpenAI from "openai";
+import { jsonrepair } from "jsonrepair";
 
 import { env } from "@/lib/env";
 import { ApiError } from "@/lib/errors/api-error";
@@ -466,13 +467,41 @@ export class DeepseekProvider implements LlmProvider {
         (c) => c.type === "function" && c.function.name === submitToolName,
       );
       if (submitCall && submitCall.type === "function") {
+        const rawArgs = submitCall.function.arguments;
         let toolInput: unknown;
         try {
-          toolInput = JSON.parse(submitCall.function.arguments);
-        } catch (err) {
-          const apiErr = new ApiError("llm_invalid_output");
-          (apiErr as Error & { cause?: unknown }).cause = err;
-          throw apiErr;
+          toolInput = JSON.parse(rawArgs);
+        } catch (firstErr) {
+          // The DeepSeek path sometimes emits malformed JSON in
+          // `tool_calls[].function.arguments` — unescaped quotes inside
+          // a string, missing/trailing commas, an unterminated tail near
+          // the output-token cap. `jsonrepair` handles the common LLM
+          // mistakes (single/double quote mixups, missing/trailing
+          // commas, dangling brackets, even partially-truncated
+          // structures) without changing prompt or schema. Try once;
+          // if the repaired output still fails to parse, surface the
+          // original SyntaxError with a diagnostic excerpt so the
+          // request_logs row carries something investigable.
+          try {
+            const repaired = jsonrepair(rawArgs);
+            toolInput = JSON.parse(repaired);
+          } catch (secondErr) {
+            const apiErr = new ApiError("llm_invalid_output");
+            (apiErr as Error & { cause?: unknown }).cause = {
+              name: "JsonParseFailure",
+              message:
+                firstErr instanceof Error
+                  ? firstErr.message
+                  : String(firstErr),
+              json_parse_excerpt: makeJsonParseExcerpt(rawArgs, firstErr),
+              json_repair_attempted: true,
+              json_repair_error:
+                secondErr instanceof Error
+                  ? secondErr.message
+                  : String(secondErr),
+            };
+            throw apiErr;
+          }
         }
         const finalUsage: CallLLMUsage = {
           input_tokens: totalCacheMiss,
@@ -673,3 +702,24 @@ function webSearchToolDef(): OpenAI.Chat.Completions.ChatCompletionTool {
 // it would mean carrying dead code that maps "required" through —
 // "required" is the value DeepSeek's reasoner backend rejects, so
 // nobody should be reaching for it.
+
+// Excerpt the area around a JSON.parse failure for the request_logs
+// metadata. Walks the SyntaxError message for "position N", then
+// returns ~120 chars of context centred on that byte with a caret
+// marker pointing at the failure site. Falls back to the head of the
+// payload if no byte offset is parseable. Always size-bounded so a
+// malformed multi-KB payload doesn't bloat the metadata column.
+function makeJsonParseExcerpt(raw: string, err: unknown): string {
+  const RADIUS = 60;
+  const message = err instanceof Error ? err.message : String(err);
+  const match = message.match(/position\s+(\d+)/i);
+  const pos = match ? Number(match[1]) : NaN;
+  if (!Number.isFinite(pos) || pos < 0 || pos > raw.length) {
+    return raw.slice(0, RADIUS * 2);
+  }
+  const start = Math.max(0, pos - RADIUS);
+  const end = Math.min(raw.length, pos + RADIUS);
+  const before = raw.slice(start, pos);
+  const after = raw.slice(pos, end);
+  return `…${before}»${after}…`;
+}
